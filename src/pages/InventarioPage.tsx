@@ -7,6 +7,7 @@ import { KPICard } from '@/components/ui/kpi-card';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Download, Upload, AlertTriangle, Package, TrendingDown } from 'lucide-react';
 import { mockProducts, mockInventory, mockWarehouses, getProductById, getWarehouseById } from '../data/mockData';
 import { Product, Inventory, User, KPIData } from '../types';
@@ -75,7 +76,7 @@ export default function InventarioPage() {
       });
   }, [currentWarehouse, searchQuery, selectedMarca, selectedCategoria, sortField, sortDirection]);
 
-  // Calculate KPIs
+  // Calculate KPIs for current warehouse
   const kpis: KPIData[] = useMemo(() => {
     const warehouseInventory = mockInventory.filter(inv => inv.warehouseId === currentWarehouse);
     
@@ -113,6 +114,49 @@ export default function InventarioPage() {
       }
     ];
   }, [currentWarehouse]);
+
+  // Calculate global totals across all warehouses
+  const globalTotals = useMemo(() => {
+    const allInventory = mockInventory.map(inv => {
+      const product = getProductById(inv.productId);
+      return { ...inv, product };
+    }).filter(item => item.product);
+
+    const totalStockValue = allInventory.reduce((sum, inv) => 
+      sum + (inv.onHand * inv.product!.precio), 0
+    );
+
+    const totalProducts = new Set(allInventory.map(inv => inv.productId)).size;
+    
+    const totalItems = allInventory.reduce((sum, inv) => sum + inv.onHand, 0);
+
+    const globalLowStock = allInventory.filter(inv => 
+      inv.onHand <= inv.product!.reorderPoint
+    ).length;
+
+    const warehouseBreakdown = mockWarehouses.map(warehouse => {
+      const warehouseInv = allInventory.filter(inv => inv.warehouseId === warehouse.id);
+      const warehouseTotal = warehouseInv.reduce((sum, inv) => sum + inv.onHand, 0);
+      const warehouseValue = warehouseInv.reduce((sum, inv) => 
+        sum + (inv.onHand * inv.product!.precio), 0
+      );
+      
+      return {
+        warehouse: warehouse.nombre,
+        totalItems: warehouseTotal,
+        totalValue: warehouseValue,
+        uniqueProducts: new Set(warehouseInv.map(inv => inv.productId)).size
+      };
+    });
+
+    return {
+      totalStockValue,
+      totalProducts,
+      totalItems,
+      globalLowStock,
+      warehouseBreakdown
+    };
+  }, []);
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -188,15 +232,93 @@ export default function InventarioPage() {
         </div>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {kpis.map((kpi, index) => (
-          <KPICard key={index} data={kpi} />
-        ))}
-      </div>
+      {/* Tabs for Warehouse and Global View */}
+      <Tabs defaultValue="warehouse" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="warehouse">Vista por Sucursal</TabsTrigger>
+          <TabsTrigger value="global">Totales Globales</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="warehouse" className="space-y-6">
+          {/* KPIs for current warehouse */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {kpis.map((kpi, index) => (
+              <KPICard key={index} data={kpi} />
+            ))}
+          </div>
+        </TabsContent>
 
-      {/* Filters */}
-      <Card>
+        <TabsContent value="global" className="space-y-6">
+          {/* Global KPIs */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <KPICard data={{
+              label: 'Valor Total Inventario',
+              value: globalTotals.totalStockValue,
+              changeType: 'positive',
+              change: 15.3,
+              format: 'currency'
+            }} />
+            <KPICard data={{
+              label: 'Productos Únicos',
+              value: globalTotals.totalProducts,
+              changeType: 'neutral',
+              change: 0,
+              format: 'number'
+            }} />
+            <KPICard data={{
+              label: 'Items Totales',
+              value: globalTotals.totalItems,
+              changeType: 'positive',
+              change: 8.7,
+              format: 'number'
+            }} />
+            <KPICard data={{
+              label: 'Bajo Stock Global',
+              value: globalTotals.globalLowStock,
+              changeType: globalTotals.globalLowStock > 15 ? 'negative' : 'positive',
+              change: -5.2,
+              format: 'number'
+            }} />
+          </div>
+
+          {/* Warehouse Breakdown Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Desglose por Sucursal</CardTitle>
+              <CardDescription>
+                Resumen de inventario por cada sucursal
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Sucursal</TableHead>
+                    <TableHead className="text-right">Items Totales</TableHead>
+                    <TableHead className="text-right">Productos Únicos</TableHead>
+                    <TableHead className="text-right">Valor Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {globalTotals.warehouseBreakdown.map((warehouse, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">{warehouse.warehouse}</TableCell>
+                      <TableCell className="text-right">{warehouse.totalItems.toLocaleString()}</TableCell>
+                      <TableCell className="text-right">{warehouse.uniqueProducts}</TableCell>
+                      <TableCell className="text-right">${warehouse.totalValue.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Filters - Only show on warehouse tab */}
+      <Tabs defaultValue="warehouse" className="w-full">
+        <TabsContent value="warehouse">
+          <Card>
         <CardHeader>
           <CardTitle>Filtros</CardTitle>
           <CardDescription>
@@ -261,8 +383,8 @@ export default function InventarioPage() {
         </CardContent>
       </Card>
 
-      {/* Inventory Table */}
-      <Card className="data-table">
+          {/* Inventory Table */}
+          <Card className="data-table">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -349,6 +471,8 @@ export default function InventarioPage() {
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
