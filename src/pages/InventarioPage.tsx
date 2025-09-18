@@ -20,8 +20,8 @@ interface ContextType {
 
 export default function InventarioPage() {
   const { currentWarehouse, searchQuery, currentUser } = useOutletContext<ContextType>();
-  const [selectedMarca, setSelectedMarca] = useState<string>('');
-  const [selectedCategoria, setSelectedCategoria] = useState<string>('');
+  const [selectedMarca, setSelectedMarca] = useState<string>('all');
+  const [selectedCategoria, setSelectedCategoria] = useState<string>('all');
   const [sortField, setSortField] = useState<string>('nombre');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
@@ -51,10 +51,10 @@ export default function InventarioPage() {
         }
         
         // Brand filter
-        if (selectedMarca && item.product.marca !== selectedMarca) return false;
+        if (selectedMarca && selectedMarca !== 'all' && item.product.marca !== selectedMarca) return false;
         
         // Category filter
-        if (selectedCategoria && item.product.categoria !== selectedCategoria) return false;
+        if (selectedCategoria && selectedCategoria !== 'all' && item.product.categoria !== selectedCategoria) return false;
         
         return true;
       })
@@ -212,7 +212,7 @@ export default function InventarioPage() {
                   <SelectValue placeholder="Todas las marcas" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas las marcas</SelectItem>
+                  <SelectItem value="all">Todas las marcas</SelectItem>
                   {marcas.map(marca => (
                     <SelectItem key={marca} value={marca}>{marca}</SelectItem>
                   ))}
@@ -227,7 +227,7 @@ export default function InventarioPage() {
                   <SelectValue placeholder="Todas las categorías" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas las categorías</SelectItem>
+                  <SelectItem value="all">Todas las categorías</SelectItem>
                   {categorias.map(categoria => (
                     <SelectItem key={categoria} value={categoria}>{categoria}</SelectItem>
                   ))}
@@ -248,8 +248,8 @@ export default function InventarioPage() {
             <div className="flex items-end">
               <Button 
                 onClick={() => {
-                  setSelectedMarca('');
-                  setSelectedCategoria('');
+                  setSelectedMarca('all');
+                  setSelectedCategoria('all');
                 }} 
                 variant="outline"
                 className="w-full"

@@ -22,7 +22,7 @@ interface ContextType {
 
 export default function VentasPage() {
   const { currentWarehouse, currentUser } = useOutletContext<ContextType>();
-  const [selectedMetodoPago, setSelectedMetodoPago] = useState<string>('');
+  const [selectedMetodoPago, setSelectedMetodoPago] = useState<string>('all');
   const [dateRange, setDateRange] = useState<string>('30d');
 
   // Filter sales data
@@ -47,7 +47,7 @@ export default function VentasPage() {
     return mockSales
       .filter(sale => sale.warehouseId === currentWarehouse)
       .filter(sale => new Date(sale.fechaISO) >= startDate)
-      .filter(sale => selectedMetodoPago ? sale.metodoPago === selectedMetodoPago : true)
+      .filter(sale => selectedMetodoPago && selectedMetodoPago !== 'all' ? sale.metodoPago === selectedMetodoPago : true)
       .sort((a, b) => new Date(b.fechaISO).getTime() - new Date(a.fechaISO).getTime());
   }, [currentWarehouse, selectedMetodoPago, dateRange]);
 
@@ -227,7 +227,7 @@ export default function VentasPage() {
                   <SelectValue placeholder="Todos los métodos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos los métodos</SelectItem>
+                  <SelectItem value="all">Todos los métodos</SelectItem>
                   <SelectItem value="efectivo">Efectivo</SelectItem>
                   <SelectItem value="tarjeta">Tarjeta</SelectItem>
                   <SelectItem value="transferencia">Transferencia</SelectItem>
@@ -239,7 +239,7 @@ export default function VentasPage() {
             <div className="flex items-end">
               <Button 
                 onClick={() => {
-                  setSelectedMetodoPago('');
+                  setSelectedMetodoPago('all');
                   setDateRange('30d');
                 }} 
                 variant="outline"
