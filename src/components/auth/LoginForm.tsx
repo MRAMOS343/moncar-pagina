@@ -69,7 +69,7 @@ export function LoginForm({
               setPassword('password');
             }}>
                   <span>{user.email}</span>
-                  <span className="capitalize text-primary">{user.role}</span>
+                  <span className="capitalize text-red-600">{user.role}</span>
                 </div>)}
             </div>
           </div>
