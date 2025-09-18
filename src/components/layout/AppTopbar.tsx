@@ -137,7 +137,7 @@ export function AppTopbar({
             variant="ghost"
             size="icon"
             onClick={onToggleDarkMode}
-            aria-label="Toggle dark mode"
+            aria-label="Cambiar modo oscuro"
           >
             {isDarkMode ? (
               <Sun className="h-4 w-4" />
@@ -146,7 +146,7 @@ export function AppTopbar({
             )}
           </Button>
 
-          <Button variant="ghost" size="icon" aria-label="Notifications">
+          <Button variant="ghost" size="icon" aria-label="Notificaciones">
             <Bell className="h-4 w-4" />
           </Button>
         </div>

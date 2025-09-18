@@ -35,7 +35,7 @@ export function DashboardLayout() {
   // Generate breadcrumbs based on current route
   const generateBreadcrumbs = () => {
     const pathParts = location.pathname.split('/').filter(Boolean);
-    const breadcrumbs = [{ label: 'Dashboard', href: '/' }];
+    const breadcrumbs = [{ label: 'Panel de Control', href: '/' }];
     
     let currentPath = '';
     pathParts.forEach((part) => {
