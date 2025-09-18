@@ -1,16 +1,16 @@
 import { cn } from "@/lib/utils";
 import { KPIData } from "../../types";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
-
 interface KPICardProps {
   data: KPIData;
   className?: string;
 }
-
-export function KPICard({ data, className }: KPICardProps) {
+export function KPICard({
+  data,
+  className
+}: KPICardProps) {
   const formatValue = (value: number | string, format?: string) => {
     if (typeof value === 'string') return value;
-    
     switch (format) {
       case 'currency':
         return new Intl.NumberFormat('es-MX', {
@@ -24,20 +24,17 @@ export function KPICard({ data, className }: KPICardProps) {
         return new Intl.NumberFormat('es-MX').format(value);
     }
   };
-
   const getChangeIcon = () => {
     if (!data.change) return null;
-    
     switch (data.changeType) {
       case 'positive':
-        return <TrendingUp className="w-4 h-4 text-success" />;
+        return;
       case 'negative':
         return <TrendingDown className="w-4 h-4 text-destructive" />;
       default:
         return <Minus className="w-4 h-4 text-muted-foreground" />;
     }
   };
-
   const getChangeColorClass = () => {
     switch (data.changeType) {
       case 'positive':
@@ -48,9 +45,7 @@ export function KPICard({ data, className }: KPICardProps) {
         return 'text-muted-foreground';
     }
   };
-
-  return (
-    <div className={cn("kpi-card", className)}>
+  return <div className={cn("kpi-card", className)}>
       <div className="flex items-start justify-between">
         <div className="space-y-2">
           <p className="text-sm font-medium text-muted-foreground">
@@ -60,15 +55,10 @@ export function KPICard({ data, className }: KPICardProps) {
             {formatValue(data.value, data.format)}
           </p>
         </div>
-        {data.change !== undefined && (
-          <div className={cn("flex items-center gap-1 text-sm", getChangeColorClass())}>
+        {data.change !== undefined && <div className={cn("flex items-center gap-1 text-sm", getChangeColorClass())}>
             {getChangeIcon()}
-            <span>
-              {data.change > 0 ? '+' : ''}{data.change.toFixed(1)}%
-            </span>
-          </div>
-        )}
+            
+          </div>}
       </div>
-    </div>
-  );
+    </div>;
 }
