@@ -10,6 +10,8 @@ import VentasPage from "./pages/VentasPage";
 import ComprasPage from "./pages/ComprasPage";
 import PrediccionPage from "./pages/PrediccionPage";
 import NotFound from "./pages/NotFound";
+import LoginPage from "./pages/LoginPage";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 const router = createBrowserRouter([
   {
@@ -21,8 +23,16 @@ const router = createBrowserRouter([
         element: <Index />,
       },
       {
+        path: "login",
+        element: <LoginPage />,
+      },
+      {
         path: "dashboard",
-        element: <DashboardLayout />,
+        element: (
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        ),
         children: [
           {
             index: true,
