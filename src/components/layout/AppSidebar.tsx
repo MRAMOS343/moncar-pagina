@@ -81,7 +81,7 @@ export function AppSidebar({ currentUser, onLogout }: AppSidebarProps) {
   };
   
   const getNavClass = (url: string) => {
-    const baseClass = "w-full justify-start transition-colors duration-200";
+    const baseClass = "w-full justify-start transition-colors duration-200 py-4 px-3";
     return isActive(url) 
       ? `${baseClass} sidebar-item-active` 
       : `${baseClass} sidebar-item`;
