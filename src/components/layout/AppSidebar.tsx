@@ -71,7 +71,14 @@ export function AppSidebar({ currentUser, onLogout }: AppSidebarProps) {
   const location = useLocation();
   const currentPath = location.pathname;
 
-  const isActive = (path: string) => currentPath === path || currentPath.startsWith(path + '/');
+  const isActive = (path: string) => {
+    // Para el dashboard principal, solo activar si es exactamente esa ruta
+    if (path === '/dashboard') {
+      return currentPath === '/dashboard';
+    }
+    // Para otras rutas, activar si coincide exactamente o es una subruta
+    return currentPath === path || currentPath.startsWith(path + '/');
+  };
   
   const getNavClass = (url: string) => {
     const baseClass = "w-full justify-start transition-colors duration-200";
