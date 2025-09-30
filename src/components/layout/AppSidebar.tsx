@@ -116,9 +116,9 @@ export function AppSidebar({ currentUser, onLogout }: AppSidebarProps) {
                     <NavLink to={item.url} className={getNavClass(item.url)}>
                       <item.icon className="w-5 h-5" />
                       {!collapsed && (
-                        <div className="flex flex-col items-start">
+                        <div className="flex flex-col items-start gap-0.5">
                           <span className="font-medium">{item.title}</span>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs text-muted-foreground leading-tight">
                             {item.description}
                           </span>
                         </div>
