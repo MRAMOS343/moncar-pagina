@@ -9,6 +9,8 @@ import InventarioPage from "./pages/InventarioPage";
 import VentasPage from "./pages/VentasPage";
 import ComprasPage from "./pages/ComprasPage";
 import PrediccionPage from "./pages/PrediccionPage";
+import EquiposPage from "./pages/EquiposPage";
+import ProveedoresPage from "./pages/ProveedoresPage";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/LoginPage";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
@@ -53,6 +55,14 @@ const router = createBrowserRouter([
           {
             path: "prediccion",
             element: <PrediccionPage />,
+          },
+          {
+            path: "equipos",
+            element: <EquiposPage />,
+          },
+          {
+            path: "proveedores",
+            element: <ProveedoresPage />,
           },
         ],
       },

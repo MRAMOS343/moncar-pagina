@@ -14,6 +14,8 @@ const routeLabels: Record<string, string> = {
   '/dashboard/ventas': 'Ventas', 
   '/dashboard/prediccion': 'Predicción de Ventas',
   '/dashboard/compras': 'Compra Sugerida',
+  '/dashboard/equipos': 'Equipos',
+  '/dashboard/proveedores': 'Proveedores',
   '/configuracion': 'Configuración'
 };
 

@@ -95,6 +95,28 @@ export interface PurchaseSuggestion {
   costo?: number;
 }
 
+export interface Team {
+  id: string;
+  nombre: string;
+  descripcion?: string;
+  lider?: string;
+  miembros: string[];
+  warehouseId?: string;
+  fechaCreacion: string;
+}
+
+export interface Supplier {
+  id: string;
+  nombre: string;
+  contacto: string;
+  telefono: string;
+  email: string;
+  direccion?: string;
+  rfc?: string;
+  categorias: string[];
+  activo: boolean;
+}
+
 export interface FilterState {
   search: string;
   marca: string;

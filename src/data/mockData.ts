@@ -1,4 +1,4 @@
-import { Product, Warehouse, Inventory, Sale, User } from '../types';
+import { Product, Warehouse, Inventory, Sale, User, Team, Supplier } from '../types';
 
 // Mock warehouses (sucursales)
 export const mockWarehouses: Warehouse[] = [
@@ -212,6 +212,115 @@ for (let i = 0; i < 150; i++) {
   });
 }
 
+// Mock teams
+export const mockTeams: Team[] = [
+  {
+    id: 't1',
+    nombre: 'Equipo Ventas Norte',
+    descripcion: 'Equipo de ventas para sucursales del norte',
+    lider: 'Carlos Gerente',
+    miembros: ['María Cajera', 'Juan Pérez', 'Ana López'],
+    warehouseId: 'w1',
+    fechaCreacion: '2024-01-15'
+  },
+  {
+    id: 't2',
+    nombre: 'Equipo Inventario',
+    descripcion: 'Equipo encargado del control de inventario',
+    lider: 'Roberto Sánchez',
+    miembros: ['Pedro Martínez', 'Laura García', 'Miguel Torres'],
+    fechaCreacion: '2024-02-10'
+  },
+  {
+    id: 't3',
+    nombre: 'Equipo Compras',
+    descripcion: 'Equipo de gestión de compras y proveedores',
+    lider: 'Gabriela Hernández',
+    miembros: ['José Ramírez', 'Carmen Flores'],
+    warehouseId: 'w2',
+    fechaCreacion: '2024-03-05'
+  },
+  {
+    id: 't4',
+    nombre: 'Equipo Ventas Sur',
+    descripcion: 'Equipo de ventas para sucursales del sur',
+    lider: 'Fernando Morales',
+    miembros: ['Diana Cruz', 'Ricardo Méndez', 'Patricia Ruiz', 'Alberto Reyes'],
+    warehouseId: 'w3',
+    fechaCreacion: '2024-01-20'
+  }
+];
+
+// Mock suppliers
+export const mockSuppliers: Supplier[] = [
+  {
+    id: 's1',
+    nombre: 'Autopartes del Bajío S.A. de C.V.',
+    contacto: 'Ing. Roberto González',
+    telefono: '555-1234-567',
+    email: 'ventas@autopartesbajio.com.mx',
+    direccion: 'Av. Industria 456, León, Guanajuato',
+    rfc: 'ADB890123-ABC',
+    categorias: ['Frenos', 'Suspensión'],
+    activo: true
+  },
+  {
+    id: 's2',
+    nombre: 'Distribuidora Nacional de Refacciones',
+    contacto: 'Lic. María Guadalupe Ramírez',
+    telefono: '555-9876-543',
+    email: 'contacto@dnr.com.mx',
+    direccion: 'Calzada Tlalpan 890, Ciudad de México',
+    rfc: 'DNR780456-XYZ',
+    categorias: ['Filtros', 'Lubricantes', 'Eléctrico'],
+    activo: true
+  },
+  {
+    id: 's3',
+    nombre: 'Importadora Gómez Hermanos',
+    contacto: 'Sr. José Luis Gómez',
+    telefono: '555-4567-890',
+    email: 'jlgomez@gomezhermanos.mx',
+    direccion: 'Boulevard Díaz Ordaz 234, Monterrey, Nuevo León',
+    rfc: 'IGH560789-DEF',
+    categorias: ['Motor', 'Encendido'],
+    activo: true
+  },
+  {
+    id: 's4',
+    nombre: 'Refacciones Martínez del Pacífico',
+    contacto: 'Ing. Carmen Martínez Vega',
+    telefono: '555-3456-789',
+    email: 'ventas@rmpacífico.com',
+    direccion: 'Av. Marina Nacional 567, Guadalajara, Jalisco',
+    rfc: 'RMP670234-GHI',
+    categorias: ['Enfriamiento', 'Accesorios'],
+    activo: true
+  },
+  {
+    id: 's5',
+    nombre: 'Distribuidora de Autopartes Hernández',
+    contacto: 'Sr. Pedro Hernández Castro',
+    telefono: '555-8765-432',
+    email: 'info@dah-refacciones.mx',
+    direccion: 'Calle Reforma 123, Puebla, Puebla',
+    rfc: 'DAH450123-JKL',
+    categorias: ['Frenos', 'Eléctrico', 'Motor'],
+    activo: true
+  },
+  {
+    id: 's6',
+    nombre: 'Proveedora Industrial del Norte',
+    contacto: 'Lic. Ana Laura Torres',
+    telefono: '555-2345-678',
+    email: 'atorres@pinnorte.com.mx',
+    direccion: 'Parque Industrial 789, Saltillo, Coahuila',
+    rfc: 'PIN340567-MNO',
+    categorias: ['Suspensión', 'Motor', 'Filtros'],
+    activo: false
+  }
+];
+
 // Utility functions for data manipulation
 export const getProductById = (id: string): Product | undefined => 
   mockProducts.find(p => p.id === id);
@@ -235,3 +344,9 @@ export const getSalesForWarehouse = (warehouseId: string, dateFrom?: Date, dateT
     if (dateTo && new Date(sale.fechaISO) > dateTo) return false;
     return true;
   });
+
+export const getTeamById = (id: string): Team | undefined => 
+  mockTeams.find(t => t.id === id);
+
+export const getSupplierById = (id: string): Supplier | undefined => 
+  mockSuppliers.find(s => s.id === id);

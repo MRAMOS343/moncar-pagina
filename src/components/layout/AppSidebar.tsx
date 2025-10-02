@@ -7,7 +7,9 @@ import {
   Settings,
   User,
   LogOut,
-  LayoutDashboard
+  LayoutDashboard,
+  Users,
+  Truck
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
@@ -57,6 +59,18 @@ const mainNavItems = [
     url: "/dashboard/compras", 
     icon: ShoppingBag,
     description: "Sugerencias de reabastecimiento"
+  },
+  { 
+    title: "Equipos", 
+    url: "/dashboard/equipos", 
+    icon: Users,
+    description: "Gestión de equipos de trabajo"
+  },
+  { 
+    title: "Proveedores", 
+    url: "/dashboard/proveedores", 
+    icon: Truck,
+    description: "Directorio de proveedores"
   },
 ];
 
