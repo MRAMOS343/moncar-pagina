@@ -142,7 +142,9 @@ export default function DashboardPage() {
       {/* Indicadores clave de rendimiento (KPIs) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {kpisGlobales.map((kpi, index) => (
-          <KPICard key={index} data={kpi} />
+          <div key={index} className="animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
+            <KPICard data={kpi} />
+          </div>
         ))}
       </div>
 

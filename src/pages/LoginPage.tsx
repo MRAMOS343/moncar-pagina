@@ -18,7 +18,8 @@ export default function LoginPage() {
   }
   
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 relative overflow-hidden">
+      <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
       <LoginForm onLogin={login} />
     </div>
   );

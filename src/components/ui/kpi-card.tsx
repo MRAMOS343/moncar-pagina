@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { KPIData } from "../../types";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, DollarSign, Package, ShoppingCart, AlertTriangle } from "lucide-react";
 interface KPICardProps {
   data: KPIData;
   className?: string;
@@ -45,17 +45,34 @@ export function KPICard({
         return 'text-muted-foreground';
     }
   };
-  return <div className={cn("bg-card p-6 rounded-lg border shadow-sm", className)}>
+  const getContextualIcon = () => {
+    const iconClass = "w-5 h-5";
+    if (data.label.includes("Ventas")) return <DollarSign className={iconClass} />;
+    if (data.label.includes("Productos")) return <Package className={iconClass} />;
+    if (data.label.includes("Ticket")) return <ShoppingCart className={iconClass} />;
+    if (data.label.includes("Stock")) return <AlertTriangle className={iconClass} />;
+    return null;
+  };
+
+  return <div className={cn(
+      "bg-card p-6 rounded-lg border shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 group",
+      className
+    )}>
       <div className="flex items-start justify-between">
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">
-            {data.label}
-          </p>
-          <p className="text-2xl font-bold text-foreground">
+        <div className="space-y-3 flex-1">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
+              {getContextualIcon()}
+            </div>
+            <p className="text-sm font-medium text-muted-foreground">
+              {data.label}
+            </p>
+          </div>
+          <p className="text-3xl font-bold text-foreground">
             {formatValue(data.value, data.format)}
           </p>
         </div>
-        {data.change !== undefined && <div className={cn("flex items-center gap-1 text-sm", getChangeColorClass())}>
+        {data.change !== undefined && <div className={cn("flex items-center gap-1 text-sm font-medium", getChangeColorClass())}>
             {getChangeIcon()}
             <span>{data.change > 0 ? '+' : ''}{data.change}%</span>
           </div>}

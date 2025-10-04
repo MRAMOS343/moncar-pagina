@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Package } from 'lucide-react';
 import { mockUsers } from '../../data/mockData';
+import { Badge } from '@/components/ui/badge';
+import { CardFooter } from '@/components/ui/card';
 interface LoginFormProps {
   onLogin: (email: string, password: string) => boolean;
 }
@@ -30,7 +32,7 @@ export function LoginForm({
     setIsLoading(false);
   };
   return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md animate-fade-in">
         <CardHeader className="text-center space-y-4">
           <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center bg-red-600">
             <Package className="w-8 h-8 text-primary-foreground" />
@@ -61,19 +63,28 @@ export function LoginForm({
             </Button>
           </form>
 
-          <div className="mt-6 space-y-3">
-            <p className="text-sm text-muted-foreground text-center">Usuarios sugeridos??:</p>
-            <div className="space-y-2 text-xs">
-              {mockUsers.map(user => <div key={user.id} className="flex justify-between p-2 bg-muted rounded cursor-pointer hover:bg-muted/80" onClick={() => {
+          <div className="mt-6 p-4 bg-muted/50 rounded-lg border border-border">
+            <p className="text-sm font-medium text-foreground mb-3">Usuarios de prueba:</p>
+            <div className="space-y-2">
+              {mockUsers.map(user => <div key={user.id} className="flex justify-between items-center p-2 rounded hover:bg-accent transition-colors cursor-pointer group" onClick={() => {
               setEmail(user.email);
               setPassword('password');
             }}>
-                  <span>{user.email}</span>
-                  <span className="capitalize text-red-600">{user.role}</span>
+                  <div>
+                    <p className="text-sm font-medium group-hover:text-primary transition-colors">{user.email}</p>
+                  </div>
+                  <Badge variant="outline" className="text-xs capitalize">
+                    {user.role}
+                  </Badge>
                 </div>)}
             </div>
           </div>
         </CardContent>
+        <CardFooter className="flex flex-col space-y-2">
+          <p className="text-xs text-muted-foreground text-center">
+            Sistema de Gestión Moncar - v4.5
+          </p>
+        </CardFooter>
       </Card>
     </div>;
 }
