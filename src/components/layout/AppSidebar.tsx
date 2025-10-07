@@ -5,7 +5,7 @@ import {
   TrendingUp, 
   ShoppingBag,
   Settings,
-  User,
+  User as UserIcon,
   LogOut,
   LayoutDashboard,
   Users,
@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { User as UserType } from "@/types";
+import { User } from "@/types";
 
 const mainNavItems = [
   { 
@@ -89,7 +89,7 @@ const mainNavItems = [
 ];
 
 interface AppSidebarProps {
-  currentUser: UserType | null;
+  currentUser: User | null;
   onLogout: () => void;
 }
 
@@ -166,7 +166,7 @@ export function AppSidebar({ currentUser, onLogout }: AppSidebarProps) {
           <div className="bg-secondary rounded-lg p-3 mb-2">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-primary-foreground" />
+                <UserIcon className="w-4 h-4 text-primary-foreground" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">
