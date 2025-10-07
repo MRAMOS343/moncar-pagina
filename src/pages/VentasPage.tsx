@@ -45,7 +45,7 @@ export default function VentasPage() {
     }
 
     return mockSales
-      .filter(sale => sale.warehouseId === currentWarehouse)
+      .filter(sale => currentWarehouse === 'all' || sale.warehouseId === currentWarehouse)
       .filter(sale => new Date(sale.fechaISO) >= startDate)
       .filter(sale => selectedMetodoPago && selectedMetodoPago !== 'all' ? sale.metodoPago === selectedMetodoPago : true)
       .sort((a, b) => new Date(b.fechaISO).getTime() - new Date(a.fechaISO).getTime());
@@ -142,7 +142,11 @@ export default function VentasPage() {
         <div>
           <h1 className="text-3xl font-bold text-foreground">Ventas</h1>
           <p className="text-muted-foreground">
-            Registro de ventas en {getWarehouseById(currentWarehouse)?.nombre}
+            Registro de ventas en {
+              currentWarehouse === 'all' 
+                ? 'Todas las Sucursales' 
+                : getWarehouseById(currentWarehouse)?.nombre || 'Sucursal no encontrada'
+            }
           </p>
         </div>
         <div className="flex gap-2">
