@@ -212,6 +212,8 @@ export default function DashboardPage() {
                   fill="#8884d8"
                   dataKey="value"
                   label={({ name, percentage }) => `${name} ${percentage}%`}
+                  labelLine={{ stroke: 'hsl(var(--foreground))' }}
+                  style={{ fill: 'hsl(var(--foreground))' }}
                 >
                   {datosMetodosPago.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORES[index % COLORES.length]} />
