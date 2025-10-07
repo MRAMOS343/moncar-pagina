@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { useOutletContext, useNavigate } from "react-router-dom";
 import { KPICard } from "@/components/ui/kpi-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,8 @@ import { mockSales, mockInventory, mockProducts, mockWarehouses } from "@/data/m
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, BarChart, Bar } from "recharts";
 import { TrendingUp, ShoppingCart, Package, DollarSign, AlertTriangle, Plus } from "lucide-react";
 import { Sale, User, KPIData } from "@/types";
+import { ProductModal } from "@/components/modals/ProductModal";
+import { toast } from "@/hooks/use-toast";
 
 interface ContextType {
   currentWarehouse: string;
@@ -17,6 +19,8 @@ interface ContextType {
 
 export default function DashboardPage() {
   const { currentWarehouse, currentUser } = useOutletContext<ContextType>();
+  const navigate = useNavigate();
+  const [productModalOpen, setProductModalOpen] = useState(false);
 
   // Cálculo de KPIs globales del negocio
   const kpisGlobales = useMemo((): KPIData[] => {
@@ -142,6 +146,23 @@ export default function DashboardPage() {
   // Colores para los gráficos - colores vibrantes diferenciados
   const COLORES = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#F97316'];
 
+  const handleNewSale = () => {
+    navigate('/dashboard/ventas');
+  };
+
+  const handleAddProduct = () => {
+    setProductModalOpen(true);
+  };
+
+  const handleSaveProduct = async (productData: any) => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    toast({
+      title: "Producto creado",
+      description: `${productData.nombre} ha sido creado exitosamente.`,
+    });
+    setProductModalOpen(false);
+  };
+
   return (
     <div className="space-y-6 p-6">
       {/* Encabezado de la página principal */}
@@ -157,11 +178,11 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button>
+          <Button onClick={handleNewSale}>
             <Plus className="w-4 h-4 mr-2" />
             Nueva Venta
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleAddProduct}>
             <Package className="w-4 h-4 mr-2" />
             Agregar Producto
           </Button>
@@ -371,6 +392,14 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Product Modal */}
+      <ProductModal
+        open={productModalOpen}
+        onOpenChange={setProductModalOpen}
+        product={null}
+        onSave={handleSaveProduct}
+      />
     </div>
   );
 }
