@@ -26,11 +26,11 @@ const categoriaIcons: Record<TicketCategory, typeof Bug> = {
   reporte: FileText,
 };
 
-const estadoColors: Record<TicketStatus, string> = {
-  abierto: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
-  en_progreso: 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400',
-  resuelto: 'bg-green-500/10 text-green-700 dark:text-green-400',
-  cerrado: 'bg-gray-500/10 text-gray-700 dark:text-gray-400',
+const estadoVariants: Record<TicketStatus, "info" | "warning" | "success" | "outline"> = {
+  abierto: 'info',
+  en_progreso: 'warning',
+  resuelto: 'success',
+  cerrado: 'outline',
 };
 
 const estadoLabels: Record<TicketStatus, string> = {
@@ -40,11 +40,11 @@ const estadoLabels: Record<TicketStatus, string> = {
   cerrado: 'Cerrado',
 };
 
-const prioridadColors: Record<TicketPriority, string> = {
-  baja: 'bg-gray-500/10 text-gray-700 dark:text-gray-400',
-  media: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
-  alta: 'bg-orange-500/10 text-orange-700 dark:text-orange-400',
-  urgente: 'bg-red-500/10 text-red-700 dark:text-red-400',
+const prioridadVariants: Record<TicketPriority, "outline" | "info" | "warning" | "destructive"> = {
+  baja: 'outline',
+  media: 'info',
+  alta: 'warning',
+  urgente: 'destructive',
 };
 
 const prioridadLabels: Record<TicketPriority, string> = {
@@ -77,7 +77,7 @@ export function TicketCard({ ticket, onClick }: TicketCardProps) {
               </p>
             </div>
           </div>
-          <Badge className={prioridadColors[ticket.prioridad]}>
+          <Badge variant={prioridadVariants[ticket.prioridad]}>
             {prioridadLabels[ticket.prioridad]}
           </Badge>
         </div>
@@ -85,7 +85,7 @@ export function TicketCard({ ticket, onClick }: TicketCardProps) {
 
       <CardContent className="pt-0">
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <Badge className={estadoColors[ticket.estado]} variant="outline">
+          <Badge variant={estadoVariants[ticket.estado]}>
             {estadoLabels[ticket.estado]}
           </Badge>
           

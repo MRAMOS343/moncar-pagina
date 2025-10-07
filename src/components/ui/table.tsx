@@ -12,13 +12,19 @@ const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableE
 Table.displayName = "Table";
 
 const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
-  ({ className, ...props }, ref) => <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />,
+  ({ className, ...props }, ref) => (
+    <thead ref={ref} className={cn("[&_tr]:border-b sticky top-0 bg-muted/50 backdrop-blur-sm z-10", className)} {...props} />
+  ),
 );
 TableHeader.displayName = "TableHeader";
 
 const TableBody = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
   ({ className, ...props }, ref) => (
-    <tbody ref={ref} className={cn("[&_tr:last-child]:border-0", className)} {...props} />
+    <tbody 
+      ref={ref} 
+      className={cn("[&_tr:last-child]:border-0 [&_tr:nth-child(even)]:bg-muted/30", className)} 
+      {...props} 
+    />
   ),
 );
 TableBody.displayName = "TableBody";
@@ -34,7 +40,10 @@ const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTML
   ({ className, ...props }, ref) => (
     <tr
       ref={ref}
-      className={cn("border-b transition-colors data-[state=selected]:bg-muted hover:bg-muted/50", className)}
+      className={cn(
+        "border-b transition-all duration-200 data-[state=selected]:bg-muted hover:bg-accent/5",
+        className
+      )}
       {...props}
     />
   ),

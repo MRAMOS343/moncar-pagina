@@ -211,9 +211,9 @@ export default function InventarioPage() {
     if (inv.onHand <= inv.product.reorderPoint) {
       return <Badge variant="destructive">Stock Bajo</Badge>;
     } else if (inv.onHand <= inv.product.safetyStock + inv.product.reorderPoint) {
-      return <Badge variant="secondary">Stock Medio</Badge>;
+      return <Badge variant="warning">Stock Medio</Badge>;
     } else {
-      return <Badge className="bg-green-100 text-green-700">Stock Alto</Badge>;
+      return <Badge variant="success">Stock Alto</Badge>;
     }
   };
 

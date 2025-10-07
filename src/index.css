@@ -43,6 +43,11 @@
     --success-foreground: 0 0% 98%;
     --success-light: 142 76% 90%;
     
+    /* Info - Blue for informational */
+    --info: 214 84% 56%;
+    --info-foreground: 0 0% 98%;
+    --info-light: 214 84% 90%;
+    
     /* Warning - Amber for cautions */
     --warning: 45 93% 47%;
     --warning-foreground: 0 0% 98%;
@@ -121,6 +126,10 @@
     --success: 142 76% 36%;
     --success-foreground: 0 0% 98%;
     --success-light: 142 76% 20%;
+    
+    --info: 214 84% 56%;
+    --info-foreground: 0 0% 98%;
+    --info-light: 214 84% 20%;
     
     --warning: 45 93% 47%;
     --warning-foreground: 0 0% 98%;
