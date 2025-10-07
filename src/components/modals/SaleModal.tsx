@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useDebounce } from "@/hooks/useDebounce";
 import {
   Dialog,
   DialogContent,
@@ -44,9 +45,17 @@ import { Trash2, Plus, Search } from "lucide-react";
 // Esquema de validación para cada producto en la venta
 const esquemaProductoVenta = z.object({
   productId: z.string().min(1, "Producto es requerido"),
-  qty: z.number().min(1, "La cantidad debe ser mayor a 0"),
-  unitPrice: z.number().min(0.01, "El precio debe ser mayor a 0"),
-  discount: z.number().min(0, "El descuento no puede ser negativo").max(100, "El descuento no puede ser mayor a 100%").optional(),
+  qty: z.number()
+    .int("La cantidad debe ser un número entero")
+    .min(1, "La cantidad debe ser mayor a 0")
+    .max(9999, "La cantidad no puede exceder 9999 unidades"),
+  unitPrice: z.number()
+    .min(0.01, "El precio debe ser mayor a 0")
+    .max(999999.99, "El precio excede el límite permitido"),
+  discount: z.number()
+    .min(0, "El descuento no puede ser negativo")
+    .max(100, "El descuento no puede ser mayor a 100%")
+    .optional(),
 });
 
 // Esquema principal de validación para la venta completa
@@ -74,6 +83,7 @@ export function SaleModal({ open, onOpenChange, warehouseId, onSave }: SaleModal
   const [productoSeleccionadoId, setProductoSeleccionadoId] = useState("");
   const [cantidad, setCantidad] = useState(1);
   const [busquedaProducto, setBusquedaProducto] = useState("");
+  const busquedaDebounced = useDebounce(busquedaProducto, 300);
 
   // Configuración del formulario con validación
   const formulario = useForm<DatosFormularioVenta>({
@@ -85,14 +95,18 @@ export function SaleModal({ open, onOpenChange, warehouseId, onSave }: SaleModal
     },
   });
 
-  // Filtrar productos basado en la búsqueda
+  // Filtrar productos basado en la búsqueda con debounce
   const productosFiltrados = useMemo(() => {
+    if (!busquedaDebounced.trim()) {
+      return mockProducts;
+    }
+    const busquedaLower = busquedaDebounced.toLowerCase();
     return mockProducts.filter(producto =>
-      producto.nombre.toLowerCase().includes(busquedaProducto.toLowerCase()) ||
-      producto.sku.toLowerCase().includes(busquedaProducto.toLowerCase()) ||
-      producto.marca.toLowerCase().includes(busquedaProducto.toLowerCase())
+      producto.nombre.toLowerCase().includes(busquedaLower) ||
+      producto.sku.toLowerCase().includes(busquedaLower) ||
+      producto.marca.toLowerCase().includes(busquedaLower)
     );
-  }, [busquedaProducto]);
+  }, [busquedaDebounced]);
 
   // Calcular totales de la venta
   const totales = useMemo(() => {
@@ -124,10 +138,37 @@ export function SaleModal({ open, onOpenChange, warehouseId, onSave }: SaleModal
   }, [open, formulario]);
 
   const agregarProducto = () => {
-    if (!productoSeleccionadoId || cantidad <= 0) {
+    if (!productoSeleccionadoId) {
       toast({
         title: "Error",
-        description: "Debe seleccionar un producto y cantidad válida.",
+        description: "Debe seleccionar un producto.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (cantidad <= 0) {
+      toast({
+        title: "Error",
+        description: "La cantidad debe ser mayor a 0.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (cantidad > 9999) {
+      toast({
+        title: "Error",
+        description: "La cantidad no puede exceder 9999 unidades.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!Number.isInteger(cantidad)) {
+      toast({
+        title: "Error",
+        description: "La cantidad debe ser un número entero.",
         variant: "destructive",
       });
       return;
@@ -165,7 +206,7 @@ export function SaleModal({ open, onOpenChange, warehouseId, onSave }: SaleModal
   };
 
   const actualizarCantidadProducto = (indice: number, qty: number) => {
-    if (qty <= 0) return;
+    if (qty <= 0 || qty > 9999 || !Number.isInteger(qty)) return;
     const productosActualizados = [...productos];
     productosActualizados[indice].qty = qty;
     setProductos(productosActualizados);

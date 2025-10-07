@@ -32,16 +32,38 @@ import { useToast } from "@/hooks/use-toast";
 import { Product } from "@/types";
 
 const productSchema = z.object({
-  sku: z.string().min(1, "SKU es requerido").max(20, "SKU debe tener máximo 20 caracteres"),
-  nombre: z.string().min(1, "Nombre es requerido").max(100, "Nombre debe tener máximo 100 caracteres"),
-  marca: z.string().min(1, "Marca es requerida").max(50, "Marca debe tener máximo 50 caracteres"),
+  sku: z.string()
+    .min(1, "SKU es requerido")
+    .max(50, "SKU debe tener máximo 50 caracteres")
+    .regex(/^[A-Z0-9-]+$/i, "SKU solo puede contener letras, números y guiones")
+    .trim(),
+  nombre: z.string()
+    .min(1, "Nombre es requerido")
+    .max(200, "Nombre debe tener máximo 200 caracteres")
+    .trim(),
+  marca: z.string()
+    .min(1, "Marca es requerida")
+    .max(100, "Marca debe tener máximo 100 caracteres")
+    .trim(),
   categoria: z.string().min(1, "Categoría es requerida"),
   unidad: z.string().min(1, "Unidad es requerida"),
-  precio: z.number().min(0.01, "El precio debe ser mayor a 0"),
-  iva: z.number().min(0, "IVA no puede ser negativo").max(100, "IVA no puede ser mayor a 100%"),
-  reorderPoint: z.number().min(0, "Punto de reorden no puede ser negativo"),
-  safetyStock: z.number().min(0, "Stock de seguridad no puede ser negativo"),
-  descripcion: z.string().max(500, "Descripción debe tener máximo 500 caracteres").optional(),
+  precio: z.number()
+    .min(0.01, "El precio debe ser mayor a 0")
+    .max(999999.99, "El precio excede el límite permitido"),
+  iva: z.number()
+    .min(0, "IVA no puede ser negativo")
+    .max(100, "IVA no puede ser mayor a 100%"),
+  reorderPoint: z.number()
+    .int("Punto de reorden debe ser un número entero")
+    .min(0, "Punto de reorden no puede ser negativo")
+    .max(9999, "Punto de reorden excede el límite"),
+  safetyStock: z.number()
+    .int("Stock de seguridad debe ser un número entero")
+    .min(0, "Stock de seguridad no puede ser negativo")
+    .max(9999, "Stock de seguridad excede el límite"),
+  descripcion: z.string()
+    .max(500, "Descripción debe tener máximo 500 caracteres")
+    .optional(),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
