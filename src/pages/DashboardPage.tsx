@@ -209,10 +209,26 @@ export default function DashboardPage() {
                   cx="50%"
                   cy="50%"
                   outerRadius={100}
-                  fill="#8884d8"
                   dataKey="value"
-                  label={({ name, percentage }) => `${name} ${percentage}%`}
-                  labelLine={{ stroke: 'hsl(var(--foreground))' }}
+                  label={(entry) => {
+                    const RADIAN = Math.PI / 180;
+                    const { cx, cy, midAngle, outerRadius, name, percentage } = entry;
+                    const radius = outerRadius + 30;
+                    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                    
+                    return (
+                      <text 
+                        x={x} 
+                        y={y} 
+                        fill="hsl(var(--foreground))"
+                        textAnchor={x > cx ? 'start' : 'end'} 
+                        dominantBaseline="central"
+                      >
+                        {`${name} ${percentage}%`}
+                      </text>
+                    );
+                  }}
                 >
                   {datosMetodosPago.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORES[index % COLORES.length]} />
