@@ -124,7 +124,11 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground">
-            Resumen general del sistema - {mockWarehouses.find(w => w.id === currentWarehouse)?.nombre || 'Todas las sucursales'}
+            Resumen general del sistema - {
+              currentWarehouse === 'all' 
+                ? 'Todas las Sucursales' 
+                : mockWarehouses.find(w => w.id === currentWarehouse)?.nombre || 'Sucursal no encontrada'
+            }
           </p>
         </div>
         <div className="flex gap-2">

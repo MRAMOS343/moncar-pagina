@@ -62,11 +62,18 @@ export function DashboardLayout() {
 
   const handleWarehouseChange = (warehouseId: string) => {
     setCurrentWarehouse(warehouseId);
-    const warehouse = mockWarehouses.find(w => w.id === warehouseId);
-    toast({
-      title: "Sucursal cambiada",
-      description: `Ahora trabajando en ${warehouse?.nombre}`,
-    });
+    if (warehouseId === 'all') {
+      toast({
+        title: "Vista global",
+        description: "Mostrando información de todas las sucursales",
+      });
+    } else {
+      const warehouse = mockWarehouses.find(w => w.id === warehouseId);
+      toast({
+        title: "Sucursal cambiada",
+        description: `Ahora trabajando en ${warehouse?.nombre}`,
+      });
+    }
   };
 
   const handleRoleChange = (role: 'admin' | 'gerente' | 'cajero') => {

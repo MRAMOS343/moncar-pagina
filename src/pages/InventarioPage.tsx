@@ -38,7 +38,7 @@ export default function InventarioPage() {
   // Filter inventory data for current warehouse
   const warehouseInventory = useMemo(() => {
     return mockInventory
-      .filter(inv => inv.warehouseId === currentWarehouse)
+      .filter(inv => currentWarehouse === 'all' || inv.warehouseId === currentWarehouse)
       .map(inv => {
         const product = getProductById(inv.productId);
         return product ? { ...inv, product } : null;
@@ -288,7 +288,10 @@ export default function InventarioPage() {
         <div>
           <h1 className="text-3xl font-bold text-foreground">Inventario</h1>
           <p className="text-muted-foreground">
-            {getWarehouseById(currentWarehouse)?.nombre || 'Sucursal no encontrada'}
+            {currentWarehouse === 'all' 
+              ? 'Todas las Sucursales' 
+              : getWarehouseById(currentWarehouse)?.nombre || 'Sucursal no encontrada'
+            }
           </p>
         </div>
         <div className="flex gap-2">
@@ -385,7 +388,11 @@ export default function InventarioPage() {
             <CardHeader>
               <CardTitle>Productos en Inventario</CardTitle>
               <CardDescription>
-                {warehouseInventory.length} productos en {getWarehouseById(currentWarehouse)?.nombre}
+                {warehouseInventory.length} productos en {
+                  currentWarehouse === 'all' 
+                    ? 'todas las sucursales' 
+                    : getWarehouseById(currentWarehouse)?.nombre
+                }
               </CardDescription>
             </CardHeader>
             <CardContent>

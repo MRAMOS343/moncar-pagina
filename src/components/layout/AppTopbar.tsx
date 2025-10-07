@@ -102,6 +102,7 @@ export function AppTopbar({
             <SelectValue placeholder="Sucursal" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="all">Todas las Sucursales</SelectItem>
             {warehouses.map((warehouse) => (
               <SelectItem key={warehouse.id} value={warehouse.id}>
                 {warehouse.nombre}
