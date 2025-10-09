@@ -6,14 +6,19 @@ import { KPICard } from '@/components/ui/kpi-card';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Download, CreditCard, DollarSign, TrendingUp, Calendar } from 'lucide-react';
+import { Plus, Download, ShoppingBag } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { mockSales, mockWarehouses, getWarehouseById, getProductById } from '../data/mockData';
 import { Sale, User, KPIData, ChartDataPoint } from '../types';
-import { toast } from '@/hooks/use-toast';
 import { format, startOfDay, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { exportToCSV } from '@/utils/exportCSV';
+import { EmptyState } from '@/components/ui/empty-state';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
+import { ChartSkeleton } from '@/components/ui/chart-skeleton';
+import { KPISkeleton } from '@/components/ui/kpi-skeleton';
+import { useLoadingState } from '@/hooks/useLoadingState';
+import { showSuccessToast, showErrorToast, showInfoToast } from '@/utils/toastHelpers';
 
 interface ContextType {
   currentWarehouse: string;
@@ -25,6 +30,7 @@ export default function VentasPage() {
   const { currentWarehouse, currentUser } = useOutletContext<ContextType>();
   const [selectedMetodoPago, setSelectedMetodoPago] = useState<string>('all');
   const [dateRange, setDateRange] = useState<string>('30d');
+  const { isLoading } = useLoadingState({ minLoadingTime: 1000 });
 
   // Filter sales data
   const filteredSales = useMemo(() => {
@@ -112,16 +118,15 @@ export default function VentasPage() {
 
   const handleCreateSale = () => {
     if (currentUser.role === 'admin' || currentUser.role === 'gerente' || currentUser.role === 'cajero') {
-      toast({
-        title: "Funcionalidad disponible próximamente",
-        description: "El módulo de creación de ventas será implementado en la siguiente versión.",
-      });
+      showInfoToast(
+        "Funcionalidad disponible próximamente",
+        "El módulo de creación de ventas será implementado en la siguiente versión."
+      );
     } else {
-      toast({
-        title: "Acceso denegado",
-        description: "No tienes permisos para crear ventas.",
-        variant: "destructive"
-      });
+      showErrorToast(
+        "Acceso denegado",
+        "No tienes permisos para crear ventas."
+      );
     }
   };
 
@@ -151,10 +156,10 @@ export default function VentasPage() {
       `ventas_${dateRange}_${new Date().toISOString().split('T')[0]}`
     );
     
-    toast({
-      title: "Exportación exitosa",
-      description: "Los datos de ventas se han exportado a CSV correctamente.",
-    });
+    showSuccessToast(
+      "Exportación exitosa",
+      "Los datos de ventas se han exportado a CSV correctamente."
+    );
   };
 
   return (
@@ -172,11 +177,11 @@ export default function VentasPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleCreateSale} size="sm">
+          <Button onClick={handleCreateSale} size="sm" className="btn-hover">
             <Plus className="w-4 h-4 mr-2" />
             Nueva Venta
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExportCSV}>
+          <Button variant="outline" size="sm" onClick={handleExportCSV} className="btn-hover">
             <Download className="w-4 h-4 mr-2" />
             Exportar
           </Button>
@@ -184,43 +189,57 @@ export default function VentasPage() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-fade-in">
-        {kpis.map((kpi, index) => (
-          <KPICard key={index} data={kpi} />
-        ))}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {isLoading ? (
+          <>
+            <KPISkeleton />
+            <KPISkeleton />
+            <KPISkeleton />
+          </>
+        ) : (
+          kpis.map((kpi, index) => (
+            <div key={index} className="animate-fade-in hover-lift">
+              <KPICard data={kpi} />
+            </div>
+          ))
+        )}
       </div>
 
       {/* Chart */}
-      <Card className="chart-card animate-scale-in">
-        <CardHeader>
-          <CardTitle>Tendencia de Ventas</CardTitle>
-          <CardDescription>
-            Ventas diarias en los últimos {dateRange === '7d' ? '7 días' : dateRange === '30d' ? '30 días' : '90 días'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip 
-                  formatter={(value: number) => [`$${value.toFixed(2)}`, 'Ventas']}
-                  labelFormatter={(label) => `Fecha: ${label}`}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--primary))' }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
+      {isLoading ? (
+        <ChartSkeleton />
+      ) : (
+        <Card className="chart-card animate-scale-in card-hover">
+          <CardHeader>
+            <CardTitle>Tendencia de Ventas</CardTitle>
+            <CardDescription>
+              Ventas diarias en los últimos {dateRange === '7d' ? '7 días' : dateRange === '30d' ? '30 días' : '90 días'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip 
+                    formatter={(value: number) => [`$${value.toFixed(2)}`, 'Ventas']}
+                    labelFormatter={(label) => `Fecha: ${label}`}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="value" 
+                    stroke="hsl(var(--primary))" 
+                    strokeWidth={2}
+                    dot={{ fill: 'hsl(var(--primary))' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filters */}
       <Card>
@@ -291,57 +310,71 @@ export default function VentasPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID Venta</TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Vendedor</TableHead>
-                  <TableHead>Método Pago</TableHead>
-                  <TableHead className="text-right">Subtotal</TableHead>
-                  <TableHead className="text-right">IVA</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="text-center">Items</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredSales.map((sale) => (
-                  <TableRow key={sale.id} className="hover:bg-muted/50">
-                    <TableCell className="font-mono text-sm">{sale.id}</TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">
-                          {format(new Date(sale.fechaISO), 'dd/MM/yyyy', { locale: es })}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {format(new Date(sale.fechaISO), 'HH:mm')}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{sale.vendedor || 'Sin asignar'}</TableCell>
-                    <TableCell>
-                      {getMetodoPagoBadge(sale.metodoPago)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      ${sale.subtotal.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-right text-muted-foreground">
-                      ${sale.iva.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      ${sale.total.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="outline">
-                        {sale.items.length} items
-                      </Badge>
-                    </TableCell>
+          {isLoading ? (
+            <TableSkeleton rows={10} columns={8} />
+          ) : filteredSales.length === 0 ? (
+            <EmptyState
+              icon={ShoppingBag}
+              title="No hay ventas registradas"
+              description="No se encontraron ventas que coincidan con los filtros aplicados. Intenta ajustar los criterios de búsqueda."
+              action={{
+                label: "Crear Nueva Venta",
+                onClick: handleCreateSale
+              }}
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID Venta</TableHead>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead>Vendedor</TableHead>
+                    <TableHead>Método Pago</TableHead>
+                    <TableHead className="text-right">Subtotal</TableHead>
+                    <TableHead className="text-right">IVA</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="text-center">Items</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredSales.map((sale) => (
+                    <TableRow key={sale.id} className="hover:bg-muted/50 smooth-transition">
+                      <TableCell className="font-mono text-sm">{sale.id}</TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">
+                            {format(new Date(sale.fechaISO), 'dd/MM/yyyy', { locale: es })}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {format(new Date(sale.fechaISO), 'HH:mm')}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{sale.vendedor || 'Sin asignar'}</TableCell>
+                      <TableCell>
+                        {getMetodoPagoBadge(sale.metodoPago)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        ${sale.subtotal.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                        ${sale.iva.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        ${sale.total.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline">
+                          {sale.items.length} items
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
