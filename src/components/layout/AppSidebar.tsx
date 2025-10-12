@@ -116,16 +116,16 @@ export function AppSidebar({ currentUser, onLogout }: AppSidebarProps) {
   };
 
   return (
-    <Sidebar className={collapsed ? "w-16" : "w-72"}>
+    <Sidebar className={collapsed ? "w-16" : "w-72"} collapsible="icon">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+          <div className="w-10 h-10 min-w-[2.5rem] bg-primary rounded-lg flex items-center justify-center touch-target">
             <Package className="w-5 h-5 text-primary-foreground" />
           </div>
           {!collapsed && (
-            <div>
-              <h2 className="text-lg font-bold text-foreground">AutoParts Pro</h2>
-              <p className="text-sm text-muted-foreground">Sistema de refaccionaria</p>
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold text-foreground truncate">AutoParts Pro</h2>
+              <p className="text-sm text-muted-foreground truncate">Sistema de refaccionaria</p>
             </div>
           )}
         </div>
@@ -141,12 +141,12 @@ export function AppSidebar({ currentUser, onLogout }: AppSidebarProps) {
               {mainNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} className={getNavClass(item.url)}>
-                      <item.icon className="w-5 h-5" />
+                    <NavLink to={item.url} className={`${getNavClass(item.url)} touch-target min-h-[44px]`}>
+                      <item.icon className="w-5 h-5 min-w-[1.25rem]" />
                       {!collapsed && (
-                        <div className="flex flex-col items-start gap-0.5">
-                          <span className="font-medium">{item.title}</span>
-                          <span className="text-xs text-muted-foreground leading-tight">
+                        <div className="flex flex-col items-start gap-0.5 min-w-0">
+                          <span className="font-medium truncate w-full">{item.title}</span>
+                          <span className="text-xs text-muted-foreground leading-tight line-clamp-1">
                             {item.description}
                           </span>
                         </div>
@@ -165,14 +165,14 @@ export function AppSidebar({ currentUser, onLogout }: AppSidebarProps) {
         {!collapsed && currentUser && (
           <div className="bg-secondary rounded-lg p-3 mb-2">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 min-w-[2.5rem] bg-primary rounded-full flex items-center justify-center">
                 <UserIcon className="w-4 h-4 text-primary-foreground" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">
                   {currentUser.nombre}
                 </p>
-                <p className="text-xs text-muted-foreground capitalize">
+                <p className="text-xs text-muted-foreground capitalize truncate">
                   {currentUser.role}
                 </p>
               </div>
@@ -184,9 +184,9 @@ export function AppSidebar({ currentUser, onLogout }: AppSidebarProps) {
           variant="ghost"
           size={collapsed ? "icon" : "default"}
           onClick={onLogout}
-          className="w-full justify-start"
+          className="w-full justify-start touch-target min-h-[44px]"
         >
-          <LogOut className="w-4 h-4" />
+          <LogOut className="w-4 h-4 min-w-[1rem]" />
           {!collapsed && <span>Cerrar Sesión</span>}
         </Button>
       </SidebarFooter>

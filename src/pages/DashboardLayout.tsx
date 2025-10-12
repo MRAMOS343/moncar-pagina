@@ -153,11 +153,11 @@ export function DashboardLayout() {
   }
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar currentUser={currentUser} onLogout={handleLogout} />
         
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 w-full">
           <AppTopbar
             breadcrumbs={generateBreadcrumbs()}
             warehouses={mockWarehouses}
@@ -170,7 +170,7 @@ export function DashboardLayout() {
             onToggleDarkMode={handleToggleDarkMode}
           />
           
-          <main className="flex-1 p-6 overflow-auto">
+          <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-auto">
             <Outlet context={{ 
               currentWarehouse, 
               searchQuery, 

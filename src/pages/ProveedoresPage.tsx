@@ -3,7 +3,6 @@ import { Truck, Search, Mail, Phone, MapPin, FileText, Plus, Edit, Trash2 } from
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { mockSuppliers } from "@/data/mockData";
 import { Supplier } from "@/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,8 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { ResponsiveTable } from "@/components/ui/responsive-table";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function ProveedoresPage() {
+  const isMobile = useIsMobile();
   const [suppliers, setSuppliers] = useState<Supplier[]>(mockSuppliers);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
@@ -139,17 +141,17 @@ export default function ProveedoresPage() {
   };
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Proveedores</h1>
-          <p className="text-muted-foreground mt-1">Directorio de proveedores y contactos</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Proveedores</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">Directorio de proveedores y contactos</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => handleOpenDialog()}>
+            <Button onClick={() => handleOpenDialog()} className="touch-target w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
-              Agregar Proveedor
+              {isMobile ? "Agregar" : "Agregar Proveedor"}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -255,18 +257,18 @@ export default function ProveedoresPage() {
         </Dialog>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+        <div className="relative flex-1 sm:max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           <Input
             placeholder="Buscar proveedores..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 touch-target"
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full sm:w-40 touch-target">
             <SelectValue placeholder="Estado" />
           </SelectTrigger>
           <SelectContent>
@@ -275,120 +277,97 @@ export default function ProveedoresPage() {
             <SelectItem value="inactivos">Inactivos</SelectItem>
           </SelectContent>
         </Select>
-        <Badge variant="outline" className="text-sm">
+        <Badge variant="outline" className="text-sm self-center sm:self-auto">
           {filteredSuppliers.length} {filteredSuppliers.length === 1 ? "proveedor" : "proveedores"}
         </Badge>
       </div>
 
       <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Proveedor</TableHead>
-                  <TableHead>Contacto</TableHead>
-                  <TableHead>Teléfono</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Categorías</TableHead>
-                  <TableHead>RFC</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredSuppliers.map((supplier) => (
-                  <TableRow key={supplier.id} className="hover:bg-muted/50">
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Truck className="w-5 h-5 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-foreground">{supplier.nombre}</p>
-                          {supplier.direccion && (
-                            <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                              <MapPin className="w-3 h-3" />
-                              <span className="line-clamp-1">{supplier.direccion}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <p className="text-sm text-foreground">{supplier.contacto}</p>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-4 h-4 text-muted-foreground" />
-                        <a 
-                          href={`tel:${supplier.telefono}`}
-                          className="text-sm text-primary hover:underline"
-                        >
-                          {supplier.telefono}
-                        </a>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-4 h-4 text-muted-foreground" />
-                        <a 
-                          href={`mailto:${supplier.email}`}
-                          className="text-sm text-primary hover:underline"
-                        >
-                          {supplier.email}
-                        </a>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {supplier.categorias.slice(0, 2).map((cat, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-xs">
-                            {cat}
-                          </Badge>
-                        ))}
-                        {supplier.categorias.length > 2 && (
-                          <Badge variant="secondary" className="text-xs">
-                            +{supplier.categorias.length - 2}
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm font-mono text-foreground">{supplier.rfc}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={supplier.activo ? "default" : "secondary"}>
-                        {supplier.activo ? "Activo" : "Inactivo"}
+        <CardContent className="p-0 sm:p-6">
+          <ResponsiveTable
+            data={filteredSuppliers}
+            columns={[
+              { key: 'nombre', header: 'Proveedor' },
+              { key: 'contacto', header: 'Contacto' },
+              { key: 'telefono', header: 'Teléfono' },
+              { key: 'email', header: 'Email' },
+              { key: 'categorias', header: 'Categorías' },
+              { key: 'rfc', header: 'RFC' },
+              { key: 'activo', header: 'Estado' },
+            ]}
+            mobileCardRender={(supplier) => (
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-12 h-12 min-w-[3rem] bg-primary/10 rounded-lg flex items-center justify-center">
+                    <Truck className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-foreground truncate">{supplier.nombre}</h3>
+                    <p className="text-sm text-muted-foreground truncate">{supplier.contacto}</p>
+                    <Badge variant={supplier.activo ? "default" : "secondary"} className="mt-1">
+                      {supplier.activo ? "Activo" : "Inactivo"}
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <a href={`tel:${supplier.telefono}`} className="text-primary hover:underline truncate">
+                      {supplier.telefono}
+                    </a>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <a href={`mailto:${supplier.email}`} className="text-primary hover:underline truncate">
+                      {supplier.email}
+                    </a>
+                  </div>
+
+                  {supplier.direccion && (
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <span className="text-muted-foreground line-clamp-2">{supplier.direccion}</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-start gap-2">
+                    <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                    <span className="font-mono text-muted-foreground">{supplier.rfc}</span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {supplier.categorias.map((cat, idx) => (
+                      <Badge key={idx} variant="secondary" className="text-xs">
+                        {cat}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleOpenDialog(supplier)}
-                        >
-                          <Edit className="w-3 h-3 mr-1" />
-                          Editar
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteSupplier(supplier.id)}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleOpenDialog(supplier)}
+                    className="flex-1 touch-target"
+                  >
+                    <Edit className="w-4 h-4 mr-1" />
+                    Editar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeleteSupplier(supplier.id)}
+                    className="touch-target"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          />
         </CardContent>
       </Card>
 
