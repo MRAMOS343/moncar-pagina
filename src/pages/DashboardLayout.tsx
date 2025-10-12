@@ -157,7 +157,7 @@ export function DashboardLayout() {
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar currentUser={currentUser} onLogout={handleLogout} />
         
-        <div className="flex-1 flex flex-col min-w-0 w-full">
+        <div className="flex-1 flex flex-col min-w-0">
           <AppTopbar
             breadcrumbs={generateBreadcrumbs()}
             warehouses={mockWarehouses}
