@@ -5,8 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { KPICard } from '@/components/ui/kpi-card';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Download, ShoppingBag } from 'lucide-react';
+import { ResponsiveTable } from '@/components/ui/responsive-table';
+import { Plus, Download, ShoppingBag, Filter } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { mockSales, mockWarehouses, getWarehouseById, getProductById } from '../data/mockData';
 import { Sale, User, KPIData, ChartDataPoint } from '../types';
@@ -19,6 +19,8 @@ import { ChartSkeleton } from '@/components/ui/chart-skeleton';
 import { KPISkeleton } from '@/components/ui/kpi-skeleton';
 import { useLoadingState } from '@/hooks/useLoadingState';
 import { showSuccessToast, showErrorToast, showInfoToast } from '@/utils/toastHelpers';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ContextType {
   currentWarehouse: string;
@@ -31,6 +33,7 @@ export default function VentasPage() {
   const [selectedMetodoPago, setSelectedMetodoPago] = useState<string>('all');
   const [dateRange, setDateRange] = useState<string>('30d');
   const { isLoading } = useLoadingState({ minLoadingTime: 1000 });
+  const isMobile = useIsMobile();
 
   // Filter sales data
   const filteredSales = useMemo(() => {
@@ -165,10 +168,10 @@ export default function VentasPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Ventas</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Ventas</h1>
+          <p className="text-sm text-muted-foreground">
             Registro de ventas en {
               currentWarehouse === 'all' 
                 ? 'Todas las Sucursales' 
@@ -176,14 +179,14 @@ export default function VentasPage() {
             }
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={handleCreateSale} size="sm" className="btn-hover">
-            <Plus className="w-4 h-4 mr-2" />
-            Nueva Venta
+        <div className="flex gap-2 self-end sm:self-auto">
+          <Button onClick={handleCreateSale} size="sm" className="btn-hover touch-target">
+            <Plus className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Nueva Venta</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExportCSV} className="btn-hover">
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
+          <Button variant="outline" size="sm" onClick={handleExportCSV} className="btn-hover touch-target">
+            <Download className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Exportar</span>
           </Button>
         </div>
       </div>
@@ -242,60 +245,117 @@ export default function VentasPage() {
       )}
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filtros</CardTitle>
-          <CardDescription>
-            Filtra las ventas por período y método de pago
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Período</label>
-              <Select value={dateRange} onValueChange={setDateRange}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="7d">Últimos 7 días</SelectItem>
-                  <SelectItem value="30d">Últimos 30 días</SelectItem>
-                  <SelectItem value="90d">Últimos 90 días</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Método de Pago</label>
-              <Select value={selectedMetodoPago} onValueChange={setSelectedMetodoPago}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos los métodos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los métodos</SelectItem>
-                  <SelectItem value="efectivo">Efectivo</SelectItem>
-                  <SelectItem value="tarjeta">Tarjeta</SelectItem>
-                  <SelectItem value="transferencia">Transferencia</SelectItem>
-                  <SelectItem value="credito">Crédito</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      {isMobile ? (
+        <Accordion type="single" collapsible defaultValue="filtros">
+          <AccordionItem value="filtros">
+            <AccordionTrigger className="px-4">
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4" />
+                <span>Filtros</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="px-4 pb-4 space-y-4">
+                <div className="space-y-2">
+                  <label className="text-base font-medium">Período</label>
+                  <Select value={dateRange} onValueChange={setDateRange}>
+                    <SelectTrigger className="mobile-select">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="7d">Últimos 7 días</SelectItem>
+                      <SelectItem value="30d">Últimos 30 días</SelectItem>
+                      <SelectItem value="90d">Últimos 90 días</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-base font-medium">Método de Pago</label>
+                  <Select value={selectedMetodoPago} onValueChange={setSelectedMetodoPago}>
+                    <SelectTrigger className="mobile-select">
+                      <SelectValue placeholder="Todos los métodos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los métodos</SelectItem>
+                      <SelectItem value="efectivo">Efectivo</SelectItem>
+                      <SelectItem value="tarjeta">Tarjeta</SelectItem>
+                      <SelectItem value="transferencia">Transferencia</SelectItem>
+                      <SelectItem value="credito">Crédito</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="flex items-end">
-              <Button 
-                onClick={() => {
-                  setSelectedMetodoPago('all');
-                  setDateRange('30d');
-                }} 
-                variant="outline"
-                className="w-full"
-              >
-                Limpiar filtros
-              </Button>
+                <Button 
+                  onClick={() => {
+                    setSelectedMetodoPago('all');
+                    setDateRange('30d');
+                  }} 
+                  variant="outline"
+                  className="w-full mobile-button"
+                >
+                  Limpiar filtros
+                </Button>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Filtros</CardTitle>
+            <CardDescription>
+              Filtra las ventas por período y método de pago
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Período</label>
+                <Select value={dateRange} onValueChange={setDateRange}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7d">Últimos 7 días</SelectItem>
+                    <SelectItem value="30d">Últimos 30 días</SelectItem>
+                    <SelectItem value="90d">Últimos 90 días</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Método de Pago</label>
+                <Select value={selectedMetodoPago} onValueChange={setSelectedMetodoPago}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todos los métodos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los métodos</SelectItem>
+                    <SelectItem value="efectivo">Efectivo</SelectItem>
+                    <SelectItem value="tarjeta">Tarjeta</SelectItem>
+                    <SelectItem value="transferencia">Transferencia</SelectItem>
+                    <SelectItem value="credito">Crédito</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-end">
+                <Button 
+                  onClick={() => {
+                    setSelectedMetodoPago('all');
+                    setDateRange('30d');
+                  }} 
+                  variant="outline"
+                  className="w-full"
+                >
+                  Limpiar filtros
+                </Button>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Sales Table */}
       <Card className="data-table">
@@ -323,57 +383,75 @@ export default function VentasPage() {
               }}
             />
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID Venta</TableHead>
-                    <TableHead>Fecha</TableHead>
-                    <TableHead>Vendedor</TableHead>
-                    <TableHead>Método Pago</TableHead>
-                    <TableHead className="text-right">Subtotal</TableHead>
-                    <TableHead className="text-right">IVA</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="text-center">Items</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSales.map((sale) => (
-                    <TableRow key={sale.id} className="hover:bg-muted/50 smooth-transition">
-                      <TableCell className="font-mono text-sm">{sale.id}</TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">
-                            {format(new Date(sale.fechaISO), 'dd/MM/yyyy', { locale: es })}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {format(new Date(sale.fechaISO), 'HH:mm')}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{sale.vendedor || 'Sin asignar'}</TableCell>
-                      <TableCell>
-                        {getMetodoPagoBadge(sale.metodoPago)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        ${sale.subtotal.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-right text-muted-foreground">
-                        ${sale.iva.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        ${sale.total.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="outline">
-                          {sale.items.length} items
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <ResponsiveTable
+              data={filteredSales}
+              columns={[
+                { key: 'id', header: 'ID Venta' },
+                { 
+                  key: 'fechaISO', 
+                  header: 'Fecha',
+                  render: (value: string) => (
+                    <div>
+                      <div className="font-medium">
+                        {format(new Date(value), 'dd/MM/yyyy', { locale: es })}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {format(new Date(value), 'HH:mm')}
+                      </div>
+                    </div>
+                  )
+                },
+                { key: 'vendedor', header: 'Vendedor' },
+                { 
+                  key: 'metodoPago', 
+                  header: 'Método Pago',
+                  render: (value: Sale['metodoPago']) => getMetodoPagoBadge(value)
+                },
+                { 
+                  key: 'subtotal', 
+                  header: 'Subtotal',
+                  render: (value: number) => <span className="text-right block">${value.toFixed(2)}</span>
+                },
+                { 
+                  key: 'iva', 
+                  header: 'IVA',
+                  render: (value: number) => <span className="text-right text-muted-foreground block">${value.toFixed(2)}</span>
+                },
+                { 
+                  key: 'total', 
+                  header: 'Total',
+                  render: (value: number) => <span className="text-right font-medium block">${value.toFixed(2)}</span>
+                },
+                { 
+                  key: 'items', 
+                  header: 'Items',
+                  render: (value: any[]) => (
+                    <div className="text-center">
+                      <Badge variant="outline">{value.length} items</Badge>
+                    </div>
+                  )
+                }
+              ]}
+              mobileCardRender={(sale) => (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-mono text-xs text-muted-foreground">{sale.id}</p>
+                      <p className="font-medium text-lg">${sale.total.toFixed(2)}</p>
+                    </div>
+                    {getMetodoPagoBadge(sale.metodoPago)}
+                  </div>
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p>{format(new Date(sale.fechaISO), 'dd/MM/yyyy HH:mm', { locale: es })}</p>
+                    <p>Vendedor: {sale.vendedor || 'Sin asignar'}</p>
+                    <div className="flex items-center justify-between pt-1">
+                      <span>{sale.items.length} items</span>
+                      <span className="text-xs">IVA: ${sale.iva.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            />
           )}
         </CardContent>
       </Card>

@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { DataTable, Columna } from '@/components/ui/data-table';
 import { ProductModal } from '@/components/modals/ProductModal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Download, Upload, AlertTriangle, Package, TrendingDown, Plus, Edit, X } from 'lucide-react';
+import { Download, Upload, AlertTriangle, Package, TrendingDown, Plus, Edit, X, Filter } from 'lucide-react';
 import { mockProducts, mockInventory, mockWarehouses, getProductById, getWarehouseById } from '../data/mockData';
 import { Product, Inventory, User, KPIData } from '../types';
 import { exportToCSV } from '@/utils/exportCSV';
@@ -18,6 +18,8 @@ import { useLoadingState } from '@/hooks/useLoadingState';
 import { KPISkeleton } from '@/components/ui/kpi-skeleton';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { showSuccessToast, showErrorToast } from '@/utils/toastHelpers';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ContextType {
   currentWarehouse: string;
@@ -36,6 +38,7 @@ export default function InventarioPage() {
   const [productModalOpen, setProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const { isLoading } = useLoadingState({ minLoadingTime: 600 });
+  const isMobile = useIsMobile();
 
   // Get unique brands and categories for filters
   const marcas = [...new Set(mockProducts.map(p => p.marca))];
@@ -285,28 +288,28 @@ export default function InventarioPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Inventario</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Inventario</h1>
+          <p className="text-sm text-muted-foreground">
             {currentWarehouse === 'all' 
               ? 'Todas las Sucursales' 
               : getWarehouseById(currentWarehouse)?.nombre || 'Sucursal no encontrada'
             }
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExportCSV} className="btn-hover">
-            <Download className="w-4 h-4 mr-2" />
-            Exportar CSV
+        <div className="flex gap-2 self-end sm:self-auto flex-wrap">
+          <Button variant="outline" onClick={handleExportCSV} size="sm" className="btn-hover touch-target">
+            <Download className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Exportar CSV</span>
           </Button>
-          <Button variant="outline" onClick={handleImportCSV} className="btn-hover">
-            <Upload className="w-4 h-4 mr-2" />
-            Importar CSV
+          <Button variant="outline" onClick={handleImportCSV} size="sm" className="btn-hover touch-target">
+            <Upload className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Importar CSV</span>
           </Button>
-          <Button onClick={handleCreateProduct} className="btn-hover">
-            <Plus className="w-4 h-4 mr-2" />
-            Nuevo Producto
+          <Button onClick={handleCreateProduct} size="sm" className="btn-hover touch-target">
+            <Plus className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Nuevo Producto</span>
           </Button>
         </div>
       </div>
@@ -335,63 +338,123 @@ export default function InventarioPage() {
           </div>
 
           {/* Filters */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Filtros</CardTitle>
-              <CardDescription>
-                Filtra los productos por marca y categoría
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Marca</label>
-                  <Select value={selectedMarca} onValueChange={setSelectedMarca}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Todas las marcas" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas las marcas</SelectItem>
-                      {marcas.map((marca) => (
-                        <SelectItem key={marca} value={marca}>
-                          {marca}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+          {isMobile ? (
+            <Accordion type="single" collapsible defaultValue="filtros">
+              <AccordionItem value="filtros">
+                <AccordionTrigger className="px-4">
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4" />
+                    <span>Filtros</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="px-4 pb-4 space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-base font-medium">Marca</label>
+                      <Select value={selectedMarca} onValueChange={setSelectedMarca}>
+                        <SelectTrigger className="mobile-select">
+                          <SelectValue placeholder="Todas las marcas" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todas las marcas</SelectItem>
+                          {marcas.map((marca) => (
+                            <SelectItem key={marca} value={marca}>
+                              {marca}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Categoría</label>
-                  <Select value={selectedCategoria} onValueChange={setSelectedCategoria}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Todas las categorías" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas las categorías</SelectItem>
-                      {categorias.map((categoria) => (
-                        <SelectItem key={categoria} value={categoria}>
-                          {categoria}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                    <div className="space-y-2">
+                      <label className="text-base font-medium">Categoría</label>
+                      <Select value={selectedCategoria} onValueChange={setSelectedCategoria}>
+                        <SelectTrigger className="mobile-select">
+                          <SelectValue placeholder="Todas las categorías" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todas las categorías</SelectItem>
+                          {categorias.map((categoria) => (
+                            <SelectItem key={categoria} value={categoria}>
+                              {categoria}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                <div className="flex items-end">
-                  <Button 
-                    variant="outline" 
-                    onClick={clearFilters}
-                    className="w-full"
-                    disabled={selectedMarca === 'all' && selectedCategoria === 'all'}
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Limpiar Filtros
-                  </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={clearFilters}
+                      className="w-full mobile-button"
+                      disabled={selectedMarca === 'all' && selectedCategoria === 'all'}
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      Limpiar Filtros
+                    </Button>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Filtros</CardTitle>
+                <CardDescription>
+                  Filtra los productos por marca y categoría
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Marca</label>
+                    <Select value={selectedMarca} onValueChange={setSelectedMarca}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Todas las marcas" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todas las marcas</SelectItem>
+                        {marcas.map((marca) => (
+                          <SelectItem key={marca} value={marca}>
+                            {marca}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Categoría</label>
+                    <Select value={selectedCategoria} onValueChange={setSelectedCategoria}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Todas las categorías" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todas las categorías</SelectItem>
+                        {categorias.map((categoria) => (
+                          <SelectItem key={categoria} value={categoria}>
+                            {categoria}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-end">
+                    <Button 
+                      variant="outline" 
+                      onClick={clearFilters}
+                      className="w-full"
+                      disabled={selectedMarca === 'all' && selectedCategoria === 'all'}
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      Limpiar Filtros
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Inventory Table */}
           <Card className="card-hover animate-fade-in">

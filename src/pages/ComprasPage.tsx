@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ResponsiveTable } from '@/components/ui/responsive-table';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ShoppingCart, AlertTriangle, Package, TrendingDown, Download } from 'lucide-react';
 import { mockProducts, mockInventory, mockWarehouses, getProductById, getWarehouseById } from '../data/mockData';
@@ -15,6 +15,7 @@ import { useLoadingState } from '@/hooks/useLoadingState';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { showErrorToast, showInfoToast, showSuccessToast } from '@/utils/toastHelpers';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ContextType {
   currentWarehouse: string;
@@ -28,6 +29,7 @@ export default function ComprasPage() {
   const [safetyStockPercent, setSafetyStockPercent] = useState<number>(20);
   const [horizonteSemanas, setHorizonteSemanas] = useState<number>(4);
   const { isLoading } = useLoadingState({ minLoadingTime: 600 });
+  const isMobile = useIsMobile();
 
   // Generate purchase suggestions
   const purchaseSuggestions: PurchaseSuggestion[] = useMemo(() => {
@@ -130,26 +132,26 @@ export default function ComprasPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Compra Sugerida</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Compra Sugerida</h1>
+          <p className="text-sm text-muted-foreground">
             Sugerencias de reabastecimiento basadas en demanda y stock actual
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={handleExport} variant="outline" size="sm" className="btn-hover">
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
+        <div className="flex gap-2 self-end sm:self-auto">
+          <Button onClick={handleExport} variant="outline" size="sm" className="btn-hover touch-target">
+            <Download className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Exportar</span>
           </Button>
           <Button 
             onClick={handleGeneratePreOrder} 
             size="sm"
             disabled={currentUser.role === 'cajero' || purchaseSuggestions.length === 0}
-            className="btn-hover"
+            className="btn-hover touch-target"
           >
-            <ShoppingCart className="w-4 h-4 mr-2" />
-            Generar Pre-orden
+            <ShoppingCart className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Generar Pre-orden</span>
           </Button>
         </div>
       </div>
@@ -272,59 +274,87 @@ export default function ComprasPage() {
               description="Todos los productos tienen stock suficiente o ajusta los parámetros de configuración."
             />
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>SKU</TableHead>
-                    <TableHead>Producto</TableHead>
-                    <TableHead className="text-right">Stock Actual</TableHead>
-                    <TableHead className="text-right">Punto Reorden</TableHead>
-                    <TableHead className="text-right">Demanda Esperada</TableHead>
-                    <TableHead className="text-right">Cobertura (días)</TableHead>
-                    <TableHead className="text-right">Cantidad Sugerida</TableHead>
-                    <TableHead className="text-right">Costo Estimado</TableHead>
-                    <TableHead className="text-center">Urgencia</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {purchaseSuggestions.map((suggestion) => {
-                    const product = getProductById(suggestion.productId)!;
-                    
+            <ResponsiveTable
+              data={purchaseSuggestions}
+              columns={[
+                { 
+                  key: 'productId', 
+                  header: 'SKU',
+                  render: (value: string) => {
+                    const product = getProductById(value);
+                    return <span className="font-mono text-sm">{product?.sku}</span>;
+                  }
+                },
+                { 
+                  key: 'productId', 
+                  header: 'Producto',
+                  render: (value: string) => {
+                    const product = getProductById(value);
                     return (
-                      <TableRow key={`${suggestion.productId}-${suggestion.warehouseId}`} className="hover:bg-muted/50">
-                        <TableCell className="font-mono text-sm">{product.sku}</TableCell>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{product.nombre}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {product.marca} - {product.categoria}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">{suggestion.onHand}</TableCell>
-                        <TableCell className="text-right">{suggestion.reorderPoint}</TableCell>
-                        <TableCell className="text-right">{suggestion.demandaEsperada}</TableCell>
-                        <TableCell className="text-right">
-                          <span className={suggestion.coberturaDias <= 7 ? 'text-destructive font-medium' : ''}>
-                            {suggestion.coberturaDias.toFixed(1)}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right font-medium text-primary">
-                          {suggestion.qtySugerida}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          ${suggestion.costo?.toFixed(2) || '0.00'}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {getUrgencyBadge(suggestion.coberturaDias)}
-                        </TableCell>
-                      </TableRow>
+                      <div>
+                        <div className="font-medium">{product?.nombre}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {product?.marca} - {product?.categoria}
+                        </div>
+                      </div>
                     );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+                  }
+                },
+                { key: 'onHand', header: 'Stock Actual', render: (value: number) => <span className="text-right block">{value}</span> },
+                { key: 'reorderPoint', header: 'Punto Reorden', render: (value: number) => <span className="text-right block">{value}</span> },
+                { key: 'demandaEsperada', header: 'Demanda Esperada', render: (value: number) => <span className="text-right block">{value}</span> },
+                { 
+                  key: 'coberturaDias', 
+                  header: 'Cobertura (días)',
+                  render: (value: number) => (
+                    <span className={`text-right block ${value <= 7 ? 'text-destructive font-medium' : ''}`}>
+                      {value.toFixed(1)}
+                    </span>
+                  )
+                },
+                { key: 'qtySugerida', header: 'Cantidad Sugerida', render: (value: number) => <span className="text-right font-medium text-primary block">{value}</span> },
+                { key: 'costo', header: 'Costo Estimado', render: (value: number) => <span className="text-right block">${value?.toFixed(2) || '0.00'}</span> },
+                { 
+                  key: 'coberturaDias', 
+                  header: 'Urgencia',
+                  render: (value: number) => <div className="text-center">{getUrgencyBadge(value)}</div>
+                }
+              ]}
+              mobileCardRender={(suggestion) => {
+                const product = getProductById(suggestion.productId);
+                return (
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium">{product?.nombre}</p>
+                        <p className="text-xs text-muted-foreground">{product?.marca}</p>
+                      </div>
+                      {getUrgencyBadge(suggestion.coberturaDias)}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Stock Actual</p>
+                        <p className="font-medium">{suggestion.onHand}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Cant. Sugerida</p>
+                        <p className="font-medium text-primary">{suggestion.qtySugerida}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Cobertura</p>
+                        <p className={suggestion.coberturaDias <= 7 ? 'text-destructive font-medium' : ''}>
+                          {suggestion.coberturaDias.toFixed(1)} días
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Costo</p>
+                        <p className="font-medium">${suggestion.costo?.toFixed(2)}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }}
+            />
           )}
         </CardContent>
       </Card>

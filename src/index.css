@@ -264,5 +264,20 @@
   .responsive-heading {
     @apply text-xl sm:text-2xl md:text-3xl;
   }
+
+  /* Mobile-first input styling */
+  .mobile-input {
+    @apply h-12 text-base sm:h-10 sm:text-sm touch-target;
+  }
+  
+  /* Mobile-friendly select */
+  .mobile-select {
+    @apply h-12 text-base sm:h-10 sm:text-sm;
+  }
+  
+  /* Mobile button */
+  .mobile-button {
+    @apply h-12 px-6 text-base sm:h-10 sm:px-4 sm:text-sm;
+  }
 }
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +11,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+} from "@/components/ui/drawer";
 import {
   Form,
   FormControl,
@@ -53,6 +62,7 @@ interface SaleModalProps {
 
 export function SaleModal({ open, onOpenChange, warehouseId, onSave }: SaleModalProps) {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [enviandoFormulario, setEnviandoFormulario] = useState(false);
   const [productos, setProductos] = useState<SaleItem[]>([]);
   const [productoSeleccionadoId, setProductoSeleccionadoId] = useState("");
@@ -233,18 +243,9 @@ export function SaleModal({ open, onOpenChange, warehouseId, onSave }: SaleModal
     return product ? `${product.nombre} - ${product.marca}` : "Producto no encontrado";
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Nueva Venta</DialogTitle>
-          <DialogDescription>
-            Registra una nueva venta agregando productos y especificando el método de pago.
-          </DialogDescription>
-        </DialogHeader>
-
-        <Form {...formulario}>
-          <form onSubmit={formulario.handleSubmit(enviarFormulario)} className="space-y-6">
+  const FormContent = () => (
+    <Form {...formulario}>
+      <form onSubmit={formulario.handleSubmit(enviarFormulario)} className="space-y-6">
             {/* Detalles de la venta */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
@@ -333,10 +334,13 @@ export function SaleModal({ open, onOpenChange, warehouseId, onSave }: SaleModal
                   <label className="text-sm font-medium mb-2 block">Cantidad</label>
                   <Input
                     type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     min="1"
                     value={cantidad}
                     onChange={(e) => setCantidad(parseInt(e.target.value) || 1)}
                     placeholder="1"
+                    className={isMobile ? "mobile-input" : ""}
                   />
                 </div>
 
@@ -377,6 +381,8 @@ export function SaleModal({ open, onOpenChange, warehouseId, onSave }: SaleModal
                           <TableCell>
                             <Input
                               type="number"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
                               min="1"
                               value={producto.qty}
                               onChange={(e) => actualizarCantidadProducto(indice, parseInt(e.target.value) || 1)}
@@ -391,6 +397,7 @@ export function SaleModal({ open, onOpenChange, warehouseId, onSave }: SaleModal
                           <TableCell>
                             <Input
                               type="number"
+                              inputMode="decimal"
                               min="0"
                               max="100"
                               value={producto.discount || 0}
@@ -442,21 +449,64 @@ export function SaleModal({ open, onOpenChange, warehouseId, onSave }: SaleModal
               </div>
             )}
 
-            <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => onOpenChange(false)}
-                disabled={enviandoFormulario}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={enviandoFormulario || productos.length === 0}>
-                {enviandoFormulario ? "Registrando..." : "Registrar Venta"}
-              </Button>
-            </DialogFooter>
+            {isMobile ? (
+              <DrawerFooter>
+                <Button type="submit" disabled={enviandoFormulario || productos.length === 0} className="mobile-button">
+                  {enviandoFormulario ? "Registrando..." : "Registrar Venta"}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => onOpenChange(false)}
+                  disabled={enviandoFormulario}
+                  className="mobile-button"
+                >
+                  Cancelar
+                </Button>
+              </DrawerFooter>
+            ) : (
+              <DialogFooter>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => onOpenChange(false)}
+                  disabled={enviandoFormulario}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={enviandoFormulario || productos.length === 0}>
+                  {enviandoFormulario ? "Registrando..." : "Registrar Venta"}
+                </Button>
+              </DialogFooter>
+            )}
           </form>
         </Form>
+  );
+
+  return isMobile ? (
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="max-h-[95vh]">
+        <DrawerHeader>
+          <DrawerTitle>Nueva Venta</DrawerTitle>
+          <DrawerDescription>
+            Registra una nueva venta agregando productos y especificando el método de pago.
+          </DrawerDescription>
+        </DrawerHeader>
+        <div className="overflow-y-auto px-4">
+          <FormContent />
+        </div>
+      </DrawerContent>
+    </Drawer>
+  ) : (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Nueva Venta</DialogTitle>
+          <DialogDescription>
+            Registra una nueva venta agregando productos y especificando el método de pago.
+          </DialogDescription>
+        </DialogHeader>
+        <FormContent />
       </DialogContent>
     </Dialog>
   );
