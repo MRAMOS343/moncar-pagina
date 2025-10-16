@@ -84,7 +84,7 @@ export function AppTopbar({
   };
 
   return (
-    <header className="h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-0">
+    <header className="h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
       <div className="flex h-full items-center gap-2 md:gap-4 px-2 md:px-4">
         {/* Sidebar Toggle */}
         <SidebarTrigger className="flex-shrink-0" />
