@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, AlertTriangle, BarChart3, Calendar } from 'lucide-react';
-import { LazyLineChart } from '@/components/charts/LazyLineChart';
+import { LazyLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from '@/components/charts/LazyLineChart';
 import { useData } from '@/contexts/DataContext';
 import { User, ChartDataPoint, ForecastData } from '../types';
 import { addWeeks, format, subWeeks } from 'date-fns';
@@ -296,18 +296,61 @@ export default function PrediccionPage() {
           </CardHeader>
           <CardContent>
             <div className="h-96">
-              <LazyLineChart 
-                data={chartData}
-                lines={[
-                  { dataKey: 'value', stroke: 'hsl(var(--primary))', name: 'Histórico', strokeWidth: 2, dot: { fill: 'hsl(var(--primary))', r: 3 } },
-                  { dataKey: 'forecast', stroke: 'hsl(var(--destructive))', name: 'Pronóstico', strokeWidth: 2, strokeDasharray: '5 5', dot: { fill: 'hsl(var(--destructive))', r: 3 } },
-                  { dataKey: 'upperBound', stroke: 'hsl(var(--muted-foreground))', name: 'Límite Superior', strokeDasharray: '2 2', dot: false },
-                  { dataKey: 'lowerBound', stroke: 'hsl(var(--muted-foreground))', name: 'Límite Inferior', strokeDasharray: '2 2', dot: false }
-                ]}
-                xAxisKey="label"
-                yAxisLabel="Unidades"
-                height={384}
-              />
+              <LazyLineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis 
+                  dataKey="label" 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                />
+                <YAxis 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  label={{ value: 'Unidades', angle: -90, position: 'insideLeft' }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--popover))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '6px'
+                  }}
+                />
+                <Line 
+                  type="monotone"
+                  dataKey="value" 
+                  stroke="hsl(var(--primary))" 
+                  name="Histórico" 
+                  strokeWidth={2} 
+                  dot={{ fill: 'hsl(var(--primary))', r: 3 }}
+                />
+                <Line 
+                  type="monotone"
+                  dataKey="forecast" 
+                  stroke="hsl(var(--destructive))" 
+                  name="Pronóstico" 
+                  strokeWidth={2} 
+                  strokeDasharray="5 5"
+                  dot={{ fill: 'hsl(var(--destructive))', r: 3 }}
+                />
+                <Line 
+                  type="monotone"
+                  dataKey="upperBound" 
+                  stroke="hsl(var(--muted-foreground))" 
+                  name="Límite Superior" 
+                  strokeDasharray="2 2"
+                  dot={false}
+                  strokeWidth={1}
+                />
+                <Line 
+                  type="monotone"
+                  dataKey="lowerBound" 
+                  stroke="hsl(var(--muted-foreground))" 
+                  name="Límite Inferior" 
+                  strokeDasharray="2 2"
+                  dot={false}
+                  strokeWidth={1}
+                />
+              </LazyLineChart>
             </div>
           </CardContent>
       </Card>
