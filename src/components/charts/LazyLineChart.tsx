@@ -11,15 +11,16 @@ const ResponsiveContainer = lazy(() => import('recharts').then(mod => ({ default
 
 interface LazyLineChartProps {
   data: any[];
+  height?: number | string; // height for the responsive container
   children?: React.ReactNode;
   [key: string]: any;
 }
 
-export function LazyLineChart({ children, data, ...props }: LazyLineChartProps) {
+export function LazyLineChart({ children, data, height = 320, ...rest }: LazyLineChartProps) {
   return (
     <Suspense fallback={<ChartSkeleton />}>
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} {...props}>
+      <ResponsiveContainer width="100%" height={height}>
+        <LineChart data={data} {...rest}>
           {children}
         </LineChart>
       </ResponsiveContainer>
