@@ -240,24 +240,22 @@ export default function VentasPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-80">
-              <LazyLineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip 
-                  formatter={(value: number) => [`$${value.toFixed(2)}`, 'Ventas']}
-                  labelFormatter={(label) => `Fecha: ${label}`}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--primary))' }}
-                />
-              </LazyLineChart>
-            </div>
+            <LazyLineChart data={chartData} height={320}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip 
+                formatter={(value: number) => [`$${value.toFixed(2)}`, 'Ventas']}
+                labelFormatter={(label) => `Fecha: ${label}`}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="value" 
+                stroke="hsl(var(--primary))" 
+                strokeWidth={2}
+                dot={{ fill: 'hsl(var(--primary))' }}
+              />
+            </LazyLineChart>
           </CardContent>
         </Card>
       )}

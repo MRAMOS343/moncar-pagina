@@ -155,7 +155,7 @@ export default function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <LazyLineChart data={datosTendenciaVentas}>
+            <LazyLineChart data={datosTendenciaVentas} height={320}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
               <XAxis dataKey="date" className="text-muted-foreground" />
               <YAxis className="text-muted-foreground" />
@@ -193,7 +193,7 @@ export default function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <LazyPieChart>
+            <LazyPieChart height={320}>
               <Pie
                 data={datosMetodosPago}
                 cx="50%"

@@ -295,63 +295,61 @@ export default function PrediccionPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-96">
-              <LazyLineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis 
-                  dataKey="label" 
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
-                <YAxis 
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  label={{ value: 'Unidades', angle: -90, position: 'insideLeft' }}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--popover))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px'
-                  }}
-                />
-                <Line 
-                  type="monotone"
-                  dataKey="value" 
-                  stroke="hsl(var(--primary))" 
-                  name="Histórico" 
-                  strokeWidth={2} 
-                  dot={{ fill: 'hsl(var(--primary))', r: 3 }}
-                />
-                <Line 
-                  type="monotone"
-                  dataKey="forecast" 
-                  stroke="hsl(var(--destructive))" 
-                  name="Pronóstico" 
-                  strokeWidth={2} 
-                  strokeDasharray="5 5"
-                  dot={{ fill: 'hsl(var(--destructive))', r: 3 }}
-                />
-                <Line 
-                  type="monotone"
-                  dataKey="upperBound" 
-                  stroke="hsl(var(--muted-foreground))" 
-                  name="Límite Superior" 
-                  strokeDasharray="2 2"
-                  dot={false}
-                  strokeWidth={1}
-                />
-                <Line 
-                  type="monotone"
-                  dataKey="lowerBound" 
-                  stroke="hsl(var(--muted-foreground))" 
-                  name="Límite Inferior" 
-                  strokeDasharray="2 2"
-                  dot={false}
-                  strokeWidth={1}
-                />
-              </LazyLineChart>
-            </div>
+            <LazyLineChart data={chartData} height={384}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis 
+                dataKey="label" 
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+              />
+              <YAxis 
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+                label={{ value: 'Unidades', angle: -90, position: 'insideLeft' }}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--popover))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '6px'
+                }}
+              />
+              <Line 
+                type="monotone"
+                dataKey="value" 
+                stroke="hsl(var(--primary))" 
+                name="Histórico" 
+                strokeWidth={2} 
+                dot={{ fill: 'hsl(var(--primary))', r: 3 }}
+              />
+              <Line 
+                type="monotone"
+                dataKey="forecast" 
+                stroke="hsl(var(--destructive))" 
+                name="Pronóstico" 
+                strokeWidth={2} 
+                strokeDasharray="5 5"
+                dot={{ fill: 'hsl(var(--destructive))', r: 3 }}
+              />
+              <Line 
+                type="monotone"
+                dataKey="upperBound" 
+                stroke="hsl(var(--muted-foreground))" 
+                name="Límite Superior" 
+                strokeDasharray="2 2"
+                dot={false}
+                strokeWidth={1}
+              />
+              <Line 
+                type="monotone"
+                dataKey="lowerBound" 
+                stroke="hsl(var(--muted-foreground))" 
+                name="Límite Inferior" 
+                strokeDasharray="2 2"
+                dot={false}
+                strokeWidth={1}
+              />
+            </LazyLineChart>
           </CardContent>
       </Card>
       )}
