@@ -1,32 +1,91 @@
 import { useState } from "react";
-import { Truck, Search, Mail, Phone, MapPin, FileText, Plus, Edit, Trash2 } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { Package, ShoppingCart, TrendingDown, RotateCcw, DollarSign, Upload, FileText, Plus } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useData } from '@/contexts/DataContext';
-import { Supplier } from "@/types";
-import { supplierSchema, SupplierFormData } from '@/schemas/supplierSchema';
-import { sanitizeHtml, sanitizePhone } from '@/utils/sanitize';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { supplierSchema, SupplierFormData } from '@/schemas/supplierSchema';
+import { sanitizeHtml, sanitizePhone } from '@/utils/sanitize';
 import { toast } from "sonner";
-import { ResponsiveTable } from "@/components/ui/responsive-table";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useData } from '@/contexts/DataContext';
+import { Supplier } from "@/types";
+import { formatCurrency } from "@/utils/formatters";
+
+interface SupplierPayment {
+  id: string;
+  supplierId: string;
+  supplierName: string;
+  banco: string;
+  cuenta: string;
+  saldo: number;
+  pagosProgramados: number;
+  estadoSemana: 'pendiente' | 'pagado';
+  comprobantes: string[];
+}
 
 export default function ProveedoresPage() {
-  const isMobile = useIsMobile();
   const { suppliers: initialSuppliers } = useData();
   const [suppliers, setSuppliers] = useState<Supplier[]>(initialSuppliers);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+
+  const [supplierPayments] = useState<SupplierPayment[]>([
+    {
+      id: "1",
+      supplierId: "1",
+      supplierName: "Bosch MX",
+      banco: "BBVA",
+      cuenta: "CLABE 012 345 678901234",
+      saldo: 18760,
+      pagosProgramados: 12000,
+      estadoSemana: 'pendiente',
+      comprobantes: []
+    },
+    {
+      id: "2",
+      supplierId: "2",
+      supplierName: "Brembo MX",
+      banco: "Banorte",
+      cuenta: "CLABE 072 123 456789012",
+      saldo: 24490,
+      pagosProgramados: 15000,
+      estadoSemana: 'pagado',
+      comprobantes: ["comprobante_brembo_2025-10-22.pdf"]
+    },
+    {
+      id: "3",
+      supplierId: "3",
+      supplierName: "Mann Filter",
+      banco: "Santander",
+      cuenta: "CLABE 014 987 654321098",
+      saldo: 9800,
+      pagosProgramados: 8000,
+      estadoSemana: 'pendiente',
+      comprobantes: []
+    }
+  ]);
+
+  const inventoryData = [
+    { sku: "CM-001", articulo: "Cilindro Maestro", linea: "Frenos", marca: "Bosch", existencia: 18, min: 10, max: 35, costo: 540, precio: 899, rotacion: "A" },
+    { sku: "AC-210", articulo: "Aceite 5W30 1L", linea: "Lubricantes", marca: "Mobil", existencia: 72, min: 40, max: 120, costo: 95, precio: 169, rotacion: "A" },
+    { sku: "LS-512", articulo: "Limpiaparabrisas 21\"", linea: "Accesorios", marca: "Trico", existencia: 9, min: 15, max: 60, costo: 48, precio: 99, rotacion: "B" },
+    { sku: "PB-404", articulo: "Pastillas de freno", linea: "Frenos", marca: "Brembo", existencia: 4, min: 12, max: 40, costo: 780, precio: 1249, rotacion: "A" },
+    { sku: "FS-331", articulo: "Filtro de aceite", linea: "Filtros", marca: "Mann", existencia: 3, min: 8, max: 30, costo: 110, precio: 199, rotacion: "B" }
+  ];
+
+  const purchaseOrders = [
+    { folio: "PO-8791", fecha: "2025-10-22", sucursal: "MonCar Pachuca", proveedor: "RefaExpress", items: 42, montoETA: "$38,210 2 días", estado: "en-transito" },
+    { folio: "PO-8790", fecha: "2025-10-22", sucursal: "Monzalvo Centro", proveedor: "Distrib. Hidalgo", items: 15, montoETA: "$12,990 Hoy", estado: "recibiendo" },
+    { folio: "PO-8787", fecha: "2025-10-21", sucursal: "MonCar Pachuca", proveedor: "Bosch MX", items: 8, montoETA: "$18,760 3 días", estado: "ordenado" }
+  ];
 
   const form = useForm<SupplierFormData>({
     resolver: zodResolver(supplierSchema),
@@ -42,19 +101,11 @@ export default function ProveedoresPage() {
     }
   });
 
-  const filteredSuppliers = suppliers.filter(supplier => {
-    const matchesSearch = 
-      supplier.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      supplier.contacto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      supplier.email.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = 
-      statusFilter === "todos" || 
-      (statusFilter === "activos" && supplier.activo) ||
-      (statusFilter === "inactivos" && !supplier.activo);
-
-    return matchesSearch && matchesStatus;
-  });
+  const totalAdeudado = supplierPayments.reduce((sum, p) => sum + p.saldo, 0);
+  const programadoSemana = supplierPayments.reduce((sum, p) => sum + p.pagosProgramados, 0);
+  const pagadoSemana = supplierPayments
+    .filter(p => p.estadoSemana === 'pagado')
+    .reduce((sum, p) => sum + p.pagosProgramados, 0);
 
   const handleOpenDialog = (supplier?: Supplier) => {
     if (supplier) {
@@ -71,16 +122,7 @@ export default function ProveedoresPage() {
       });
     } else {
       setEditingSupplier(null);
-      form.reset({
-        nombre: "",
-        contacto: "",
-        telefono: "",
-        email: "",
-        direccion: "",
-        rfc: "",
-        categorias: "",
-        activo: true
-      });
+      form.reset();
     }
     setIsDialogOpen(true);
   };
@@ -95,310 +137,223 @@ export default function ProveedoresPage() {
       categorias: sanitizeHtml(data.categorias)
     };
 
-    const categoriasArray = sanitizedData.categorias
-      .split(",")
-      .map(c => c.trim())
-      .filter(c => c.length > 0);
+    const categoriasArray = sanitizedData.categorias.split(",").map(c => c.trim()).filter(c => c.length > 0);
 
     if (editingSupplier) {
       setSuppliers(suppliers.map(s =>
         s.id === editingSupplier.id
-          ? {
-              ...editingSupplier,
-              nombre: sanitizedData.nombre,
-              contacto: sanitizedData.contacto,
-              telefono: sanitizedData.telefono,
-              email: sanitizedData.email,
-              direccion: sanitizedData.direccion || "",
-              rfc: sanitizedData.rfc || "",
-              categorias: categoriasArray,
-              activo: sanitizedData.activo
-            }
+          ? { ...editingSupplier, ...sanitizedData, categorias: categoriasArray }
           : s
       ));
-      toast.success("Proveedor actualizado correctamente");
+      toast.success("Proveedor actualizado");
     } else {
       const newSupplier: Supplier = {
-        id: `s${suppliers.length + 1}`,
-        nombre: sanitizedData.nombre,
-        contacto: sanitizedData.contacto,
-        telefono: sanitizedData.telefono,
-        email: sanitizedData.email,
-        direccion: sanitizedData.direccion || "",
-        rfc: sanitizedData.rfc || "",
-        categorias: categoriasArray,
-        activo: sanitizedData.activo
+        id: String(suppliers.length + 1),
+        ...sanitizedData,
+        categorias: categoriasArray
       };
       setSuppliers([...suppliers, newSupplier]);
-      toast.success("Proveedor creado correctamente");
+      toast.success("Proveedor creado");
     }
 
     setIsDialogOpen(false);
-  };
-
-  const handleDeleteSupplier = (supplierId: string) => {
-    setSuppliers(suppliers.filter(s => s.id !== supplierId));
-    toast.success("Proveedor eliminado correctamente");
+    form.reset();
   };
 
   return (
-    <main role="main" aria-label="Contenido principal">
-      <div className="space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-6 p-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Proveedores</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1">Directorio de proveedores y contactos</p>
+          <h1 className="text-3xl font-bold">Operación – Refaccionarias</h1>
+          <p className="text-muted-foreground">
+            Monitoreo de inventario, pedidos, backorders, devoluciones y pagos a proveedores.
+          </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => handleOpenDialog()} className="touch-target w-full sm:w-auto" aria-label="Agregar nuevo proveedor">
-              <Plus className="w-4 h-4 mr-2" />
-              {isMobile ? "Agregar" : "Agregar Proveedor"}
+            <Button onClick={() => handleOpenDialog()}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nuevo proveedor
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{editingSupplier ? "Editar Proveedor" : "Agregar Nuevo Proveedor"}</DialogTitle>
-              <DialogDescription>
-                {editingSupplier ? "Actualiza los datos del proveedor" : "Completa la información del nuevo proveedor"}
-              </DialogDescription>
+              <DialogTitle>{editingSupplier ? "Editar" : "Nuevo"} Proveedor</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="nombre">Nombre del Proveedor *</Label>
-                  <Input
-                    id="nombre"
-                    {...form.register('nombre')}
-                    placeholder="Ej: Autopartes del Bajío S.A. de C.V."
-                  />
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Nombre *</Label>
+                  <Input {...form.register("nombre")} />
                   {form.formState.errors.nombre && (
                     <p className="text-sm text-destructive">{form.formState.errors.nombre.message}</p>
                   )}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="contacto">Nombre de Contacto *</Label>
-                  <Input
-                    id="contacto"
-                    {...form.register('contacto')}
-                    placeholder="Ej: Ing. Roberto González"
-                  />
-                  {form.formState.errors.contacto && (
-                    <p className="text-sm text-destructive">{form.formState.errors.contacto.message}</p>
-                  )}
+                <div>
+                  <Label>Contacto *</Label>
+                  <Input {...form.register("contacto")} />
+                </div>
+                <div>
+                  <Label>Teléfono *</Label>
+                  <Input {...form.register("telefono")} />
+                </div>
+                <div>
+                  <Label>Email *</Label>
+                  <Input {...form.register("email")} type="email" />
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="telefono">Teléfono *</Label>
-                  <Input
-                    id="telefono"
-                    {...form.register('telefono')}
-                    placeholder="555-1234-567"
-                  />
-                  {form.formState.errors.telefono && (
-                    <p className="text-sm text-destructive">{form.formState.errors.telefono.message}</p>
-                  )}
+              <div>
+                <Label>Dirección</Label>
+                <Textarea {...form.register("direccion")} />
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label>RFC</Label>
+                  <Input {...form.register("rfc")} />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    {...form.register('email')}
-                    placeholder="ventas@proveedor.com.mx"
-                  />
-                  {form.formState.errors.email && (
-                    <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
-                  )}
+                <div>
+                  <Label>Categorías *</Label>
+                  <Input {...form.register("categorias")} placeholder="Frenos, Filtros..." />
                 </div>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="direccion">Dirección</Label>
-                <Input
-                  id="direccion"
-                  {...form.register('direccion')}
-                  placeholder="Av. Industria 456, León, Guanajuato"
-                />
+              <div className="flex items-center gap-2">
+                <Switch checked={form.watch("activo")} onCheckedChange={(v) => form.setValue("activo", v)} />
+                <Label>Activo</Label>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="rfc">RFC</Label>
-                <Input
-                  id="rfc"
-                  {...form.register('rfc')}
-                  placeholder="ABC890123-XYZ"
-                />
-                {form.formState.errors.rfc && (
-                  <p className="text-sm text-destructive">{form.formState.errors.rfc.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="categorias">Categorías (separadas por coma)</Label>
-                <Textarea
-                  id="categorias"
-                  {...form.register('categorias')}
-                  placeholder="Frenos, Suspensión, Motor"
-                  rows={2}
-                />
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="activo"
-                  checked={form.watch('activo')}
-                  onCheckedChange={(checked) => form.setValue('activo', checked)}
-                />
-                <Label htmlFor="activo">Proveedor Activo</Label>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button 
-                onClick={form.handleSubmit(onSubmit)}
-                disabled={!form.formState.isValid || form.formState.isSubmitting}
-                aria-label={editingSupplier ? "Actualizar proveedor" : "Crear proveedor"}
-              >
-                {form.formState.isSubmitting ? "Guardando..." : editingSupplier ? "Actualizar" : "Crear"}
-              </Button>
-            </DialogFooter>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
+                <Button type="submit">{editingSupplier ? "Actualizar" : "Crear"}</Button>
+              </DialogFooter>
+            </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-        <div className="relative flex-1 sm:max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-          <Input
-            placeholder="Buscar proveedores..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 touch-target"
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-40 touch-target">
-            <SelectValue placeholder="Estado" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos</SelectItem>
-            <SelectItem value="activos">Activos</SelectItem>
-            <SelectItem value="inactivos">Inactivos</SelectItem>
-          </SelectContent>
-        </Select>
-        <Badge variant="outline" className="text-sm self-center sm:self-auto">
-          {filteredSuppliers.length} {filteredSuppliers.length === 1 ? "proveedor" : "proveedores"}
-        </Badge>
-      </div>
+      <Tabs defaultValue="inventario">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="inventario"><Package className="h-4 w-4 mr-2" />Inventario</TabsTrigger>
+          <TabsTrigger value="ordenes"><ShoppingCart className="h-4 w-4 mr-2" />Órdenes</TabsTrigger>
+          <TabsTrigger value="backorder"><TrendingDown className="h-4 w-4 mr-2" />Backorder</TabsTrigger>
+          <TabsTrigger value="devoluciones"><RotateCcw className="h-4 w-4 mr-2" />Devoluciones</TabsTrigger>
+          <TabsTrigger value="pagos"><DollarSign className="h-4 w-4 mr-2" />Pagos</TabsTrigger>
+        </TabsList>
 
-      <Card>
-        <CardContent className="p-0 sm:p-6">
-          <ResponsiveTable
-            data={filteredSuppliers}
-            columns={[
-              { key: 'nombre', header: 'Proveedor' },
-              { key: 'contacto', header: 'Contacto' },
-              { key: 'telefono', header: 'Teléfono' },
-              { key: 'email', header: 'Email' },
-              { key: 'categorias', header: 'Categorías' },
-              { key: 'rfc', header: 'RFC' },
-              { key: 'activo', header: 'Estado' },
-            ]}
-            mobileCardRender={(supplier) => (
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 min-w-[3rem] bg-primary/10 rounded-lg flex items-center justify-center">
-                    <Truck className="w-6 h-6 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-foreground truncate">{supplier.nombre}</h3>
-                    <p className="text-sm text-muted-foreground truncate">{supplier.contacto}</p>
-                    <Badge variant={supplier.activo ? "default" : "secondary"} className="mt-1">
-                      {supplier.activo ? "Activo" : "Inactivo"}
-                    </Badge>
-                  </div>
-                </div>
+        <TabsContent value="inventario" className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold">Inventario por SKU</h2>
+            <div className="flex gap-2">
+              <Badge variant="outline">Bajo mínimo: 2</Badge>
+              <Badge variant="outline">Sobrante: 1</Badge>
+            </div>
+          </div>
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>SKU</TableHead>
+                  <TableHead>Artículo</TableHead>
+                  <TableHead>Línea</TableHead>
+                  <TableHead>Marca</TableHead>
+                  <TableHead>Existencia</TableHead>
+                  <TableHead>Mín/Máx</TableHead>
+                  <TableHead>Costo</TableHead>
+                  <TableHead>Precio</TableHead>
+                  <TableHead>Rotación</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {inventoryData.map(i => (
+                  <TableRow key={i.sku}>
+                    <TableCell className="font-medium">{i.sku}</TableCell>
+                    <TableCell>{i.articulo}</TableCell>
+                    <TableCell>{i.linea}</TableCell>
+                    <TableCell>{i.marca}</TableCell>
+                    <TableCell>{i.existencia}</TableCell>
+                    <TableCell>{i.min}/{i.max}</TableCell>
+                    <TableCell>{formatCurrency(i.costo)}</TableCell>
+                    <TableCell>{formatCurrency(i.precio)}</TableCell>
+                    <TableCell><Badge variant={i.rotacion === 'A' ? 'default' : 'secondary'}>{i.rotacion}</Badge></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
 
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                    <a href={`tel:${supplier.telefono}`} className="text-primary hover:underline truncate">
-                      {supplier.telefono}
-                    </a>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                    <a href={`mailto:${supplier.email}`} className="text-primary hover:underline truncate">
-                      {supplier.email}
-                    </a>
-                  </div>
+        <TabsContent value="ordenes" className="space-y-4">
+          <h2 className="text-2xl font-bold">Órdenes de compra</h2>
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Folio</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Sucursal</TableHead>
+                  <TableHead>Proveedor</TableHead>
+                  <TableHead>Items</TableHead>
+                  <TableHead>Monto/ETA</TableHead>
+                  <TableHead>Estado</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {purchaseOrders.map(o => (
+                  <TableRow key={o.folio}>
+                    <TableCell className="font-medium">{o.folio}</TableCell>
+                    <TableCell>{o.fecha}</TableCell>
+                    <TableCell>{o.sucursal}</TableCell>
+                    <TableCell>{o.proveedor}</TableCell>
+                    <TableCell>{o.items}</TableCell>
+                    <TableCell>{o.montoETA}</TableCell>
+                    <TableCell><Badge>{o.estado}</Badge></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
 
-                  {supplier.direccion && (
-                    <div className="flex items-start gap-2">
-                      <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                      <span className="text-muted-foreground line-clamp-2">{supplier.direccion}</span>
-                    </div>
-                  )}
+        <TabsContent value="backorder"><Card><CardContent className="py-20 text-center text-muted-foreground">Sin backorders</CardContent></Card></TabsContent>
+        <TabsContent value="devoluciones"><Card><CardContent className="py-20 text-center text-muted-foreground">Sin devoluciones</CardContent></Card></TabsContent>
 
-                  <div className="flex items-start gap-2">
-                    <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                    <span className="font-mono text-muted-foreground">{supplier.rfc}</span>
-                  </div>
-
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {supplier.categorias.map((cat, idx) => (
-                      <Badge key={idx} variant="secondary" className="text-xs">
-                        {cat}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex gap-2 pt-2 border-t">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleOpenDialog(supplier)}
-                    className="flex-1 touch-target"
-                    aria-label={`Editar proveedor ${supplier.nombre}`}
-                  >
-                    <Edit className="w-4 h-4 mr-1" />
-                    Editar
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDeleteSupplier(supplier.id)}
-                    className="touch-target"
-                    aria-label={`Eliminar proveedor ${supplier.nombre}`}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-          />
-        </CardContent>
-      </Card>
-
-      {filteredSuppliers.length === 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Truck className="w-12 h-12 text-muted-foreground mb-4" />
-            <p className="text-lg font-medium text-foreground">No se encontraron proveedores</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Intenta con otro término de búsqueda o ajusta los filtros
-            </p>
-          </CardContent>
-        </Card>
-      )}
-      </div>
-    </main>
+        <TabsContent value="pagos" className="space-y-4">
+          <h2 className="text-2xl font-bold">Pagos a Proveedores</h2>
+          <div className="grid md:grid-cols-3 gap-4">
+            <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Adeudado total</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{formatCurrency(totalAdeudado)}</div></CardContent></Card>
+            <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Programado semana</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{formatCurrency(programadoSemana)}</div></CardContent></Card>
+            <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Pagado semana</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{formatCurrency(pagadoSemana)}</div></CardContent></Card>
+          </div>
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Proveedor</TableHead>
+                  <TableHead>Banco</TableHead>
+                  <TableHead>Cuenta</TableHead>
+                  <TableHead>Saldo</TableHead>
+                  <TableHead>Programado</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Comprobantes</TableHead>
+                  <TableHead>Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {supplierPayments.map(p => (
+                  <TableRow key={p.id}>
+                    <TableCell className="font-medium">{p.supplierName}</TableCell>
+                    <TableCell>{p.banco}</TableCell>
+                    <TableCell>{p.cuenta}</TableCell>
+                    <TableCell>{formatCurrency(p.saldo)}</TableCell>
+                    <TableCell>{formatCurrency(p.pagosProgramados)}</TableCell>
+                    <TableCell><Badge variant={p.estadoSemana === 'pagado' ? 'default' : 'outline'}>{p.estadoSemana}</Badge></TableCell>
+                    <TableCell>{p.comprobantes.length > 0 ? <><FileText className="h-4 w-4 inline mr-1"/>{p.comprobantes[0]}</> : '—'}</TableCell>
+                    <TableCell><div className="flex gap-2"><Button size="sm" variant="outline"><Upload className="h-4 w-4"/></Button><Button size="sm" disabled={p.estadoSemana === 'pagado'}>Marcar pagado</Button></div></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
