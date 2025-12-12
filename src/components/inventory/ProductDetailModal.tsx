@@ -27,6 +27,7 @@ interface Specification {
 }
 
 interface Compatibility {
+  id: string;
   marca: string;
   modelo: string;
   año: string;
@@ -46,11 +47,10 @@ const getInitialSpecs = (product: Product): Specification[] => [
   { id: '4', label: 'Peso', value: '2.5 kg' },
 ];
 
-const getInitialCompatibility = (): Compatibility => ({
-  marca: 'Honda',
-  modelo: 'Accord',
-  año: '2018',
-});
+const getInitialCompatibility = (): Compatibility[] => [
+  { id: '1', marca: 'Honda', modelo: 'Accord', año: '2018' },
+  { id: '2', marca: 'Toyota', modelo: 'Camry', año: '2019' },
+];
 
 const getInitialEquivalences = (): string[] => [
   'Bosch',
@@ -60,7 +60,7 @@ const getInitialEquivalences = (): string[] => [
 
 export function ProductDetailModal({ open, onOpenChange, item }: ProductDetailModalProps) {
   const [specifications, setSpecifications] = useState<Specification[]>([]);
-  const [compatibility, setCompatibility] = useState<Compatibility>(getInitialCompatibility());
+  const [compatibilities, setCompatibilities] = useState<Compatibility[]>([]);
   const [equivalences, setEquivalences] = useState<string[]>([]);
   const [editingSpecId, setEditingSpecId] = useState<string | null>(null);
   const [newSpecLabel, setNewSpecLabel] = useState('');
@@ -68,14 +68,36 @@ export function ProductDetailModal({ open, onOpenChange, item }: ProductDetailMo
   const [showAddSpec, setShowAddSpec] = useState(false);
   const [newEquivalence, setNewEquivalence] = useState('');
   const [showAddEquivalence, setShowAddEquivalence] = useState(false);
+  const [showAddCompatibility, setShowAddCompatibility] = useState(false);
+  const [newCompatibility, setNewCompatibility] = useState({ marca: '', modelo: '', año: '' });
 
   // Initialize data when modal opens with a new item
   const initializeData = () => {
     if (item) {
       setSpecifications(getInitialSpecs(item.product));
-      setCompatibility(getInitialCompatibility());
+      setCompatibilities(getInitialCompatibility());
       setEquivalences(getInitialEquivalences());
     }
+  };
+
+  const handleAddCompatibility = () => {
+    if (newCompatibility.marca.trim() && newCompatibility.modelo.trim() && newCompatibility.año.trim()) {
+      const newCompat: Compatibility = {
+        id: Date.now().toString(),
+        marca: newCompatibility.marca.trim(),
+        modelo: newCompatibility.modelo.trim(),
+        año: newCompatibility.año.trim(),
+      };
+      setCompatibilities([...compatibilities, newCompat]);
+      setNewCompatibility({ marca: '', modelo: '', año: '' });
+      setShowAddCompatibility(false);
+      showSuccessToast('Vehículo agregado', `${newCompat.marca} ${newCompat.modelo} ha sido agregado.`);
+    }
+  };
+
+  const handleRemoveCompatibility = (id: string) => {
+    setCompatibilities(compatibilities.filter(c => c.id !== id));
+    showSuccessToast('Vehículo eliminado', 'El vehículo ha sido eliminado de la compatibilidad.');
   };
 
   // Reset state when modal opens
@@ -157,25 +179,91 @@ export function ProductDetailModal({ open, onOpenChange, item }: ProductDetailMo
 
                 {/* Compatibility Section */}
                 <div className="space-y-3">
-                  <h3 className="text-lg font-semibold text-primary">Compatibilidad</h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-primary">Compatibilidad</h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowAddCompatibility(true)}
+                      className="h-8 px-2"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Agregar
+                    </Button>
+                  </div>
                   <Separator />
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-muted-foreground text-sm">Marca</Label>
-                      <p className="font-medium">{compatibility.marca}</p>
+                  
+                  {showAddCompatibility && (
+                    <div className="flex flex-col gap-2 p-3 bg-muted/50 rounded-lg">
+                      <div className="grid grid-cols-3 gap-2">
+                        <Input
+                          placeholder="Marca"
+                          value={newCompatibility.marca}
+                          onChange={(e) => setNewCompatibility({ ...newCompatibility, marca: e.target.value })}
+                        />
+                        <Input
+                          placeholder="Modelo"
+                          value={newCompatibility.modelo}
+                          onChange={(e) => setNewCompatibility({ ...newCompatibility, modelo: e.target.value })}
+                        />
+                        <Input
+                          placeholder="Año"
+                          value={newCompatibility.año}
+                          onChange={(e) => setNewCompatibility({ ...newCompatibility, año: e.target.value })}
+                          onKeyDown={(e) => e.key === 'Enter' && handleAddCompatibility()}
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button size="sm" onClick={handleAddCompatibility}>
+                          <Check className="w-4 h-4 mr-1" />
+                          Agregar
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          onClick={() => {
+                            setShowAddCompatibility(false);
+                            setNewCompatibility({ marca: '', modelo: '', año: '' });
+                          }}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div>
-                      <Label className="text-muted-foreground text-sm">Modelo</Label>
-                      <p className="font-medium">{compatibility.modelo}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground text-sm">Año</Label>
-                      <p className="font-medium">{compatibility.año}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground text-sm">Stock</Label>
-                      <p className="font-medium">{onHand} {product.unidad}</p>
-                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    {compatibilities.map((compat) => (
+                      <div 
+                        key={compat.id}
+                        className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/30 group hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                          <span className="font-medium">{compat.marca}</span>
+                          <span className="text-muted-foreground">{compat.modelo}</span>
+                          <Badge variant="outline" className="text-xs">{compat.año}</Badge>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleRemoveCompatibility(compat.id)}
+                        >
+                          <X className="w-3 h-3 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                    {compatibilities.length === 0 && (
+                      <p className="text-sm text-muted-foreground italic">
+                        No hay vehículos compatibles registrados
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="pt-2">
+                    <Label className="text-muted-foreground text-sm">Stock</Label>
+                    <p className="font-medium">{onHand} {product.unidad}</p>
                   </div>
                 </div>
 
