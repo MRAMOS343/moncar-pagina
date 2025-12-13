@@ -5,6 +5,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +22,24 @@ import { Package, Plus, X, Edit2, Check, Trash2 } from 'lucide-react';
 import { Product, Inventory } from '@/types';
 import { cn } from '@/lib/utils';
 import { showSuccessToast } from '@/utils/toastHelpers';
+
+// Predefined specifications for quick selection
+const PREDEFINED_SPECIFICATIONS = [
+  'Voltaje',
+  'Corriente',
+  'Material',
+  'Peso',
+  'Dimensiones',
+  'Capacidad',
+  'Potencia',
+  'Resistencia',
+  'Temperatura máxima',
+  'Garantía',
+  'Color',
+  'Tamaño',
+  'Amperaje',
+  'Compatibilidad eléctrica',
+];
 
 interface InventoryWithProduct extends Inventory {
   product: Product;
@@ -66,6 +91,8 @@ export function ProductDetailModal({ open, onOpenChange, item }: ProductDetailMo
   const [newSpecLabel, setNewSpecLabel] = useState('');
   const [newSpecValue, setNewSpecValue] = useState('');
   const [showAddSpec, setShowAddSpec] = useState(false);
+  const [specMode, setSpecMode] = useState<'select' | 'custom'>('select');
+  const [selectedPredefinedSpec, setSelectedPredefinedSpec] = useState('');
   const [newEquivalence, setNewEquivalence] = useState('');
   const [showAddEquivalence, setShowAddEquivalence] = useState(false);
   const [showAddCompatibility, setShowAddCompatibility] = useState(false);
@@ -113,19 +140,27 @@ export function ProductDetailModal({ open, onOpenChange, item }: ProductDetailMo
   const { product, onHand } = item;
 
   const handleAddSpecification = () => {
-    if (newSpecLabel.trim() && newSpecValue.trim()) {
+    const label = specMode === 'select' ? selectedPredefinedSpec : newSpecLabel.trim();
+    if (label && newSpecValue.trim()) {
       const newSpec: Specification = {
         id: Date.now().toString(),
-        label: newSpecLabel.trim(),
+        label: label,
         value: newSpecValue.trim(),
       };
       setSpecifications([...specifications, newSpec]);
       setNewSpecLabel('');
       setNewSpecValue('');
+      setSelectedPredefinedSpec('');
       setShowAddSpec(false);
-      showSuccessToast('Especificación agregada', `${newSpecLabel} ha sido agregada.`);
+      setSpecMode('select');
+      showSuccessToast('Especificación agregada', `${label} ha sido agregada.`);
     }
   };
+
+  // Get available predefined specs (filter out already used ones)
+  const availablePredefinedSpecs = PREDEFINED_SPECIFICATIONS.filter(
+    spec => !specifications.some(s => s.label.toLowerCase() === spec.toLowerCase())
+  );
 
   const handleRemoveSpecification = (id: string) => {
     setSpecifications(specifications.filter(spec => spec.id !== id));
@@ -354,34 +389,90 @@ export function ProductDetailModal({ open, onOpenChange, item }: ProductDetailMo
                 <Separator />
 
                 {showAddSpec && (
-                  <div className="flex gap-2 mb-3 p-3 bg-muted/50 rounded-lg">
-                    <Input
-                      placeholder="Etiqueta"
-                      value={newSpecLabel}
-                      onChange={(e) => setNewSpecLabel(e.target.value)}
-                      className="flex-1"
-                    />
-                    <Input
-                      placeholder="Valor"
-                      value={newSpecValue}
-                      onChange={(e) => setNewSpecValue(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleAddSpecification()}
-                      className="flex-1"
-                    />
-                    <Button size="sm" onClick={handleAddSpecification}>
-                      <Check className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      onClick={() => {
-                        setShowAddSpec(false);
-                        setNewSpecLabel('');
-                        setNewSpecValue('');
-                      }}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
+                  <div className="mb-3 p-4 bg-muted/50 rounded-lg space-y-4">
+                    {/* Mode Toggle */}
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={specMode === 'select' ? 'default' : 'outline'}
+                        onClick={() => setSpecMode('select')}
+                        className="flex-1"
+                      >
+                        Seleccionar existente
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={specMode === 'custom' ? 'default' : 'outline'}
+                        onClick={() => setSpecMode('custom')}
+                        className="flex-1"
+                      >
+                        Agregar nuevo
+                      </Button>
+                    </div>
+
+                    {/* Input Fields */}
+                    <div className="flex gap-2">
+                      {specMode === 'select' ? (
+                        <Select
+                          value={selectedPredefinedSpec}
+                          onValueChange={setSelectedPredefinedSpec}
+                        >
+                          <SelectTrigger className="flex-1 bg-background">
+                            <SelectValue placeholder="Selecciona una especificación" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availablePredefinedSpecs.length > 0 ? (
+                              availablePredefinedSpecs.map((spec) => (
+                                <SelectItem key={spec} value={spec}>
+                                  {spec}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <div className="px-2 py-4 text-sm text-muted-foreground text-center">
+                                Todas las especificaciones predefinidas ya están en uso
+                              </div>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input
+                          placeholder="Nueva etiqueta (ej: Longitud)"
+                          value={newSpecLabel}
+                          onChange={(e) => setNewSpecLabel(e.target.value)}
+                          className="flex-1"
+                        />
+                      )}
+                      <Input
+                        placeholder="Valor"
+                        value={newSpecValue}
+                        onChange={(e) => setNewSpecValue(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddSpecification()}
+                        className="flex-1"
+                      />
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" onClick={handleAddSpecification}>
+                        <Check className="w-4 h-4 mr-1" />
+                        Agregar
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={() => {
+                          setShowAddSpec(false);
+                          setNewSpecLabel('');
+                          setNewSpecValue('');
+                          setSelectedPredefinedSpec('');
+                          setSpecMode('select');
+                        }}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 )}
 
