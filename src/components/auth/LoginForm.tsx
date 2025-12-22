@@ -1,31 +1,57 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Package } from 'lucide-react';
+import { useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, Package } from "lucide-react";
 
 interface LoginFormProps {
   onLogin: (email: string, password: string) => Promise<boolean>;
 }
 
 export function LoginForm({ onLogin }: LoginFormProps) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const canSubmit = useMemo(() => {
+    return email.trim().length > 0 && password.length > 0 && !isLoading;
+  }, [email, password, isLoading]);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError('');
+    if (!canSubmit) return;
 
-    const success = await onLogin(email, password);
-    if (!success) {
-      setError('Credenciales inválidas o usuario no existe.');
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const success = await onLogin(email.trim(), password);
+      if (!success) setError("Credenciales inválidas o usuario no existe.");
+    } catch {
+      setError("No se pudo iniciar sesión. Intenta de nuevo.");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
+  };
+
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    if (error) setError("");
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    if (error) setError("");
   };
 
   return (
@@ -40,8 +66,9 @@ export function LoginForm({ onLogin }: LoginFormProps) {
             <CardDescription>Sistema de Gestión</CardDescription>
           </div>
         </CardHeader>
+
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" aria-busy={isLoading}>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -49,11 +76,14 @@ export function LoginForm({ onLogin }: LoginFormProps) {
                 type="email"
                 placeholder="correo@ejemplo.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => handleEmailChange(e.target.value)}
                 required
                 disabled={isLoading}
+                autoComplete="email"
+                aria-invalid={!!error}
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="password">Contraseña</Label>
               <Input
@@ -61,9 +91,11 @@ export function LoginForm({ onLogin }: LoginFormProps) {
                 type="password"
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => handlePasswordChange(e.target.value)}
                 required
                 disabled={isLoading}
+                autoComplete="current-password"
+                aria-invalid={!!error}
               />
             </div>
 
@@ -73,12 +105,17 @@ export function LoginForm({ onLogin }: LoginFormProps) {
               </Alert>
             )}
 
-            <Button type="submit" disabled={isLoading} className="w-full bg-red-600 hover:bg-red-500">
+            <Button
+              type="submit"
+              disabled={!canSubmit}
+              className="w-full bg-red-600 hover:bg-red-500"
+            >
               {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Iniciar Sesión
             </Button>
           </form>
         </CardContent>
+
         <CardFooter className="flex flex-col space-y-2">
           <p className="text-xs text-muted-foreground text-center">
             Sistema de Gestión Moncar - v5.3
