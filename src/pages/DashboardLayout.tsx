@@ -3,7 +3,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '../components/layout/AppSidebar';
 import { AppTopbar } from '../components/layout/AppTopbar';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { mockWarehouses } from '../data/mockData';
 import { toast } from '@/hooks/use-toast';
