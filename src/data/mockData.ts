@@ -2,11 +2,11 @@ import { Product, Warehouse, Inventory, Sale, User, Team, Supplier, Ticket, Tick
 
 // Mock warehouses (sucursales)
 export const mockWarehouses: Warehouse[] = [
-  { id: 'w1', nombre: 'Sucursal 1', direccion: 'Av. Principal 123', telefono: '555-0001' },
-  { id: 'w2', nombre: 'Sucursal 2', direccion: 'Calle Norte 456', telefono: '555-0002' },
-  { id: 'w3', nombre: 'Sucursal 3', direccion: 'Blvd. Sur 789', telefono: '555-0003' },
-  { id: 'w4', nombre: 'Sucursal 4', direccion: 'Av. Este 321', telefono: '555-0004' },
-  { id: 'w5', nombre: 'Sucursal 5', direccion: 'Calle Oeste 654', telefono: '555-0005' },
+  { id: 'w1', nombre: 'Moncar', direccion: 'Mineral de la Reforma Carr. Pachuca-Cd. Sahagun # 930 Col, 42186 Las Águilas, Hgo.', telefono: '+527711403077' },
+  { id: 'w2', nombre: 'Monar', direccion: 'Blvd. del Minero 1010-A-1010-A, Javier Rojo Gómez, 42030 Pachuca de Soto, Hgo.', telefono: '+527713890307' },
+  { id: 'w3', nombre: 'Monzalvo', direccion: 'Blvd. del Minero 1010-Local B, Javier Rojo Gómez, 42030 Pachuca de Soto, Hgo.', telefono: '+527714746240' },
+  { id: 'w4', nombre: 'San Antonio', direccion: 'México - Pachuca 1002, San Antonio, 42083 Pachuca de Soto, Hgo.', telefono: '+527711333326' },
+  { id: 'w5', nombre: 'Memos Car', direccion: 'Blvd Everardo Márquez 909, Ex Hacienda de Coscotitlán, 42086 Pachuca de Soto, Hgo.', telefono: '+527711072836' },
 ];
 
 // Mock users
