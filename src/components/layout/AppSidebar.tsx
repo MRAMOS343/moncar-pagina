@@ -149,7 +149,7 @@ export function AppSidebar({ currentUser, onLogout }: AppSidebarProps) {
                       {!collapsed && (
                         <div className="flex flex-col items-start gap-0.5 min-w-0">
                           <span className="font-medium truncate w-full">{item.title}</span>
-                          <span className="text-xs text-muted-foreground leading-tight line-clamp-1">
+                          <span className="text-xs leading-tight line-clamp-1">
                             {item.description}
                           </span>
                         </div>
