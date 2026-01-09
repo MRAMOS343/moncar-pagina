@@ -17,9 +17,5 @@ export default function LoginPage() {
     return <Navigate to="/dashboard" replace />;
   }
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
-      <LoginForm onLogin={login} />
-    </div>
-  );
+  return <LoginForm onLogin={login} />;
 }

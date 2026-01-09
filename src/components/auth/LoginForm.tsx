@@ -55,7 +55,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md animate-fade-in border-0 shadow-none bg-transparent">
         <CardHeader className="text-center space-y-4">
           <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center bg-red-600">
