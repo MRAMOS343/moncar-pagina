@@ -118,7 +118,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
 
         <CardFooter className="flex flex-col space-y-2">
           <p className="text-xs text-muted-foreground text-center">
-            Sistema de Gestión Moncar - v5.3
+            Sistema de Gestión Moncar - v7
           </p>
         </CardFooter>
       </Card>
