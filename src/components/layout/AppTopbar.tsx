@@ -31,6 +31,7 @@ import { NotificationsPanel } from "./NotificationsPanel";
 interface AppTopbarProps {
   breadcrumbs: Array<{ label: string; href?: string }>;
   warehouses: Warehouse[];
+  warehousesLoading?: boolean;
   currentWarehouse: string;
   onWarehouseChange: (warehouseId: string) => void;
   currentUser: User | null;
@@ -43,6 +44,7 @@ interface AppTopbarProps {
 export function AppTopbar({
   breadcrumbs,
   warehouses,
+  warehousesLoading,
   currentWarehouse,
   onWarehouseChange,
   currentUser,
@@ -128,9 +130,9 @@ export function AppTopbar({
         </div>
 
         {/* Warehouse Selector */}
-        <Select value={currentWarehouse} onValueChange={onWarehouseChange}>
+        <Select value={currentWarehouse} onValueChange={onWarehouseChange} disabled={warehousesLoading}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="Sucursal" />
+            <SelectValue placeholder={warehousesLoading ? "Cargando..." : "Sucursal"} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas las Sucursales</SelectItem>

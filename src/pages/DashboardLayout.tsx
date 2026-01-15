@@ -5,7 +5,7 @@ import { AppSidebar } from '../components/layout/AppSidebar';
 import { AppTopbar } from '../components/layout/AppTopbar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { mockWarehouses } from '../data/mockData';
+import { useWarehouses } from '@/hooks/useWarehouses';
 import { toast } from '@/hooks/use-toast';
 
 const routeLabels: Record<string, string> = {
@@ -22,6 +22,7 @@ const routeLabels: Record<string, string> = {
 
 export function DashboardLayout() {
   const { currentUser, updateUserRole, logout } = useAuth();
+  const { data: warehouses = [], isLoading: warehousesLoading } = useWarehouses();
   const location = useLocation();
   const navigate = useNavigate();
   const [currentWarehouse, setCurrentWarehouse] = useLocalStorage('autoparts_warehouse', 'w1');
@@ -74,7 +75,7 @@ export function DashboardLayout() {
         description: "Mostrando información de todas las sucursales",
       });
     } else {
-      const warehouse = mockWarehouses.find(w => w.id === warehouseId);
+      const warehouse = warehouses.find(w => w.id === warehouseId);
       toast({
         title: "Sucursal cambiada",
         description: `Ahora trabajando en ${warehouse?.nombre}`,
@@ -166,7 +167,8 @@ export function DashboardLayout() {
         <SidebarInset className="flex-1 flex flex-col min-w-0">
           <AppTopbar
             breadcrumbs={generateBreadcrumbs()}
-            warehouses={mockWarehouses}
+            warehouses={warehouses}
+            warehousesLoading={warehousesLoading}
             currentWarehouse={currentWarehouse}
             onWarehouseChange={handleWarehouseChange}
             currentUser={currentUser}
