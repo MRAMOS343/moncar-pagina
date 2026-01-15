@@ -137,14 +137,16 @@ export function AppTopbar({
                 ? "Cargando..."
                 : currentWarehouse === "all"
                   ? "Todas las Sucursales"
-                  : warehouses.find((w) => w.id === currentWarehouse)?.nombre ?? "Sucursal"}
+                  : (warehouses.find((w) => w.id === currentWarehouse)?.nombre?.trim() ??
+                    warehouses.find((w) => w.id === currentWarehouse)?.nombre ??
+                    "Sucursal")}
             </span>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas las Sucursales</SelectItem>
             {warehouses.map((warehouse) => (
               <SelectItem key={warehouse.id} value={warehouse.id}>
-                {warehouse.nombre}
+                {(warehouse.nombre?.trim() ?? warehouse.nombre) as any}
               </SelectItem>
             ))}
           </SelectContent>
