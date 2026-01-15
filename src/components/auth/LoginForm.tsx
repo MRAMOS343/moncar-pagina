@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Package } from "lucide-react";
+import { BuildInfo } from "@/components/BuildInfo";
 
 interface LoginFormProps {
   onLogin: (email: string, password: string) => Promise<boolean>;
@@ -117,9 +118,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
         </CardContent>
 
         <CardFooter className="flex flex-col space-y-2">
-          <p className="text-xs text-muted-foreground text-center">
-            Sistema de Gestión Moncar - v7
-          </p>
+          <BuildInfo />
         </CardFooter>
       </Card>
     </div>
