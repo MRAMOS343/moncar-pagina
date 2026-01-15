@@ -132,7 +132,13 @@ export function AppTopbar({
         {/* Warehouse Selector */}
         <Select value={currentWarehouse} onValueChange={onWarehouseChange} disabled={warehousesLoading}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder={warehousesLoading ? "Cargando..." : "Sucursal"} />
+            <span className={warehousesLoading ? "flex-1 truncate text-muted-foreground" : "flex-1 truncate"}>
+              {warehousesLoading
+                ? "Cargando..."
+                : currentWarehouse === "all"
+                  ? "Todas las Sucursales"
+                  : warehouses.find((w) => w.id === currentWarehouse)?.nombre ?? "Sucursal"}
+            </span>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas las Sucursales</SelectItem>
