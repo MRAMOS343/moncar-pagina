@@ -3,13 +3,26 @@
  */
 
 /**
- * Formatea un número como moneda mexicana
+ * Convierte string/number a number de forma segura
+ * Útil para valores que vienen como string desde Postgres (numeric)
  */
-export function formatCurrency(value: number): string {
+export function toNumber(value: string | number | undefined | null): number {
+  if (value === undefined || value === null) return 0;
+  if (typeof value === "number") return value;
+  const parsed = Number(value);
+  return isNaN(parsed) ? 0 : parsed;
+}
+
+/**
+ * Formatea un número como moneda mexicana
+ * Acepta string o number (convierte automáticamente)
+ */
+export function formatCurrency(value: number | string): string {
+  const num = toNumber(value);
   return new Intl.NumberFormat('es-MX', { 
     style: 'currency', 
     currency: 'MXN' 
-  }).format(value);
+  }).format(num);
 }
 
 /**
