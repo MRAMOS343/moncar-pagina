@@ -12,9 +12,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ResponsiveTable } from '@/components/ui/responsive-table';
 import { Plus, Download, ShoppingBag, Filter, AlertCircle, RefreshCw } from 'lucide-react';
 import { LazyLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from '@/components/charts/LazyLineChart';
-import { useData } from '@/contexts/DataContext';
 import { getVentasColumns } from '@/config/tableColumns';
-import { User, KPIData, ChartDataPoint } from '../types';
+import { User, KPIData, ChartDataPoint, Warehouse } from '../types';
 import { format, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { exportToCSV } from '@/utils/exportCSV';
@@ -34,11 +33,11 @@ interface ContextType {
   currentWarehouse: string;
   searchQuery: string;
   currentUser: User;
+  warehouses: Warehouse[];
 }
 
 export default function VentasPage() {
-  const { currentWarehouse, currentUser } = useOutletContext<ContextType>();
-  const { getWarehouseById } = useData();
+  const { currentWarehouse, currentUser, warehouses } = useOutletContext<ContextType>();
   const isMobile = useIsMobile();
 
   // Estados para filtros
@@ -221,7 +220,7 @@ export default function VentasPage() {
             Registro de ventas en {
               currentWarehouse === 'all' 
                 ? 'Todas las Sucursales' 
-                : getWarehouseById(currentWarehouse)?.nombre || currentWarehouse
+                : warehouses.find(w => w.id === currentWarehouse)?.nombre?.trim() || currentWarehouse
             }
           </p>
         </div>

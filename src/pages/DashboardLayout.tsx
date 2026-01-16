@@ -25,9 +25,20 @@ export function DashboardLayout() {
   const { data: warehouses = [], isLoading: warehousesLoading } = useWarehouses();
   const location = useLocation();
   const navigate = useNavigate();
-  const [currentWarehouse, setCurrentWarehouse] = useLocalStorage('autoparts_warehouse', 'w1');
+  const [currentWarehouse, setCurrentWarehouse] = useLocalStorage('autoparts_warehouse', 'all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isDarkMode, setIsDarkMode] = useLocalStorage('autoparts_dark_mode', false);
+
+  // Autocorregir si el warehouse guardado ya no existe en la API
+  useEffect(() => {
+    if (warehousesLoading) return;
+    if (currentWarehouse === 'all') return;
+    
+    const exists = warehouses.some(w => w.id === currentWarehouse);
+    if (!exists) {
+      setCurrentWarehouse('all');
+    }
+  }, [warehousesLoading, warehouses, currentWarehouse, setCurrentWarehouse]);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -182,7 +193,8 @@ export function DashboardLayout() {
             <Outlet context={{ 
               currentWarehouse, 
               searchQuery, 
-              currentUser 
+              currentUser,
+              warehouses,
             }} />
           </main>
         </SidebarInset>
