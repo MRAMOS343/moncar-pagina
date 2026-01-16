@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LazyLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from "@/components/charts/LazyLineChart";
 import { LazyPieChart, Pie, Cell } from "@/components/charts/LazyPieChart";
-import { TrendingUp, ShoppingCart, Package, Store, AlertTriangle, Plus, Clock } from "lucide-react";
+import { TrendingUp, ShoppingCart, Package, Store, AlertTriangle, Plus, Clock, CreditCard } from "lucide-react";
 import { User, KPIData, Warehouse } from "@/types";
 import { ProductModal } from "@/components/modals/ProductModal";
 import { COLORES_GRAFICOS } from "@/constants";
@@ -15,6 +15,7 @@ import { ChartSkeleton } from "@/components/ui/chart-skeleton";
 import { SUCCESS_MESSAGES } from "@/constants/messages";
 import { toast } from "@/hooks/use-toast";
 import { useDashboardSales } from "@/hooks/useDashboardSales";
+import { useDashboardPaymentMethods } from "@/hooks/useDashboardPaymentMethods";
 import { dashboardKpiService } from "@/services/dashboardKpiService";
 import { format, subDays } from "date-fns";
 import { formatCurrency } from "@/utils/formatters";
@@ -37,6 +38,15 @@ export default function DashboardPage() {
     sucursal_id: currentWarehouse === 'all' ? undefined : currentWarehouse,
   });
 
+  // Determinar si es sucursal específica
+  const isSpecificWarehouse = currentWarehouse !== 'all';
+
+  // Obtener métodos de pago solo cuando hay sucursal específica
+  const { 
+    data: paymentMethodsData = [], 
+    isLoading: paymentMethodsLoading 
+  } = useDashboardPaymentMethods(salesData, isSpecificWarehouse);
+
   // Cálculo de KPIs desde datos reales
   const kpisGlobales = useMemo((): KPIData[] => {
     return dashboardKpiService.calculateKPIs(salesData);
@@ -47,10 +57,25 @@ export default function DashboardPage() {
     return dashboardKpiService.calculateTrend(salesData, 7);
   }, [salesData]);
 
-  // Ventas por sucursal (reemplaza métodos de pago que no están en la API)
+  // Ventas por sucursal
   const datosPorSucursal = useMemo(() => {
     return dashboardKpiService.calculateBySucursal(salesData, warehouses);
   }, [salesData, warehouses]);
+
+  // Datos dinámicos para el gráfico circular
+  const pieChartData = useMemo(() => {
+    return isSpecificWarehouse ? paymentMethodsData : datosPorSucursal;
+  }, [isSpecificWarehouse, paymentMethodsData, datosPorSucursal]);
+
+  const pieChartConfig = useMemo(() => ({
+    title: isSpecificWarehouse ? "Métodos de Pago" : "Ventas por Sucursal",
+    description: isSpecificWarehouse 
+      ? "Distribución de pagos por método" 
+      : "Distribución de ventas por sucursal",
+    icon: isSpecificWarehouse ? CreditCard : Store,
+    emptyIcon: isSpecificWarehouse ? CreditCard : Store,
+    emptyText: isSpecificWarehouse ? "No hay datos de pagos" : "No hay datos de ventas",
+  }), [isSpecificWarehouse]);
 
   // Últimas ventas recientes
   const ventasRecientes = useMemo(() => {
@@ -169,22 +194,26 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            {/* Gráfico de ventas por sucursal */}
+            {/* Gráfico circular dinámico */}
             <Card className="card-hover animate-fade-in">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Store className="w-5 h-5" />
-                  Ventas por Sucursal
+                  <pieChartConfig.icon className="w-5 h-5" />
+                  {pieChartConfig.title}
                 </CardTitle>
                 <CardDescription>
-                  Distribución de ventas por sucursal
+                  {pieChartConfig.description}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {datosPorSucursal.length > 0 ? (
+                {(isSpecificWarehouse && paymentMethodsLoading) ? (
+                  <div className="h-[320px] flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                  </div>
+                ) : pieChartData.length > 0 ? (
                   <LazyPieChart height={320}>
                     <Pie
-                      data={datosPorSucursal}
+                      data={pieChartData}
                       cx="50%"
                       cy="50%"
                       outerRadius={100}
@@ -210,7 +239,7 @@ export default function DashboardPage() {
                         );
                       }}
                     >
-                      {datosPorSucursal.map((entry, index) => (
+                      {pieChartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORES_GRAFICOS[index % COLORES_GRAFICOS.length]} />
                       ))}
                     </Pie>
@@ -221,13 +250,13 @@ export default function DashboardPage() {
                         borderRadius: '8px',
                         color: 'hsl(var(--foreground))'
                       }}
-                      formatter={(value: number) => [formatCurrency(value), 'Ventas']}
+                      formatter={(value: number) => [formatCurrency(value), isSpecificWarehouse ? 'Monto' : 'Ventas']}
                     />
                   </LazyPieChart>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-[320px] text-muted-foreground">
-                    <Store className="w-12 h-12 mb-2 opacity-50" />
-                    <p>No hay datos de ventas</p>
+                    <pieChartConfig.emptyIcon className="w-12 h-12 mb-2 opacity-50" />
+                    <p>{pieChartConfig.emptyText}</p>
                   </div>
                 )}
               </CardContent>
