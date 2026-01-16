@@ -2,29 +2,33 @@ import { useState, useMemo, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { KPICard } from '@/components/ui/kpi-card';
-import { getProductByIdSafe, hasItems } from '@/utils/safeData';
 import { logger } from '@/utils/logger';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ResponsiveTable } from '@/components/ui/responsive-table';
-import { Plus, Download, ShoppingBag, Filter } from 'lucide-react';
+import { Plus, Download, ShoppingBag, Filter, AlertCircle, RefreshCw } from 'lucide-react';
 import { LazyLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from '@/components/charts/LazyLineChart';
 import { useData } from '@/contexts/DataContext';
-import { useProductCache } from '@/hooks/useProductCache';
 import { getVentasColumns } from '@/config/tableColumns';
-import { Sale, User, KPIData, ChartDataPoint } from '../types';
-import { format, startOfDay, subDays } from 'date-fns';
+import { User, KPIData, ChartDataPoint } from '../types';
+import { format, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { exportToCSV } from '@/utils/exportCSV';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { ChartSkeleton } from '@/components/ui/chart-skeleton';
 import { KPISkeleton } from '@/components/ui/kpi-skeleton';
-import { useLoadingState } from '@/hooks/useLoadingState';
 import { showSuccessToast, showErrorToast, showInfoToast } from '@/utils/toastHelpers';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useSales } from '@/hooks/useSales';
+import { SaleDetailModal } from '@/components/modals/SaleDetailModal';
+import { toNumber, formatCurrency } from '@/utils/formatters';
+import type { SaleListItem } from '@/types/sales';
 
 interface ContextType {
   currentWarehouse: string;
@@ -34,94 +38,94 @@ interface ContextType {
 
 export default function VentasPage() {
   const { currentWarehouse, currentUser } = useOutletContext<ContextType>();
-  const { sales, getWarehouseById } = useData();
-  const { getProductName } = useProductCache();
-  
-  // Memoize getProductName to prevent unnecessary re-renders
-  const getProductNameMemo = useCallback((id: string) => getProductName(id), [getProductName]);
-  const [selectedMetodoPago, setSelectedMetodoPago] = useState<string>('all');
-  const [dateRange, setDateRange] = useState<string>('30d');
-  const { isLoading } = useLoadingState({ minLoadingTime: 1000 });
+  const { getWarehouseById } = useData();
   const isMobile = useIsMobile();
 
-  // Filter sales data
-  const filteredSales = useMemo(() => {
+  // Estados para filtros
+  const [dateRange, setDateRange] = useState<string>('30d');
+  const [includeCancelled, setIncludeCancelled] = useState(false);
+  
+  // Estado para modal de detalle
+  const [selectedSaleId, setSelectedSaleId] = useState<number | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+
+  // Calcular fecha "from" basado en dateRange
+  const fromDate = useMemo(() => {
     const now = new Date();
-    let startDate: Date;
-    
     switch (dateRange) {
       case '7d':
-        startDate = subDays(now, 7);
-        break;
+        return format(subDays(now, 7), 'yyyy-MM-dd');
       case '30d':
-        startDate = subDays(now, 30);
-        break;
+        return format(subDays(now, 30), 'yyyy-MM-dd');
       case '90d':
-        startDate = subDays(now, 90);
-        break;
+        return format(subDays(now, 90), 'yyyy-MM-dd');
       default:
-        startDate = subDays(now, 30);
+        return format(subDays(now, 30), 'yyyy-MM-dd');
     }
+  }, [dateRange]);
 
-    return sales
-      .filter(sale => currentWarehouse === 'all' || sale.warehouseId === currentWarehouse)
-      .filter(sale => new Date(sale.fechaISO) >= startDate)
-      .filter(sale => selectedMetodoPago && selectedMetodoPago !== 'all' ? sale.metodoPago === selectedMetodoPago : true)
-      .sort((a, b) => new Date(b.fechaISO).getTime() - new Date(a.fechaISO).getTime());
-  }, [sales, currentWarehouse, selectedMetodoPago, dateRange]);
+  // Hook para obtener ventas desde API real
+  const { 
+    data, 
+    fetchNextPage, 
+    hasNextPage, 
+    isFetchingNextPage, 
+    isLoading, 
+    error, 
+    refetch 
+  } = useSales({
+    from: fromDate,
+    sucursal_id: currentWarehouse === 'all' ? undefined : currentWarehouse,
+    include_cancelled: includeCancelled,
+  });
 
-  // Calculate KPIs
+  // Aplanar páginas de datos
+  const salesData = useMemo(() => {
+    if (!data?.pages) return [];
+    return data.pages.flatMap(page => page.items);
+  }, [data]);
+
+  // Calcular KPIs desde datos reales
   const kpis: KPIData[] = useMemo(() => {
-    const totalVentas = filteredSales.reduce((sum, sale) => sum + sale.total, 0);
-    const avgTicket = totalVentas / (filteredSales.length || 1);
-    
-    // Calculate top product
-    const productSales: Record<string, number> = {};
-    filteredSales.forEach(sale => {
-      sale.items.forEach(item => {
-        productSales[item.productId] = (productSales[item.productId] || 0) + item.qty;
-      });
-    });
-    
-    const topProductId = Object.entries(productSales)
-      .sort(([,a], [,b]) => b - a)[0]?.[0];
-    const topProductName = topProductId ? getProductNameMemo(topProductId).split(' - ')[0] : 'Sin datos';
+    const totalVentas = salesData.reduce((sum, sale) => sum + toNumber(sale.total), 0);
+    const ventasActivas = salesData.filter(s => !s.cancelada);
+    const avgTicket = totalVentas / (ventasActivas.length || 1);
 
     return [
       {
         label: 'Ventas Totales',
         value: totalVentas,
-        change: 15.2,
-        changeType: 'positive',
-        format: 'currency'
+        change: 0, // Sin comparativo por ahora
+        changeType: 'neutral' as const,
+        format: 'currency' as const
       },
       {
         label: 'Ticket Promedio',
         value: avgTicket,
-        change: -2.1,
-        changeType: 'negative',
-        format: 'currency'
+        change: 0,
+        changeType: 'neutral' as const,
+        format: 'currency' as const
       },
       {
-        label: 'Producto Top',
-        value: topProductName,
-        change: 8.5,
-        changeType: 'positive'
+        label: 'Transacciones',
+        value: salesData.length,
+        change: 0,
+        changeType: 'neutral' as const,
       }
     ];
-  }, [filteredSales, getProductNameMemo]);
+  }, [salesData]);
 
-  // Generate chart data
+  // Generar datos para gráfico
   const chartData: ChartDataPoint[] = useMemo(() => {
-    if (!hasItems(filteredSales)) {
-      return [];
-    }
+    if (salesData.length === 0) return [];
     
     const salesByDay: Record<string, number> = {};
     
-    filteredSales.forEach(sale => {
-      const day = format(new Date(sale.fechaISO), 'yyyy-MM-dd');
-      salesByDay[day] = (salesByDay[day] || 0) + sale.total;
+    salesData.forEach(sale => {
+      if (!sale.cancelada) {
+        const day = format(new Date(sale.fecha_emision), 'yyyy-MM-dd');
+        salesByDay[day] = (salesByDay[day] || 0) + toNumber(sale.total);
+      }
     });
 
     return Object.entries(salesByDay)
@@ -130,7 +134,13 @@ export default function VentasPage() {
         date: format(new Date(date), 'dd/MM', { locale: es }),
         value
       }));
-  }, [filteredSales]);
+  }, [salesData]);
+
+  // Handlers
+  const handleViewDetail = useCallback((ventaId: number) => {
+    setSelectedSaleId(ventaId);
+    setDetailOpen(true);
+  }, []);
 
   const handleCreateSale = () => {
     if (currentUser.role === 'admin' || currentUser.role === 'gerente' || currentUser.role === 'cajero') {
@@ -146,33 +156,22 @@ export default function VentasPage() {
     }
   };
 
-  const getMetodoPagoBadge = (metodo: Sale['metodoPago']) => {
-    const variants = {
-      efectivo: 'default',
-      tarjeta: 'secondary',
-      transferencia: 'outline',
-      credito: 'destructive'
-    } as const;
-
-    return <Badge variant={variants[metodo]}>{metodo}</Badge>;
-  };
-
   const handleExportCSV = () => {
     logger.info('Exportación de ventas iniciada', {
-      cantidadVentas: filteredSales.length,
+      cantidadVentas: salesData.length,
       dateRange
     });
     
     exportToCSV(
-      filteredSales.map(sale => ({
-        ID: sale.id,
-        Fecha: format(new Date(sale.fechaISO), 'dd/MM/yyyy HH:mm', { locale: es }),
-        Vendedor: sale.vendedor || 'Sin asignar',
-        MetodoPago: sale.metodoPago,
-        Subtotal: sale.subtotal,
-        IVA: sale.iva,
-        Total: sale.total,
-        Items: sale.items.length
+      salesData.map(sale => ({
+        ID: sale.venta_id,
+        Fecha: format(new Date(sale.fecha_emision), 'dd/MM/yyyy HH:mm', { locale: es }),
+        Sucursal: sale.sucursal_id,
+        Caja: sale.caja_id,
+        Subtotal: toNumber(sale.subtotal),
+        IVA: toNumber(sale.impuesto),
+        Total: toNumber(sale.total),
+        Estado: sale.cancelada ? 'Cancelada' : 'Activa'
       })),
       `ventas_${dateRange}_${new Date().toISOString().split('T')[0]}`
     );
@@ -185,6 +184,33 @@ export default function VentasPage() {
     logger.info('Exportación de ventas completada exitosamente');
   };
 
+  // Columnas de tabla
+  const columns = useMemo(() => getVentasColumns(handleViewDetail), [handleViewDetail]);
+
+  // Render de card móvil
+  const mobileCardRender = useCallback((sale: SaleListItem) => (
+    <div className="space-y-2" onClick={() => handleViewDetail(sale.venta_id)}>
+      <div className="flex justify-between items-start">
+        <div>
+          <p className="font-mono text-xs text-muted-foreground">#{sale.venta_id}</p>
+          <p className="font-medium text-lg">{formatCurrency(sale.total)}</p>
+        </div>
+        {sale.cancelada ? (
+          <Badge variant="destructive">Cancelada</Badge>
+        ) : (
+          <Badge variant="outline" className="text-green-600 border-green-600">Activa</Badge>
+        )}
+      </div>
+      <div className="text-sm text-muted-foreground space-y-1">
+        <p>{format(new Date(sale.fecha_emision), 'dd/MM/yyyy HH:mm', { locale: es })}</p>
+        <div className="flex items-center justify-between pt-1">
+          <span>Sucursal: {sale.sucursal_id}</span>
+          <span className="text-xs">Caja: {sale.caja_id}</span>
+        </div>
+      </div>
+    </div>
+  ), [handleViewDetail]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -195,7 +221,7 @@ export default function VentasPage() {
             Registro de ventas en {
               currentWarehouse === 'all' 
                 ? 'Todas las Sucursales' 
-                : getWarehouseById(currentWarehouse)?.nombre || 'Sucursal no encontrada'
+                : getWarehouseById(currentWarehouse)?.nombre || currentWarehouse
             }
           </p>
         </div>
@@ -210,6 +236,20 @@ export default function VentasPage() {
           </Button>
         </div>
       </div>
+
+      {/* Error state */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>Error al cargar ventas: {error.message}</span>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Reintentar
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -238,22 +278,28 @@ export default function VentasPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <LazyLineChart data={chartData} height={320}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip 
-                formatter={(value: number) => [`$${value.toFixed(2)}`, 'Ventas']}
-                labelFormatter={(label) => `Fecha: ${label}`}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="value" 
-                stroke="hsl(var(--primary))" 
-                strokeWidth={2}
-                dot={{ fill: 'hsl(var(--primary))' }}
-              />
-            </LazyLineChart>
+            {chartData.length > 0 ? (
+              <LazyLineChart data={chartData} height={320}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip 
+                  formatter={(value: number) => [formatCurrency(value), 'Ventas']}
+                  labelFormatter={(label) => `Fecha: ${label}`}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke="hsl(var(--primary))" 
+                  strokeWidth={2}
+                  dot={{ fill: 'hsl(var(--primary))' }}
+                />
+              </LazyLineChart>
+            ) : (
+              <div className="h-[320px] flex items-center justify-center text-muted-foreground">
+                No hay datos para mostrar
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -284,25 +330,20 @@ export default function VentasPage() {
                   </Select>
                 </div>
                 
-                <div className="space-y-2">
-                  <label className="text-base font-medium">Método de Pago</label>
-                  <Select value={selectedMetodoPago} onValueChange={setSelectedMetodoPago}>
-                    <SelectTrigger className="mobile-select">
-                      <SelectValue placeholder="Todos los métodos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos los métodos</SelectItem>
-                      <SelectItem value="efectivo">Efectivo</SelectItem>
-                      <SelectItem value="tarjeta">Tarjeta</SelectItem>
-                      <SelectItem value="transferencia">Transferencia</SelectItem>
-                      <SelectItem value="credito">Crédito</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="include-cancelled-mobile" className="text-base font-medium">
+                    Incluir canceladas
+                  </Label>
+                  <Switch 
+                    id="include-cancelled-mobile"
+                    checked={includeCancelled} 
+                    onCheckedChange={setIncludeCancelled} 
+                  />
                 </div>
 
                 <Button 
                   onClick={() => {
-                    setSelectedMetodoPago('all');
+                    setIncludeCancelled(false);
                     setDateRange('30d');
                   }} 
                   variant="outline"
@@ -319,11 +360,11 @@ export default function VentasPage() {
           <CardHeader>
             <CardTitle>Filtros</CardTitle>
             <CardDescription>
-              Filtra las ventas por período y método de pago
+              Filtra las ventas por período y estado
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Período</label>
                 <Select value={dateRange} onValueChange={setDateRange}>
@@ -338,34 +379,25 @@ export default function VentasPage() {
                 </Select>
               </div>
               
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Método de Pago</label>
-                <Select value={selectedMetodoPago} onValueChange={setSelectedMetodoPago}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todos los métodos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos los métodos</SelectItem>
-                    <SelectItem value="efectivo">Efectivo</SelectItem>
-                    <SelectItem value="tarjeta">Tarjeta</SelectItem>
-                    <SelectItem value="transferencia">Transferencia</SelectItem>
-                    <SelectItem value="credito">Crédito</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="flex items-center gap-3 h-10">
+                <Switch 
+                  id="include-cancelled"
+                  checked={includeCancelled} 
+                  onCheckedChange={setIncludeCancelled} 
+                />
+                <Label htmlFor="include-cancelled">Incluir canceladas</Label>
               </div>
 
-              <div className="flex items-end">
-                <Button 
-                  onClick={() => {
-                    setSelectedMetodoPago('all');
-                    setDateRange('30d');
-                  }} 
-                  variant="outline"
-                  className="w-full"
-                >
-                  Limpiar filtros
-                </Button>
-              </div>
+              <Button 
+                onClick={() => {
+                  setIncludeCancelled(false);
+                  setDateRange('30d');
+                }} 
+                variant="outline"
+                className="w-full"
+              >
+                Limpiar filtros
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -378,7 +410,8 @@ export default function VentasPage() {
             <div>
               <CardTitle>Registro de Ventas</CardTitle>
               <CardDescription>
-                {filteredSales.length} ventas encontradas
+                {salesData.length} ventas encontradas
+                {hasNextPage && ' (hay más disponibles)'}
               </CardDescription>
             </div>
           </div>
@@ -386,7 +419,7 @@ export default function VentasPage() {
         <CardContent className="p-0">
           {isLoading ? (
             <TableSkeleton rows={10} columns={8} />
-          ) : filteredSales.length === 0 ? (
+          ) : salesData.length === 0 ? (
             <EmptyState
               icon={ShoppingBag}
               title="No hay ventas registradas"
@@ -397,32 +430,43 @@ export default function VentasPage() {
               }}
             />
           ) : (
-            <ResponsiveTable
-              data={filteredSales}
-              columns={getVentasColumns(getMetodoPagoBadge)}
-              mobileCardRender={(sale) => (
-                <div className="space-y-2">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-mono text-xs text-muted-foreground">{sale.id}</p>
-                      <p className="font-medium text-lg">${sale.total.toFixed(2)}</p>
-                    </div>
-                    {getMetodoPagoBadge(sale.metodoPago)}
-                  </div>
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <p>{format(new Date(sale.fechaISO), 'dd/MM/yyyy HH:mm', { locale: es })}</p>
-                    <p>Vendedor: {sale.vendedor || 'Sin asignar'}</p>
-                    <div className="flex items-center justify-between pt-1">
-                      <span>{sale.items.length} items</span>
-                      <span className="text-xs">IVA: ${sale.iva.toFixed(2)}</span>
-                    </div>
-                  </div>
+            <>
+              <ResponsiveTable
+                data={salesData}
+                columns={columns}
+                mobileCardRender={mobileCardRender}
+              />
+              
+              {/* Load more button */}
+              {hasNextPage && (
+                <div className="p-4 text-center border-t">
+                  <Button 
+                    onClick={() => fetchNextPage()} 
+                    disabled={isFetchingNextPage}
+                    variant="outline"
+                  >
+                    {isFetchingNextPage ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Cargando...
+                      </>
+                    ) : (
+                      'Cargar más ventas'
+                    )}
+                  </Button>
                 </div>
               )}
-            />
+            </>
           )}
         </CardContent>
       </Card>
+
+      {/* Modal de detalle */}
+      <SaleDetailModal 
+        ventaId={selectedSaleId}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+      />
     </div>
   );
 }
