@@ -12,6 +12,13 @@ interface PaymentMethodData {
 }
 
 const PAYMENT_METHOD_NAMES: Record<string, string> = {
+  // Códigos abreviados del API
+  efe: "Efectivo",
+  cre: "Crédito",
+  deb: "Débito",
+  tra: "Transferencia",
+  tar: "Tarjeta",
+  // Nombres completos (por si el API cambia)
   efectivo: "Efectivo",
   credito: "Crédito",
   debito: "Débito",
