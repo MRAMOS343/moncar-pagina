@@ -1,5 +1,5 @@
 import { apiRequest } from "./apiClient";
-import type { ProductsListResponse, ProductDetailResponse } from "@/types/products";
+import type { ProductsListResponse, ProductDetailResponse, ProductUpdateRequest, ProductUpdateResponse } from "@/types/products";
 
 interface FetchProductsParams {
   limit?: number;
@@ -29,4 +29,15 @@ export async function fetchProductBySku(
   sku: string
 ): Promise<ProductDetailResponse> {
   return apiRequest<ProductDetailResponse>(`/products/${encodeURIComponent(sku)}`, { token });
+}
+
+export async function updateProduct(
+  token: string,
+  sku: string,
+  data: ProductUpdateRequest
+): Promise<ProductUpdateResponse> {
+  return apiRequest<ProductUpdateResponse>(
+    `/products/${encodeURIComponent(sku)}`,
+    { method: 'PATCH', token, body: data }
+  );
 }

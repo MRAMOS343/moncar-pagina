@@ -70,3 +70,67 @@ export interface TechSheetListResponse {
   items: TechSheet[];
   next_cursor: number | null;
 }
+
+// === INVENTARIO - Ajuste de stock ===
+export interface InventoryAdjustRequest {
+  sku: string;
+  almacen: string;
+  delta: number;
+  motivo: string;
+  referencia?: string;
+}
+
+export interface InventoryAdjustResponse {
+  ok: boolean;
+  sku: string;
+  almacen: string;
+  existencia: string;
+  movimiento_id: string;
+}
+
+// === PRODUCTOS - Edición parcial ===
+export interface ProductUpdateRequest {
+  descrip?: string;
+  marca?: string;
+  linea?: string;
+  unidad?: string;
+  ubicacion?: string;
+  clasificacion?: string;
+  notes?: string;
+  image_url?: string;
+  precio1?: number;
+  impuesto?: number;
+  minimo?: number;
+  maximo?: number;
+  costo_u?: number;
+}
+
+export interface ProductUpdateResponse {
+  ok: boolean;
+  item: ApiProduct;
+}
+
+// === FICHAS TÉCNICAS - Edición ===
+export interface TechSheetUpdateRequest {
+  notas_generales?: string;
+}
+
+export interface TechSheetAttributeRequest {
+  nombre_atributo: string;
+  valor: string;
+  unidad?: string;
+}
+
+export interface TechSheetAttributeResponse {
+  ok: boolean;
+  atributo: TechSheetAttribute;
+}
+
+export interface TechSheetBulkAttributesRequest {
+  atributos: TechSheetAttributeRequest[];
+}
+
+export interface TechSheetBulkAttributesResponse {
+  ok: boolean;
+  atributos: TechSheetAttribute[];
+}
