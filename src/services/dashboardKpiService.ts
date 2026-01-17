@@ -54,19 +54,44 @@ export const dashboardKpiService = {
    */
   calculateTrend(sales: SaleListItem[], days: number = 7) {
     const today = new Date();
+    today.setHours(12, 0, 0, 0); // Normalizar a mediodía para evitar problemas de zona horaria
+    
+    // DEBUG: Ver qué ventas llegan
+    console.log('[DEBUG] Total ventas recibidas:', sales.length);
+    console.log('[DEBUG] Rango de fechas en ventas:', 
+      sales.map(s => s.fecha_emision).sort()
+    );
+    
     const fechas = Array.from({ length: days }, (_, i) => {
       const fecha = new Date(today);
       fecha.setDate(fecha.getDate() - (days - 1 - i));
       return fecha.toISOString().split('T')[0];
     });
 
+    console.log('[DEBUG] Fechas generadas para el gráfico:', fechas);
+
     return fechas.map(fecha => {
-      const totalDia = sales
-        .filter(venta => !venta.cancelada && venta.fecha_emision.startsWith(fecha))
-        .reduce((suma, venta) => suma + toNumber(venta.total), 0);
+      const ventasDelDia = sales.filter(venta => {
+        if (venta.cancelada) return false;
+        // Extraer solo la fecha YYYY-MM-DD de fecha_emision
+        const fechaVenta = venta.fecha_emision.split('T')[0];
+        return fechaVenta === fecha;
+      });
+      
+      // DEBUG: Ver qué ventas coinciden por fecha
+      if (ventasDelDia.length > 0) {
+        console.log(`[DEBUG] ${fecha}: ${ventasDelDia.length} ventas`);
+      }
+      
+      const totalDia = ventasDelDia.reduce(
+        (suma, venta) => suma + toNumber(venta.total), 0
+      );
       
       return {
-        date: new Date(fecha).toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' }),
+        date: new Date(fecha + 'T12:00:00').toLocaleDateString('es-MX', { 
+          day: '2-digit', 
+          month: '2-digit' 
+        }),
         value: totalDia,
         fullDate: fecha
       };
