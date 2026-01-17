@@ -1,5 +1,5 @@
 import { apiRequest } from "./apiClient";
-import type { InventoryResponse } from "@/types/products";
+import type { InventoryResponse, InventoryAdjustRequest, InventoryAdjustResponse } from "@/types/products";
 
 interface FetchInventoryParams {
   sku?: string;
@@ -26,4 +26,15 @@ export async function fetchInventory(
   }
 
   return apiRequest<InventoryResponse>(`/inventario?${searchParams}`, { token });
+}
+
+export async function adjustInventory(
+  token: string,
+  data: InventoryAdjustRequest
+): Promise<InventoryAdjustResponse> {
+  return apiRequest<InventoryAdjustResponse>('/inventario/adjust', {
+    method: 'POST',
+    token,
+    body: data,
+  });
 }
