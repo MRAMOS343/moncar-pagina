@@ -1,25 +1,24 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { KPICard } from '@/components/ui/kpi-card';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { DataTable, Columna } from '@/components/ui/data-table';
+import { DataTable } from '@/components/ui/data-table';
 import { ProductModal } from '@/components/modals/ProductModal';
 import { ProductCardGrid } from '@/components/inventory/ProductCardGrid';
 import { ProductDetailModal } from '@/components/inventory/ProductDetailModal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Download, Upload, AlertTriangle, Package, TrendingDown, Plus, Edit, X, Filter, LayoutGrid, List } from 'lucide-react';
+import { Download, Upload, Package, Plus, X, Filter, LayoutGrid, List, Loader2 } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { useDebounce } from '@/hooks/useDebounce';
-import { getInventoryColumns } from '@/config/tableColumns';
-import { Product, Inventory, User, KPIData } from '../types';
+import { useProducts } from '@/hooks/useProducts';
+import { Product, User, KPIData } from '../types';
+import type { ApiProduct } from '@/types/products';
 import { exportToCSV } from '@/utils/exportCSV';
 import { EmptyState } from '@/components/ui/empty-state';
-import { useLoadingState } from '@/hooks/useLoadingState';
 import { KPISkeleton } from '@/components/ui/kpi-skeleton';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { showSuccessToast, showErrorToast } from '@/utils/toastHelpers';
@@ -32,15 +31,36 @@ interface ContextType {
   currentUser: User;
 }
 
-interface InventoryWithProduct extends Inventory {
-  product: Product;
+type ViewMode = 'table' | 'grid';
+
+// Helper para mapear ApiProduct al formato de la tabla
+interface ProductTableItem {
+  sku: string;
+  nombre: string;
+  marca: string;
+  categoria: string;
+  precio: number;
+  unidad: string;
+  minimo: number;
+  maximo: number;
 }
 
-type ViewMode = 'table' | 'grid';
+function mapApiProductToTableItem(p: ApiProduct): ProductTableItem {
+  return {
+    sku: p.sku,
+    nombre: p.descrip,
+    marca: p.marca,
+    categoria: p.linea,
+    precio: p.precio1,
+    unidad: p.unidad,
+    minimo: p.minimo,
+    maximo: p.maximo,
+  };
+}
 
 export default function InventarioPage() {
   const { currentWarehouse, searchQuery, currentUser } = useOutletContext<ContextType>();
-  const { products, inventory, getProductById, getWarehouseById } = useData();
+  const { getWarehouseById, inventory, getProductById } = useData();
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [selectedMarca, setSelectedMarca] = useState<string>('all');
   const [selectedCategoria, setSelectedCategoria] = useState<string>('all');
@@ -48,92 +68,107 @@ export default function InventarioPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [selectedInventoryItem, setSelectedInventoryItem] = useState<InventoryWithProduct | null>(null);
-  const { isLoading } = useLoadingState({ minLoadingTime: 600 });
+  const [selectedSku, setSelectedSku] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
-  // Get unique brands and categories for filters
-  const marcas = useMemo(() => [...new Set(products.map(p => p.marca))], [products]);
-  const categorias = useMemo(() => [...new Set(products.map(p => p.categoria))], [products]);
+  // Usar hook de productos con paginación y búsqueda
+  const { 
+    products: apiProducts, 
+    isLoading, 
+    isFetchingNextPage, 
+    hasNextPage, 
+    fetchNextPage,
+    totalCount
+  } = useProducts({ 
+    q: debouncedSearchQuery,
+    limit: 100,
+  });
 
-  // Filter inventory data for current warehouse
-  const warehouseInventory = useMemo(() => {
-    return inventory
-      .filter(inv => currentWarehouse === 'all' || inv.warehouseId === currentWarehouse)
-      .map(inv => {
-        const product = getProductById(inv.productId);
-        return product ? { ...inv, product } : null;
-      })
-      .filter((item): item is InventoryWithProduct => item !== null)
-      .filter(item => {
-        // Search filter with debounce
-        if (debouncedSearchQuery) {
-          const searchLower = debouncedSearchQuery.toLowerCase();
-          if (!item.product.nombre.toLowerCase().includes(searchLower) && 
-              !item.product.sku.toLowerCase().includes(searchLower) && 
-              !item.product.marca.toLowerCase().includes(searchLower)) {
-            return false;
-          }
-        }
+  // Mapear productos de la API al formato de tabla
+  const tableProducts = useMemo(() => 
+    apiProducts.map(mapApiProductToTableItem),
+    [apiProducts]
+  );
 
-        // Brand filter
-        if (selectedMarca !== 'all' && item.product.marca !== selectedMarca) {
-          return false;
-        }
+  // Filtrar por marca y categoría (en frontend ya que la API no soporta estos filtros)
+  const filteredProducts = useMemo(() => {
+    return tableProducts.filter(item => {
+      if (selectedMarca !== 'all' && item.marca !== selectedMarca) return false;
+      if (selectedCategoria !== 'all' && item.categoria !== selectedCategoria) return false;
+      return true;
+    });
+  }, [tableProducts, selectedMarca, selectedCategoria]);
 
-        // Category filter
-        if (selectedCategoria !== 'all' && item.product.categoria !== selectedCategoria) {
-          return false;
-        }
+  // Get unique brands and categories from loaded products
+  const marcas = useMemo(() => [...new Set(tableProducts.map(p => p.marca))].sort(), [tableProducts]);
+  const categorias = useMemo(() => [...new Set(tableProducts.map(p => p.categoria))].sort(), [tableProducts]);
 
-        return true;
-      });
-  }, [inventory, currentWarehouse, debouncedSearchQuery, selectedMarca, selectedCategoria]);
+  // Columnas para la tabla de productos
+  const productColumns = useMemo(() => [
+    {
+      key: 'sku' as const,
+      header: 'SKU',
+      sortable: true,
+    },
+    {
+      key: 'nombre' as const,
+      header: 'Producto',
+      sortable: true,
+    },
+    {
+      key: 'marca' as const,
+      header: 'Marca',
+      sortable: true,
+    },
+    {
+      key: 'categoria' as const,
+      header: 'Línea',
+      sortable: true,
+    },
+    {
+      key: 'precio' as const,
+      header: 'Precio',
+      sortable: true,
+      render: (value: number) => `$${value.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
+    },
+    {
+      key: 'unidad' as const,
+      header: 'Unidad',
+    },
+  ], []);
 
-  // Calculate KPIs for current warehouse
-  const warehouseKPIs = useMemo((): KPIData[] => {
-    const lowStockItems = warehouseInventory.filter(inv => inv.onHand <= inv.product.reorderPoint).length;
-    const totalStockValue = warehouseInventory.reduce((sum, inv) => sum + (inv.onHand * inv.product.precio), 0);
-    const totalItems = warehouseInventory.reduce((sum, inv) => sum + inv.onHand, 0);
-
+  // Calculate KPIs based on loaded products
+  const productKPIs = useMemo((): KPIData[] => {
     return [
       {
-        label: "Stock Bajo",
-        value: lowStockItems,
+        label: "Productos Cargados",
+        value: totalCount,
         format: "number",
-        change: lowStockItems > 0 ? 15.3 : -8.2,
-        changeType: lowStockItems > 0 ? "negative" : "positive"
       },
       {
-        label: "Valor Total",
-        value: totalStockValue,
-        format: "currency",
-        change: 5.7,
-        changeType: "positive"
+        label: "Productos Filtrados",
+        value: filteredProducts.length,
+        format: "number",
       },
       {
-        label: "Productos Únicos",
-        value: warehouseInventory.length,
+        label: "Marcas",
+        value: marcas.length,
         format: "number",
-        change: 2.1,
-        changeType: "positive"
       },
       {
-        label: "Unidades Totales",
-        value: totalItems,
+        label: "Líneas",
+        value: categorias.length,
         format: "number",
-        change: -1.2,
-        changeType: "negative"
-      }
+      },
     ];
-  }, [warehouseInventory]);
+  }, [totalCount, filteredProducts.length, marcas.length, categorias.length]);
 
-  // Calculate global totals across all warehouses
+  // Calculate global totals across all warehouses (using local inventory data)
   const globalTotals = useMemo(() => {
     const allInventory = inventory.map(inv => {
       const product = getProductById(inv.productId);
       return product ? { ...inv, product } : null;
-    }).filter((item): item is InventoryWithProduct => item !== null);
+    }).filter((item): item is NonNullable<typeof item> => item !== null);
 
     const totalStockValue = allInventory.reduce((sum, inv) => sum + (inv.onHand * inv.product.precio), 0);
     const uniqueProducts = new Set(allInventory.map(inv => inv.productId)).size;
@@ -158,27 +193,10 @@ export default function InventarioPage() {
     };
   }, [inventory, getProductById]);
 
-  // Helper functions defined BEFORE useMemo to avoid initialization errors
-  const getStockStatusBadge = useCallback((inv: InventoryWithProduct) => {
-    if (inv.onHand <= inv.product.reorderPoint) {
-      return <Badge variant="destructive">Stock Bajo</Badge>;
-    } else if (inv.onHand <= inv.product.safetyStock + inv.product.reorderPoint) {
-      return <Badge variant="warning">Stock Medio</Badge>;
-    } else {
-      return <Badge variant="success">Stock Alto</Badge>;
-    }
-  }, []);
-
   const handleEditProduct = useCallback((product: Product) => {
     setEditingProduct(product);
     setProductModalOpen(true);
   }, []);
-
-  // Memoized columns with explicit dependencies
-  const inventoryColumns = useMemo(() => 
-    getInventoryColumns(handleEditProduct, getStockStatusBadge),
-    [handleEditProduct, getStockStatusBadge]
-  );
 
   const handleCreateProduct = () => {
     setEditingProduct(null);
@@ -186,7 +204,6 @@ export default function InventarioPage() {
   };
 
   const handleSaveProduct = async (productData: any) => {
-    // Simulate saving
     await new Promise(resolve => setTimeout(resolve, 500));
     
     if (editingProduct) {
@@ -203,18 +220,15 @@ export default function InventarioPage() {
     }
     
     exportToCSV(
-      warehouseInventory.map(inv => ({
-        SKU: inv.product.sku,
-        Producto: inv.product.nombre,
-        Marca: inv.product.marca,
-        Categoria: inv.product.categoria,
-        Stock: inv.onHand,
-        Unidad: inv.product.unidad,
-        Precio: inv.product.precio,
-        Estado: inv.onHand <= inv.product.reorderPoint ? 'Stock Bajo' : 
-                inv.onHand <= inv.product.safetyStock + inv.product.reorderPoint ? 'Stock Medio' : 'Stock Alto'
+      filteredProducts.map(p => ({
+        SKU: p.sku,
+        Producto: p.nombre,
+        Marca: p.marca,
+        Linea: p.categoria,
+        Precio: p.precio,
+        Unidad: p.unidad,
       })),
-      `inventario_${currentWarehouse === 'all' ? 'todas_sucursales' : currentWarehouse}_${new Date().toISOString().split('T')[0]}`
+      `productos_${new Date().toISOString().split('T')[0]}`
     );
     
     showSuccessToast("Exportación exitosa", "Los datos se han exportado a CSV correctamente.");
@@ -234,9 +248,15 @@ export default function InventarioPage() {
     setSelectedCategoria('all');
   };
 
-  const handleProductCardClick = (item: InventoryWithProduct) => {
-    setSelectedInventoryItem(item);
+  const handleProductClick = (item: ProductTableItem) => {
+    setSelectedSku(item.sku);
     setDetailModalOpen(true);
+  };
+
+  const handleLoadMore = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
   };
 
   return (
@@ -244,39 +264,36 @@ export default function InventarioPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Inventario</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Productos</h1>
           <p className="text-sm text-muted-foreground">
-            {currentWarehouse === 'all' 
-              ? 'Todas las Sucursales' 
-              : getWarehouseById(currentWarehouse)?.nombre || 'Sucursal no encontrada'
-            }
+            Catálogo de productos desde la API
           </p>
         </div>
         <div className="flex gap-2 self-end sm:self-auto flex-wrap">
-          <Button variant="outline" onClick={handleExportCSV} size="sm" className="btn-hover touch-target" aria-label="Exportar inventario a CSV">
+          <Button variant="outline" onClick={handleExportCSV} size="sm" className="btn-hover touch-target">
             <Download className="w-4 h-4 sm:mr-2" />
             <span className="hidden sm:inline">Exportar CSV</span>
           </Button>
-          <Button variant="outline" onClick={handleImportCSV} size="sm" className="btn-hover touch-target" aria-label="Importar inventario desde CSV">
+          <Button variant="outline" onClick={handleImportCSV} size="sm" className="btn-hover touch-target">
             <Upload className="w-4 h-4 sm:mr-2" />
             <span className="hidden sm:inline">Importar CSV</span>
           </Button>
-          <Button onClick={handleCreateProduct} size="sm" className="btn-hover touch-target" aria-label="Crear nuevo producto">
+          <Button onClick={handleCreateProduct} size="sm" className="btn-hover touch-target">
             <Plus className="w-4 h-4 sm:mr-2" />
             <span className="hidden sm:inline">Nuevo Producto</span>
           </Button>
         </div>
       </div>
 
-      <Tabs defaultValue="warehouse" className="space-y-4">
+      <Tabs defaultValue="products" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="warehouse">Vista por Sucursal</TabsTrigger>
+          <TabsTrigger value="products">Catálogo de Productos</TabsTrigger>
           <TabsTrigger value="global">Totales Globales</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="warehouse" className="space-y-6">
+        <TabsContent value="products" className="space-y-6">
           {/* KPIs */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {isLoading ? (
               <>
                 <KPISkeleton />
@@ -285,8 +302,8 @@ export default function InventarioPage() {
                 <KPISkeleton />
               </>
             ) : (
-              warehouseKPIs.map((kpi, index) => (
-                <KPICard key={index} data={kpi} className="animate-fade-in card-hover" />
+              productKPIs.map((kpi, index) => (
+                <KPICard key={index} data={kpi} className="animate-fade-in" />
               ))
             )}
           </div>
@@ -312,26 +329,22 @@ export default function InventarioPage() {
                         <SelectContent>
                           <SelectItem value="all">Todas las marcas</SelectItem>
                           {marcas.map((marca) => (
-                            <SelectItem key={marca} value={marca}>
-                              {marca}
-                            </SelectItem>
+                            <SelectItem key={marca} value={marca}>{marca}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-base font-medium">Categoría</label>
+                      <label className="text-base font-medium">Línea</label>
                       <Select value={selectedCategoria} onValueChange={setSelectedCategoria}>
                         <SelectTrigger className="mobile-select">
-                          <SelectValue placeholder="Todas las categorías" />
+                          <SelectValue placeholder="Todas las líneas" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">Todas las categorías</SelectItem>
+                          <SelectItem value="all">Todas las líneas</SelectItem>
                           {categorias.map((categoria) => (
-                            <SelectItem key={categoria} value={categoria}>
-                              {categoria}
-                            </SelectItem>
+                            <SelectItem key={categoria} value={categoria}>{categoria}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -354,9 +367,7 @@ export default function InventarioPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Filtros</CardTitle>
-                <CardDescription>
-                  Filtra los productos por marca y categoría
-                </CardDescription>
+                <CardDescription>Filtra los productos por marca y línea</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -369,26 +380,22 @@ export default function InventarioPage() {
                       <SelectContent>
                         <SelectItem value="all">Todas las marcas</SelectItem>
                         {marcas.map((marca) => (
-                          <SelectItem key={marca} value={marca}>
-                            {marca}
-                          </SelectItem>
+                          <SelectItem key={marca} value={marca}>{marca}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Categoría</label>
+                    <label className="text-sm font-medium mb-2 block">Línea</label>
                     <Select value={selectedCategoria} onValueChange={setSelectedCategoria}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Todas las categorías" />
+                        <SelectValue placeholder="Todas las líneas" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Todas las categorías</SelectItem>
+                        <SelectItem value="all">Todas las líneas</SelectItem>
                         {categorias.map((categoria) => (
-                          <SelectItem key={categoria} value={categoria}>
-                            {categoria}
-                          </SelectItem>
+                          <SelectItem key={categoria} value={categoria}>{categoria}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -410,18 +417,14 @@ export default function InventarioPage() {
             </Card>
           )}
 
-          {/* Inventory Table/Grid */}
-          <Card className="card-hover animate-fade-in">
+          {/* Products Table */}
+          <Card className="animate-fade-in">
             <CardHeader>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <CardTitle>Productos en Inventario</CardTitle>
+                  <CardTitle>Catálogo de Productos</CardTitle>
                   <CardDescription>
-                    {warehouseInventory.length} productos en {
-                      currentWarehouse === 'all' 
-                        ? 'todas las sucursales' 
-                        : getWarehouseById(currentWarehouse)?.nombre
-                    }
+                    {filteredProducts.length} productos {hasNextPage && '(hay más disponibles)'}
                   </CardDescription>
                 </div>
                 <ToggleGroup 
@@ -441,21 +444,87 @@ export default function InventarioPage() {
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <TableSkeleton rows={5} columns={7} />
+                <TableSkeleton rows={5} columns={6} />
+              ) : filteredProducts.length === 0 ? (
+                <EmptyState
+                  icon={Package}
+                  title="No hay productos"
+                  description="No se encontraron productos que coincidan con los filtros aplicados"
+                />
               ) : viewMode === 'table' ? (
-                <DataTable
-                  data={warehouseInventory}
-                  columns={inventoryColumns}
-                  searchable={true}
-                  searchPlaceholder="Buscar por nombre, SKU o marca..."
-                  emptyMessage="No hay productos en inventario"
-                  emptyDescription="No se encontraron productos que coincidan con los filtros aplicados"
-                />
+                <div className="space-y-4">
+                  <DataTable
+                    data={filteredProducts}
+                    columns={productColumns}
+                    searchable={false}
+                    emptyMessage="No hay productos"
+                    emptyDescription="No se encontraron productos"
+                    onRowClick={handleProductClick}
+                  />
+                  
+                  {/* Load More Button */}
+                  {hasNextPage && (
+                    <div className="flex justify-center pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={handleLoadMore}
+                        disabled={isFetchingNextPage}
+                      >
+                        {isFetchingNextPage ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Cargando...
+                          </>
+                        ) : (
+                          'Cargar más productos'
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
               ) : (
-                <ProductCardGrid 
-                  items={warehouseInventory} 
-                  onProductClick={handleProductCardClick} 
-                />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {filteredProducts.map((product) => (
+                      <Card 
+                        key={product.sku} 
+                        className="cursor-pointer hover:shadow-md transition-shadow"
+                        onClick={() => handleProductClick(product)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="aspect-square bg-muted rounded-lg flex items-center justify-center mb-3">
+                            <Package className="w-12 h-12 text-muted-foreground/30" />
+                          </div>
+                          <h3 className="font-medium text-sm line-clamp-2 mb-1">{product.nombre}</h3>
+                          <p className="text-xs text-muted-foreground mb-2">{product.marca} • {product.categoria}</p>
+                          <p className="font-bold text-primary">
+                            ${product.precio.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                  
+                  {/* Load More Button */}
+                  {hasNextPage && (
+                    <div className="flex justify-center pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={handleLoadMore}
+                        disabled={isFetchingNextPage}
+                      >
+                        {isFetchingNextPage ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Cargando...
+                          </>
+                        ) : (
+                          'Cargar más productos'
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
               )}
             </CardContent>
           </Card>
@@ -496,9 +565,7 @@ export default function InventarioPage() {
           <Card>
             <CardHeader>
               <CardTitle>Resumen por Sucursal</CardTitle>
-              <CardDescription>
-                Distribución del inventario por sucursal
-              </CardDescription>
+              <CardDescription>Distribución del inventario por sucursal</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -548,11 +615,11 @@ export default function InventarioPage() {
         onSave={handleSaveProduct}
       />
 
-      {/* Product Detail Modal */}
+      {/* Product Detail Modal - Ahora recibe SKU en lugar de item */}
       <ProductDetailModal
         open={detailModalOpen}
         onOpenChange={setDetailModalOpen}
-        item={selectedInventoryItem}
+        sku={selectedSku}
       />
     </div>
   );
