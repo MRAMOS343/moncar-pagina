@@ -13,13 +13,15 @@ interface ResponsiveTableProps<T> {
   }[];
   mobileCardRender?: (item: T, index: number) => ReactNode;
   onRowClick?: (item: T) => void;
+  getRowKey?: (item: T, index: number) => string | number;
 }
 
 export function ResponsiveTable<T extends Record<string, any>>({
   data,
   columns,
   mobileCardRender,
-  onRowClick
+  onRowClick,
+  getRowKey = (_, index) => index
 }: ResponsiveTableProps<T>) {
   const isMobile = useIsMobile();
 
@@ -28,7 +30,7 @@ export function ResponsiveTable<T extends Record<string, any>>({
       <div className="space-y-3">
         {data.map((item, index) => (
           <Card 
-            key={index} 
+            key={getRowKey(item, index)} 
             className={`${onRowClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} touch-target`}
             onClick={() => onRowClick?.(item)}
           >
@@ -57,7 +59,7 @@ export function ResponsiveTable<T extends Record<string, any>>({
           <TableBody>
             {data.map((row, index) => (
               <TableRow 
-                key={index}
+                key={getRowKey(row, index)}
                 className={onRowClick ? 'cursor-pointer' : ''}
                 onClick={() => onRowClick?.(row)}
               >

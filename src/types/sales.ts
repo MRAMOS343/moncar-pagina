@@ -3,11 +3,17 @@
  * Los montos vienen como string desde Postgres (numeric)
  */
 
+// Cursor compuesto para paginación
+export interface SalesCursor {
+  cursor_fecha: string;
+  cursor_venta_id: number;
+}
+
 // Respuesta de GET /sales (lista)
 export interface SalesListResponse {
   ok: boolean;
   items: SaleListItem[];
-  next_cursor: number | null;
+  next_cursor: SalesCursor | null;
   limit: number;
 }
 
@@ -58,6 +64,7 @@ export interface FetchSalesParams {
   to?: string;
   sucursal_id?: string;
   include_cancelled?: boolean;
-  cursor?: number | null;
+  cursor_fecha?: string;
+  cursor_venta_id?: number;
   limit?: number;
 }
