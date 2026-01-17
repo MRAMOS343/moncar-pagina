@@ -78,10 +78,12 @@ export default function VentasPage() {
     include_cancelled: includeCancelled,
   });
 
-  // Aplanar páginas de datos
+  // Aplanar páginas de datos y ordenar por venta_id descendente (más recientes primero)
   const salesData = useMemo(() => {
     if (!data?.pages) return [];
-    return data.pages.flatMap(page => page.items);
+    return data.pages
+      .flatMap(page => page.items)
+      .sort((a, b) => b.venta_id - a.venta_id);
   }, [data]);
 
   // Calcular KPIs desde datos reales
