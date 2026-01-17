@@ -50,6 +50,7 @@ interface PropiedadesDataTable<T> {
   emptyMessage?: string; // Mensaje cuando no hay datos
   emptyDescription?: string; // Descripción adicional cuando no hay datos
   className?: string; // Clases CSS adicionales
+  onRowClick?: (row: T) => void; // Callback al hacer clic en una fila
 }
 
 type DireccionOrdenamiento = 'asc' | 'desc' | null;
@@ -63,7 +64,8 @@ function DataTableComponent<T extends Record<string, any>>({
   pageSize = 10,
   emptyMessage = "No hay datos disponibles",
   emptyDescription = "No se encontraron registros para mostrar",
-  className
+  className,
+  onRowClick,
 }: PropiedadesDataTable<T>) {
   // Estados del componente para manejar búsqueda, paginación y ordenamiento
   const [consultaBusqueda, setConsultaBusqueda] = useState("");
@@ -241,7 +243,11 @@ function DataTableComponent<T extends Record<string, any>>({
               </TableRow>
             ) : (
               datosPaginados.map((fila, indice) => (
-                <TableRow key={indice}>
+                <TableRow 
+                  key={indice}
+                  className={onRowClick ? "cursor-pointer hover:bg-muted/50" : undefined}
+                  onClick={() => onRowClick?.(fila)}
+                >
                   {columns.map((columna, indiceColumna) => (
                     <TableCell key={indiceColumna} className={columna.className}>
                       {columna.render 
