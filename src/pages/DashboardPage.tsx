@@ -52,9 +52,9 @@ export default function DashboardPage() {
     return dashboardKpiService.calculateKPIs(salesData);
   }, [salesData]);
 
-  // Datos de tendencia de ventas (últimos 7 días)
+  // Datos de tendencia de ventas (últimos 15 días)
   const datosTendenciaVentas = useMemo(() => {
-    return dashboardKpiService.calculateTrend(salesData, 7);
+    return dashboardKpiService.calculateTrend(salesData, 15);
   }, [salesData]);
 
   // Ventas por sucursal
@@ -161,10 +161,10 @@ export default function DashboardPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="w-5 h-5" />
-                  Tendencia de Ventas (7 días)
+                  Tendencia de Ventas (15 días)
                 </CardTitle>
                 <CardDescription>
-                  Evolución de las ventas en los últimos 7 días
+                  Evolución de las ventas en los últimos 15 días
                 </CardDescription>
               </CardHeader>
               <CardContent>
