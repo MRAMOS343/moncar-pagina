@@ -39,20 +39,20 @@ interface ProductTableItem {
   nombre: string;
   marca: string;
   categoria: string;
-  precio: number;
+  precio: number | null;
   unidad: string;
-  minimo: number;
-  maximo: number;
+  minimo: number | null;
+  maximo: number | null;
 }
 
 function mapApiProductToTableItem(p: ApiProduct): ProductTableItem {
   return {
     sku: p.sku,
-    nombre: p.descrip,
-    marca: p.marca,
-    categoria: p.linea,
+    nombre: p.descrip ?? 'Sin descripción',
+    marca: p.marca ?? 'Sin marca',
+    categoria: p.linea ?? 'Sin línea',
     precio: p.precio1,
-    unidad: p.unidad,
+    unidad: p.unidad ?? 'PZA',
     minimo: p.minimo,
     maximo: p.maximo,
   };
@@ -129,7 +129,8 @@ export default function InventarioPage() {
       key: 'precio' as const,
       header: 'Precio',
       sortable: true,
-      render: (value: number) => `$${value.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
+      render: (value: number | null | undefined) => 
+        value != null ? `$${value.toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '-',
     },
     {
       key: 'unidad' as const,
@@ -498,7 +499,9 @@ export default function InventarioPage() {
                           <h3 className="font-medium text-sm line-clamp-2 mb-1">{product.nombre}</h3>
                           <p className="text-xs text-muted-foreground mb-2">{product.marca} • {product.categoria}</p>
                           <p className="font-bold text-primary">
-                            ${product.precio.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                            {product.precio != null 
+                              ? `$${product.precio.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                              : '-'}
                           </p>
                         </CardContent>
                       </Card>

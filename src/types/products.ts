@@ -1,16 +1,16 @@
 // Tipos para la API de productos
 export interface ApiProduct {
   sku: string;
-  descrip: string;
-  marca: string;
-  linea: string;
-  unidad: string;
-  ubicacion?: string;
-  precio1: number;
-  impuesto: number;
-  minimo: number;
-  maximo: number;
-  image_url?: string;
+  descrip: string | null;
+  marca: string | null;
+  linea: string | null;
+  unidad: string | null;
+  ubicacion?: string | null;
+  precio1: number | null;
+  impuesto: number | null;
+  minimo: number | null;
+  maximo: number | null;
+  image_url?: string | null;
 }
 
 export interface ProductsListResponse {
