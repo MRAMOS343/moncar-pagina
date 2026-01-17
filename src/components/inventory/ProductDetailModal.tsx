@@ -40,12 +40,13 @@ export function ProductDetailModal({ open, onOpenChange, sku }: ProductDetailMod
 
   // Calcular precio con impuesto
   const priceInfo = useMemo(() => {
-    if (!product) return null;
-    const impuestoAmount = product.precio1 * (product.impuesto / 100);
+    if (!product || product.precio1 == null) return null;
+    const impuesto = product.impuesto ?? 0;
+    const impuestoAmount = product.precio1 * (impuesto / 100);
     const total = product.precio1 + impuestoAmount;
     return {
       base: product.precio1,
-      impuesto: product.impuesto,
+      impuesto,
       impuestoAmount,
       total,
     };
@@ -69,13 +70,13 @@ export function ProductDetailModal({ open, onOpenChange, sku }: ProductDetailMod
             </div>
           ) : product ? (
             <>
-              <DialogTitle className="text-2xl font-bold">{product.descrip}</DialogTitle>
+              <DialogTitle className="text-2xl font-bold">{product.descrip ?? 'Sin descripción'}</DialogTitle>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span>SKU: {product.sku}</span>
                 <span>•</span>
-                <span>{product.marca}</span>
+                <span>{product.marca ?? 'Sin marca'}</span>
                 <span>•</span>
-                <Badge variant="outline">{product.linea}</Badge>
+                <Badge variant="outline">{product.linea ?? 'Sin línea'}</Badge>
               </div>
             </>
           ) : null}
@@ -104,7 +105,7 @@ export function ProductDetailModal({ open, onOpenChange, sku }: ProductDetailMod
                     {product.image_url ? (
                       <img 
                         src={product.image_url} 
-                        alt={product.descrip}
+                        alt={product.descrip ?? 'Producto'}
                         className="w-full h-full object-contain"
                       />
                     ) : (
@@ -120,7 +121,7 @@ export function ProductDetailModal({ open, onOpenChange, sku }: ProductDetailMod
                         Inventario por Almacén
                       </h3>
                       <Badge variant="secondary">
-                        Total: {totalStock.toLocaleString()} {product.unidad}
+                        Total: {totalStock.toLocaleString()} {product.unidad ?? 'PZA'}
                       </Badge>
                     </div>
                     <Separator />
@@ -139,7 +140,7 @@ export function ProductDetailModal({ open, onOpenChange, sku }: ProductDetailMod
                             <TableRow key={`${inv.sku}-${inv.almacen}`}>
                               <TableCell className="font-medium">{inv.almacen}</TableCell>
                               <TableCell className="text-right">
-                                {parseFloat(String(inv.existencia)).toLocaleString()} {product.unidad}
+                                {parseFloat(String(inv.existencia)).toLocaleString()} {product.unidad ?? 'PZA'}
                               </TableCell>
                               <TableCell className="text-right text-muted-foreground text-sm">
                                 {new Date(inv.actualizado_el).toLocaleDateString('es-MX')}
@@ -159,11 +160,11 @@ export function ProductDetailModal({ open, onOpenChange, sku }: ProductDetailMod
                   <div className="grid grid-cols-2 gap-4">
                     <div className="p-3 bg-muted/30 rounded-lg">
                       <span className="text-sm text-muted-foreground">Mínimo</span>
-                      <p className="font-semibold">{product.minimo} {product.unidad}</p>
+                      <p className="font-semibold">{product.minimo ?? '-'} {product.unidad ?? 'PZA'}</p>
                     </div>
                     <div className="p-3 bg-muted/30 rounded-lg">
                       <span className="text-sm text-muted-foreground">Máximo</span>
-                      <p className="font-semibold">{product.maximo} {product.unidad}</p>
+                      <p className="font-semibold">{product.maximo ?? '-'} {product.unidad ?? 'PZA'}</p>
                     </div>
                   </div>
                 </div>
@@ -256,7 +257,7 @@ export function ProductDetailModal({ open, onOpenChange, sku }: ProductDetailMod
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <span className="text-muted-foreground">Unidad:</span>
-                        <p className="font-medium">{product.unidad}</p>
+                        <p className="font-medium">{product.unidad ?? 'PZA'}</p>
                       </div>
                       {product.ubicacion && (
                         <div>
