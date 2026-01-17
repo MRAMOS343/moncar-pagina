@@ -170,7 +170,15 @@ export default function DashboardPage() {
               <CardContent>
                 <LazyLineChart data={datosTendenciaVentas} height={320}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="date" className="text-muted-foreground" />
+                  <XAxis 
+                    dataKey="date" 
+                    className="text-muted-foreground" 
+                    interval={0}
+                    tick={{ fontSize: 10 }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                  />
                   <YAxis className="text-muted-foreground" />
                   <Tooltip 
                     contentStyle={{ 
