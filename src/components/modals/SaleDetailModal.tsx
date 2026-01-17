@@ -9,6 +9,24 @@ import { es } from "date-fns/locale";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+const PAYMENT_METHOD_NAMES: Record<string, string> = {
+  efe: "Efectivo",
+  cre: "Crédito",
+  deb: "Débito",
+  tra: "Transferencia",
+  tar: "Tarjeta",
+  efectivo: "Efectivo",
+  credito: "Crédito",
+  debito: "Débito",
+  transferencia: "Transferencia",
+  tarjeta: "Tarjeta",
+};
+
+const formatPaymentMethod = (metodo: string): string => {
+  const key = metodo.toLowerCase().trim();
+  return PAYMENT_METHOD_NAMES[key] || metodo;
+};
+
 interface SaleDetailModalProps {
   ventaId: number | null;
   open: boolean;
@@ -122,7 +140,7 @@ export function SaleDetailModal({ ventaId, open, onOpenChange }: SaleDetailModal
                 <div className="space-y-1 bg-muted/50 p-3 rounded-md">
                   {data.pagos.map((pago) => (
                     <div key={pago.idx} className="flex justify-between text-sm">
-                      <span className="capitalize">{pago.metodo}</span>
+                      <span>{formatPaymentMethod(pago.metodo)}</span>
                       <span className="font-medium">{formatCurrency(toNumber(pago.monto))}</span>
                     </div>
                   ))}
