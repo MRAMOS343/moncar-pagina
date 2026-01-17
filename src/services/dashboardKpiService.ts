@@ -66,7 +66,7 @@ export const dashboardKpiService = {
         .reduce((suma, venta) => suma + toNumber(venta.total), 0);
       
       return {
-        date: new Date(fecha).toLocaleDateString('es-MX', { weekday: 'short' }),
+        date: new Date(fecha).toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' }),
         value: totalDia,
         fullDate: fecha
       };
