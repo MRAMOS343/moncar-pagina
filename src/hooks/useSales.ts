@@ -2,12 +2,12 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchSales, fetchSaleDetail } from "@/services/salesService";
-import type { FetchSalesParams } from "@/types/sales";
+import type { FetchSalesParams, SalesCursor } from "@/types/sales";
 
 /**
- * Hook para listar ventas con paginación infinita (cursor-based)
+ * Hook para listar ventas con paginación infinita (cursor-based compuesto)
  */
-export function useSales(params: Omit<FetchSalesParams, 'cursor'>) {
+export function useSales(params: Omit<FetchSalesParams, 'cursor_fecha' | 'cursor_venta_id'>) {
   const { token } = useAuth();
 
   // Memoizar params para queryKey estable
@@ -21,9 +21,13 @@ export function useSales(params: Omit<FetchSalesParams, 'cursor'>) {
 
   return useInfiniteQuery({
     queryKey: ["sales", stableParams],
-    queryFn: ({ pageParam }) => fetchSales(token!, { ...stableParams, cursor: pageParam }),
+    queryFn: ({ pageParam }) => fetchSales(token!, { 
+      ...stableParams, 
+      cursor_fecha: pageParam?.cursor_fecha,
+      cursor_venta_id: pageParam?.cursor_venta_id,
+    }),
     enabled: !!token,
-    initialPageParam: undefined as number | undefined,
+    initialPageParam: undefined as SalesCursor | undefined,
     getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
     staleTime: 60 * 1000, // 1 minuto
   });

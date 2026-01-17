@@ -78,12 +78,22 @@ export default function VentasPage() {
     include_cancelled: includeCancelled,
   });
 
-  // Aplanar páginas de datos y ordenar por venta_id descendente (más recientes primero)
+  // Aplanar páginas de datos con deduplicación defensiva por venta_id
   const salesData = useMemo(() => {
     if (!data?.pages) return [];
-    return data.pages
-      .flatMap(page => page.items)
-      .sort((a, b) => b.venta_id - a.venta_id);
+    
+    const all = data.pages.flatMap(page => page.items);
+    
+    // Deduplicación defensiva por venta_id
+    const seen = new Set<number>();
+    const unique = all.filter(item => {
+      if (seen.has(item.venta_id)) return false;
+      seen.add(item.venta_id);
+      return true;
+    });
+    
+    // Ordenar por venta_id descendente (más recientes primero)
+    return unique.sort((a, b) => b.venta_id - a.venta_id);
   }, [data]);
 
   // Calcular KPIs desde datos reales
@@ -436,6 +446,7 @@ export default function VentasPage() {
                 data={salesData}
                 columns={columns}
                 mobileCardRender={mobileCardRender}
+                getRowKey={(item) => item.venta_id}
               />
               
               {/* Load more button */}

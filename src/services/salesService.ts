@@ -21,9 +21,12 @@ export async function fetchSales(
     searchParams.set("to", params.to);
   }
   
-  // Cursor robusto: no usar if(cursor) porque omite 0
-  if (params.cursor !== undefined && params.cursor !== null) {
-    searchParams.set("cursor", String(params.cursor));
+  // Cursor compuesto: enviar ambos campos si existen
+  if (params.cursor_fecha) {
+    searchParams.set("cursor_fecha", params.cursor_fecha);
+  }
+  if (params.cursor_venta_id !== undefined) {
+    searchParams.set("cursor_venta_id", String(params.cursor_venta_id));
   }
 
   return apiRequest<SalesListResponse>(`/sales?${searchParams.toString()}`, { token });
