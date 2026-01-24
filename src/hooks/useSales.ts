@@ -30,6 +30,15 @@ export function useSales(params: Omit<FetchSalesParams, 'cursor_fecha' | 'cursor
     initialPageParam: undefined as SalesCursor | undefined,
     getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
     staleTime: 60 * 1000, // 1 minuto
+    retry: (failureCount, error) => {
+      // No reintentar en cursor inválido o 401
+      if (error && typeof error === 'object' && 'status' in error) {
+        const apiError = error as { status: number; details?: { code?: string } };
+        if (apiError.status === 401) return false;
+        if (apiError.details?.code === 'CURSOR_INVALIDO') return false;
+      }
+      return failureCount < 2;
+    },
   });
 }
 

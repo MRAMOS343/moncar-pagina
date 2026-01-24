@@ -175,14 +175,16 @@ export default function VentasPage() {
     
     exportToCSV(
       salesData.map(sale => ({
-        ID: sale.venta_id,
-        Fecha: format(new Date(sale.fecha_emision), 'dd/MM/yyyy HH:mm', { locale: es }),
+        Folio: sale.folio_numero,
+        Fecha: sale.usu_fecha,
+        Hora: sale.usu_hora,
         Sucursal: sale.sucursal_id,
-        Caja: sale.caja_id,
+        Estado: sale.estado_origen,
+        Pagos: sale.pagos_resumen ?? '',
         Subtotal: toNumber(sale.subtotal),
         IVA: toNumber(sale.impuesto),
         Total: toNumber(sale.total),
-        Estado: sale.cancelada ? 'Cancelada' : 'Activa'
+        Cancelada: sale.cancelada ? 'Sí' : 'No'
       })),
       `ventas_${dateRange}_${new Date().toISOString().split('T')[0]}`
     );
@@ -198,29 +200,37 @@ export default function VentasPage() {
   // Columnas de tabla
   const columns = useMemo(() => getVentasColumns(handleViewDetail), [handleViewDetail]);
 
+  // Helper para badge de estado
+  const getEstadoBadge = useCallback((estado: string) => {
+    switch (estado?.toUpperCase()) {
+      case 'CO':
+        return <Badge variant="default">Completada</Badge>;
+      case 'CA':
+        return <Badge variant="destructive">Cancelada</Badge>;
+      default:
+        return <Badge variant="outline">{estado || 'N/A'}</Badge>;
+    }
+  }, []);
+
   // Render de card móvil
   const mobileCardRender = useCallback((sale: SaleListItem) => (
     <div className="space-y-2" onClick={() => handleViewDetail(sale.venta_id)}>
       <div className="flex justify-between items-start">
         <div>
-          <p className="font-mono text-xs text-muted-foreground">#{sale.venta_id}</p>
+          <p className="font-mono text-xs text-muted-foreground">{sale.folio_numero || `#${sale.venta_id}`}</p>
           <p className="font-medium text-lg">{formatCurrency(sale.total)}</p>
         </div>
-        {sale.cancelada ? (
-          <Badge variant="destructive">Cancelada</Badge>
-        ) : (
-          <Badge variant="outline" className="text-green-600 border-green-600">Activa</Badge>
-        )}
+        {getEstadoBadge(sale.estado_origen)}
       </div>
       <div className="text-sm text-muted-foreground space-y-1">
-        <p>{format(new Date(sale.fecha_emision), 'dd/MM/yyyy HH:mm', { locale: es })}</p>
+        <p>{sale.usu_fecha} {sale.usu_hora}</p>
         <div className="flex items-center justify-between pt-1">
           <span>Sucursal: {sale.sucursal_id}</span>
-          <span className="text-xs">Caja: {sale.caja_id}</span>
+          {sale.pagos_resumen && <span className="text-xs">{sale.pagos_resumen}</span>}
         </div>
       </div>
     </div>
-  ), [handleViewDetail]);
+  ), [handleViewDetail, getEstadoBadge]);
 
   return (
     <div className="space-y-6">

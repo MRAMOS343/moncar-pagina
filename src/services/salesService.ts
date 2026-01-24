@@ -11,7 +11,7 @@ export async function fetchSales(
   const searchParams = new URLSearchParams();
   
   searchParams.set("from", params.from ?? "2025-01-01");
-  searchParams.set("limit", String(params.limit ?? 20));
+  searchParams.set("limit", String(params.limit ?? 50));
   searchParams.set("include_cancelled", params.include_cancelled ? "1" : "0");
   
   if (params.sucursal_id) {
@@ -29,7 +29,20 @@ export async function fetchSales(
     searchParams.set("cursor_venta_id", String(params.cursor_venta_id));
   }
 
-  return apiRequest<SalesListResponse>(`/sales?${searchParams.toString()}`, { token });
+  const url = `/sales?${searchParams.toString()}`;
+  
+  // Logging de desarrollo
+  if (import.meta.env.DEV) {
+    console.log('[Sales API] Request:', url);
+  }
+
+  const response = await apiRequest<SalesListResponse>(url, { token });
+
+  if (import.meta.env.DEV) {
+    console.log('[Sales API] Items recibidos:', response.items.length);
+  }
+
+  return response;
 }
 
 /**

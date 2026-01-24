@@ -22,10 +22,15 @@ export interface SaleListItem {
   venta_id: number;
   fecha_emision: string;
   sucursal_id: string;
-  caja_id: string;
+  folio_numero: string;
   subtotal: string;      // Postgres numeric viene como string
   impuesto: string;
   total: string;
+  estado_origen: string;
+  pagos_resumen: string | null;
+  datos_origen: string;
+  usu_fecha: string;
+  usu_hora: string;
   cancelada: boolean;
 }
 
@@ -39,6 +44,7 @@ export interface SaleDetailResponse {
 
 // Detalle SÍ incluye campos extra de cancelación
 export interface SaleDetail extends SaleListItem {
+  caja_id?: string;         // Solo viene en detalle
   fecha_cancelacion?: string;
   motivo_cancelacion?: string;
 }

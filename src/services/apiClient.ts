@@ -38,6 +38,14 @@ export async function apiRequest<T>(
   const text = await res.text();
   const data = text ? safeJson(text) : null;
 
+  // Manejo de 401: limpiar tokens y redirigir a login
+  if (res.status === 401) {
+    localStorage.removeItem('moncar_token');
+    localStorage.removeItem('moncar_user');
+    window.location.href = '/login';
+    throw new ApiError('Sesión expirada', 401, data);
+  }
+
   if (!res.ok) {
     throw new ApiError(
       (data as Record<string, unknown>)?.error as string ?? 
