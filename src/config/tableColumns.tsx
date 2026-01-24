@@ -36,19 +36,25 @@ const getEstadoLabel = (estado: string): string => {
  */
 export const getVentasColumns = (onViewDetail?: (ventaId: number) => void) => [
   { 
-    key: 'folio_numero', 
-    header: 'Folio',
-    render: (value: string) => <span className="font-mono text-sm">{value || '---'}</span>
+    key: 'venta_id', 
+    header: 'ID Venta',
+    render: (value: number) => <span className="font-mono text-sm">{value}</span>
   },
   { 
     key: 'usu_fecha', 
     header: 'Fecha/Hora',
-    render: (_: unknown, row: SaleListItem) => (
-      <div>
-        <div className="font-medium">{row.usu_fecha || '---'}</div>
-        <div className="text-sm text-muted-foreground">{row.usu_hora || ''}</div>
-      </div>
-    )
+    render: (_: unknown, row: SaleListItem) => {
+      // Formatear fecha de YYYY-MM-DD a DD-MM-YYYY
+      const formattedDate = row.usu_fecha 
+        ? row.usu_fecha.split('-').reverse().join('-') 
+        : '---';
+      return (
+        <div>
+          <div className="font-medium">{formattedDate}</div>
+          <div className="text-sm text-muted-foreground">{row.usu_hora || ''}</div>
+        </div>
+      );
+    }
   },
   { 
     key: 'sucursal_id', 
@@ -62,13 +68,6 @@ export const getVentasColumns = (onViewDetail?: (ventaId: number) => void) => [
       <Badge variant={getEstadoBadgeVariant(value)}>
         {getEstadoLabel(value)}
       </Badge>
-    )
-  },
-  { 
-    key: 'pagos_resumen', 
-    header: 'Pagos',
-    render: (value: string | null) => (
-      <span className="text-sm">{value ?? '---'}</span>
     )
   },
   { 
