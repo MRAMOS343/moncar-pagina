@@ -213,24 +213,28 @@ export default function VentasPage() {
   }, []);
 
   // Render de card móvil
-  const mobileCardRender = useCallback((sale: SaleListItem) => (
-    <div className="space-y-2" onClick={() => handleViewDetail(sale.venta_id)}>
-      <div className="flex justify-between items-start">
-        <div>
-          <p className="font-mono text-xs text-muted-foreground">{sale.folio_numero || `#${sale.venta_id}`}</p>
-          <p className="font-medium text-lg">{formatCurrency(sale.total)}</p>
+  const mobileCardRender = useCallback((sale: SaleListItem) => {
+    // Formatear fecha de YYYY-MM-DD a DD-MM-YYYY
+    const formattedDate = sale.usu_fecha 
+      ? sale.usu_fecha.split('-').reverse().join('-') 
+      : '';
+    
+    return (
+      <div className="space-y-2" onClick={() => handleViewDetail(sale.venta_id)}>
+        <div className="flex justify-between items-start">
+          <div>
+            <p className="font-mono text-xs text-muted-foreground">#{sale.venta_id}</p>
+            <p className="font-medium text-lg">{formatCurrency(sale.total)}</p>
+          </div>
+          {getEstadoBadge(sale.estado_origen)}
         </div>
-        {getEstadoBadge(sale.estado_origen)}
-      </div>
-      <div className="text-sm text-muted-foreground space-y-1">
-        <p>{sale.usu_fecha} {sale.usu_hora}</p>
-        <div className="flex items-center justify-between pt-1">
+        <div className="text-sm text-muted-foreground space-y-1">
+          <p>{formattedDate} {sale.usu_hora}</p>
           <span>Sucursal: {sale.sucursal_id}</span>
-          {sale.pagos_resumen && <span className="text-xs">{sale.pagos_resumen}</span>}
         </div>
       </div>
-    </div>
-  ), [handleViewDetail, getEstadoBadge]);
+    );
+  }, [handleViewDetail, getEstadoBadge]);
 
   return (
     <div className="space-y-6">
