@@ -42,18 +42,14 @@ export const getVentasColumns = (onViewDetail?: (ventaId: number) => void) => [
   },
   { 
     key: 'usu_fecha', 
-    header: 'Fecha/Hora',
+    header: 'Fecha',
     render: (_: unknown, row: SaleListItem) => {
-      // Formatear fecha de YYYY-MM-DD a DD-MM-YYYY
-      const formattedDate = row.usu_fecha 
-        ? row.usu_fecha.split('-').reverse().join('-') 
-        : '---';
-      return (
-        <div>
-          <div className="font-medium">{formattedDate}</div>
-          <div className="text-sm text-muted-foreground">{row.usu_hora || ''}</div>
-        </div>
-      );
+      // Formatear fecha a dd-mm-yy
+      if (!row.usu_fecha) return <span>---</span>;
+      const datePart = row.usu_fecha.split('T')[0]; // Extraer solo YYYY-MM-DD
+      const [year, month, day] = datePart.split('-');
+      const shortYear = year?.slice(-2) || '';
+      return <span className="font-medium">{day}-{month}-{shortYear}</span>;
     }
   },
   { 
