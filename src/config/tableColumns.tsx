@@ -13,34 +13,42 @@ import { toNumber, formatCurrency } from '@/utils/formatters';
  */
 
 /**
+ * Helper para obtener variante de badge según estado_origen
+ */
+const getEstadoBadgeVariant = (estado: string): "default" | "destructive" | "outline" | "secondary" => {
+  switch (estado?.toUpperCase()) {
+    case 'CO': return 'default'; // Completada
+    case 'CA': return 'destructive'; // Cancelada
+    default: return 'outline';
+  }
+};
+
+const getEstadoLabel = (estado: string): string => {
+  switch (estado?.toUpperCase()) {
+    case 'CO': return 'Completada';
+    case 'CA': return 'Cancelada';
+    default: return estado || 'N/A';
+  }
+};
+
+/**
  * Columnas para tabla de ventas (API real)
  */
 export const getVentasColumns = (onViewDetail?: (ventaId: number) => void) => [
   { 
-    key: 'venta_id', 
-    header: 'ID Venta',
-    render: (value: number) => <span className="font-mono text-sm">{value}</span>
+    key: 'folio_numero', 
+    header: 'Folio',
+    render: (value: string) => <span className="font-mono text-sm">{value || '---'}</span>
   },
   { 
-    key: 'fecha_emision', 
-    header: 'Fecha',
-    render: (value: string) => {
-      if (!value) return <span className="text-muted-foreground">Sin fecha</span>;
-      try {
-        return (
-          <div>
-            <div className="font-medium">
-              {format(new Date(value), 'dd/MM/yyyy', { locale: es })}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {format(new Date(value), 'HH:mm')}
-            </div>
-          </div>
-        );
-      } catch {
-        return <span className="text-destructive">Fecha inválida</span>;
-      }
-    }
+    key: 'usu_fecha', 
+    header: 'Fecha/Hora',
+    render: (_: unknown, row: SaleListItem) => (
+      <div>
+        <div className="font-medium">{row.usu_fecha || '---'}</div>
+        <div className="text-sm text-muted-foreground">{row.usu_hora || ''}</div>
+      </div>
+    )
   },
   { 
     key: 'sucursal_id', 
@@ -48,9 +56,20 @@ export const getVentasColumns = (onViewDetail?: (ventaId: number) => void) => [
     render: (value: string) => <span>{value}</span>
   },
   { 
-    key: 'caja_id', 
-    header: 'Caja',
-    render: (value: string) => <span className="text-muted-foreground">{value}</span>
+    key: 'estado_origen', 
+    header: 'Estado',
+    render: (value: string) => (
+      <Badge variant={getEstadoBadgeVariant(value)}>
+        {getEstadoLabel(value)}
+      </Badge>
+    )
+  },
+  { 
+    key: 'pagos_resumen', 
+    header: 'Pagos',
+    render: (value: string | null) => (
+      <span className="text-sm">{value ?? '---'}</span>
+    )
   },
   { 
     key: 'subtotal', 
@@ -70,16 +89,7 @@ export const getVentasColumns = (onViewDetail?: (ventaId: number) => void) => [
     key: 'total', 
     header: 'Total',
     render: (value: string) => (
-      <span className="text-right font-medium block">{formatCurrency(value)}</span>
-    )
-  },
-  {
-    key: 'cancelada',
-    header: 'Estado',
-    render: (value: boolean) => (
-      value 
-        ? <Badge variant="destructive">Cancelada</Badge>
-        : <Badge variant="outline" className="text-green-600 border-green-600">Activa</Badge>
+      <span className="text-right font-semibold block">{formatCurrency(value)}</span>
     )
   },
   {

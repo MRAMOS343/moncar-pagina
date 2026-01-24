@@ -308,7 +308,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="text-right">
                       <p className="font-semibold">{formatCurrency(venta.total)}</p>
-                      <p className="text-sm text-muted-foreground">Caja: {venta.caja_id}</p>
+                      <p className="text-sm text-muted-foreground">{venta.folio_numero || `#${venta.venta_id}`}</p>
                     </div>
                   </div>
                 ))
