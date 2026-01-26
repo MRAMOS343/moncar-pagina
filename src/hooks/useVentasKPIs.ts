@@ -67,5 +67,7 @@ export function useVentasKPIs(params: VentasKPIsParams) {
     },
     staleTime: 0, // Siempre refetch al cambiar período
     enabled: !!token,
+    placeholderData: undefined, // No usar datos previos como placeholder
+    refetchOnMount: true,
   });
 }
