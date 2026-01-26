@@ -53,6 +53,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     boot();
   }, []);
 
+  // Escuchar evento global de expiración de sesión (disparado por apiClient en 401)
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      logger.warn("Sesión expirada detectada vía evento global");
+      setToken(null);
+      setCurrentUser(null);
+    };
+
+    window.addEventListener('auth:expired', handleAuthExpired);
+    return () => window.removeEventListener('auth:expired', handleAuthExpired);
+  }, []);
+
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       const resp = await loginWithPassword(email, password);

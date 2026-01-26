@@ -1,7 +1,7 @@
 import { memo, forwardRef } from "react";
 import { cn } from "@/lib/utils";
 import { KPIData } from "../../types";
-import { TrendingUp, TrendingDown, Minus, DollarSign, Package, ShoppingCart, AlertTriangle } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, DollarSign, Package, ShoppingCart, AlertTriangle, Receipt, XCircle } from "lucide-react";
 
 interface KPICardProps {
   data: KPIData;
@@ -49,9 +49,11 @@ const KPICardComponent = forwardRef<HTMLDivElement, KPICardProps>(
   const getContextualIcon = () => {
     const iconClass = "w-5 h-5";
     if (data.label.includes("Ventas")) return <DollarSign className={iconClass} />;
+    if (data.label.includes("Transacciones")) return <Receipt className={iconClass} />;
     if (data.label.includes("Productos")) return <Package className={iconClass} />;
     if (data.label.includes("Ticket")) return <ShoppingCart className={iconClass} />;
     if (data.label.includes("Stock")) return <AlertTriangle className={iconClass} />;
+    if (data.label.includes("Canceladas")) return <XCircle className={iconClass} />;
     return null;
   };
 

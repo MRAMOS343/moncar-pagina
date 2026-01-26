@@ -27,6 +27,18 @@ const formatPaymentMethod = (metodo: string): string => {
   return PAYMENT_METHOD_NAMES[key] || metodo;
 };
 
+// Helper de formateo de fechas seguro contra valores nulos o inválidos
+const safeFormatDate = (dateStr: string | null | undefined, formatStr: string = "dd/MM/yyyy HH:mm"): string => {
+  if (!dateStr) return '---';
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '---';
+    return format(date, formatStr, { locale: es });
+  } catch {
+    return '---';
+  }
+};
+
 interface SaleDetailModalProps {
   ventaId: number | null;
   open: boolean;
@@ -72,7 +84,7 @@ export function SaleDetailModal({ ventaId, open, onOpenChange }: SaleDetailModal
               <div>
                 <span className="text-muted-foreground">Fecha:</span>{" "}
                 <span className="font-medium">
-                  {format(new Date(data.venta.fecha_emision), "dd/MM/yyyy HH:mm", { locale: es })}
+                  {safeFormatDate(data.venta.fecha_emision)}
                 </span>
               </div>
               <div>
@@ -90,7 +102,7 @@ export function SaleDetailModal({ ventaId, open, onOpenChange }: SaleDetailModal
               <div className="bg-destructive/10 p-3 rounded-md text-sm border border-destructive/20">
                 <p>
                   <strong>Cancelada:</strong>{" "}
-                  {format(new Date(data.venta.fecha_cancelacion), "dd/MM/yyyy HH:mm", { locale: es })}
+                  {safeFormatDate(data.venta.fecha_cancelacion)}
                 </p>
                 <p>
                   <strong>Motivo:</strong> {data.venta.motivo_cancelacion || "Sin especificar"}

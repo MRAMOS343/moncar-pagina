@@ -1,20 +1,8 @@
 import React, { Suspense, memo } from 'react';
+import { LineChart, ResponsiveContainer, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 
-// Lazy load recharts module
-const RechartsLineChart = React.lazy(() => 
-  import('recharts').then(module => ({ 
-    default: module.LineChart 
-  }))
-);
-
-const RechartsResponsiveContainer = React.lazy(() => 
-  import('recharts').then(module => ({ 
-    default: module.ResponsiveContainer 
-  }))
-);
-
-// Re-export components for external use (these are still eagerly loaded for JSX children)
-export { Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+// Re-export components for external use
+export { Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer };
 
 interface LazyLineChartProps {
   data: any[];
@@ -42,13 +30,16 @@ export const LazyLineChart = memo(function LazyLineChart({
   height = 320, 
   ...rest 
 }: LazyLineChartProps) {
+  // Validación de datos
+  if (!data || !Array.isArray(data)) {
+    return <ChartPlaceholder height={height} />;
+  }
+
   return (
-    <Suspense fallback={<ChartPlaceholder height={height} />}>
-      <RechartsResponsiveContainer width="100%" height={height}>
-        <RechartsLineChart data={data} {...rest}>
-          {children}
-        </RechartsLineChart>
-      </RechartsResponsiveContainer>
-    </Suspense>
+    <ResponsiveContainer width="100%" height={height}>
+      <LineChart data={data} {...rest}>
+        {children}
+      </LineChart>
+    </ResponsiveContainer>
   );
 });

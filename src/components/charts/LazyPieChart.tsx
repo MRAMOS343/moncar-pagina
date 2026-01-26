@@ -1,20 +1,8 @@
-import React, { Suspense, memo } from 'react';
-
-// Lazy load recharts module
-const RechartsPieChart = React.lazy(() => 
-  import('recharts').then(module => ({ 
-    default: module.PieChart 
-  }))
-);
-
-const RechartsResponsiveContainer = React.lazy(() => 
-  import('recharts').then(module => ({ 
-    default: module.ResponsiveContainer 
-  }))
-);
+import React, { memo } from 'react';
+import { PieChart, ResponsiveContainer, Pie, Cell, Tooltip } from 'recharts';
 
 // Re-export components for external use
-export { Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+export { Pie, Cell, Tooltip, ResponsiveContainer };
 
 interface LazyPieChartProps {
   children?: React.ReactNode;
@@ -41,12 +29,10 @@ export const LazyPieChart = memo(function LazyPieChart({
   ...props 
 }: LazyPieChartProps) {
   return (
-    <Suspense fallback={<ChartPlaceholder height={height} />}>
-      <RechartsResponsiveContainer width="100%" height={height}>
-        <RechartsPieChart {...props}>
-          {children}
-        </RechartsPieChart>
-      </RechartsResponsiveContainer>
-    </Suspense>
+    <ResponsiveContainer width="100%" height={height}>
+      <PieChart {...props}>
+        {children}
+      </PieChart>
+    </ResponsiveContainer>
   );
 });
