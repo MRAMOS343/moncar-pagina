@@ -1,105 +1,88 @@
 
-# Plan: Permitir Guardar sin Modificar Campos en ProductEditModal
+
+# Plan: Limitar Decimales en Modal de Detalle de Producto
 
 ## Problema Identificado
 
-Los campos numéricos (Precio, Impuesto, Mínimo, Máximo) muestran error "Expected number, received string" porque:
-
-1. Los inputs usan `defaultValue` (no controlados por react-hook-form)
-2. El schema de Zod espera `z.number()` pero HTML inputs siempre retornan strings
-3. `handleNumberChange` solo se ejecuta cuando el usuario modifica el campo
-4. Si el usuario no toca nada y da "Guardar", react-hook-form no tiene los valores correctamente tipados
-
-## Solución
-
-### Opción Elegida: Usar `z.coerce.number()` + valores iniciales correctos
-
-Cambiar el schema para que Zod automáticamente convierta strings a números, y asegurar que los valores iniciales se carguen correctamente.
+En el modal de detalle de producto, varios valores numéricos muestran demasiados decimales:
+- **Mínimo/Máximo:** 10.0000 PZA, 100.0000 PZA (4 decimales)
+- **Total precio:** $30.000 MXN (3 decimales, debería ser 2)
+- **Total stock:** Puede mostrar decimales innecesarios
 
 ## Cambios Requeridos
 
-### Archivo: `src/components/modals/ProductEditModal.tsx`
+### Archivo: `src/components/inventory/ProductDetailModal.tsx`
 
-**Cambio 1: Actualizar el schema con coerción automática**
+**Cambio 1: Crear helper para formatear cantidades (máximo 1 decimal)**
 
 ```typescript
-// ANTES
-precio1: z.number().min(0, 'El precio debe ser positivo').optional(),
-impuesto: z.number().min(0).max(100, 'El impuesto debe ser entre 0 y 100').optional(),
-minimo: z.number().min(0, 'El mínimo debe ser positivo').optional(),
-maximo: z.number().min(0, 'El máximo debe ser positivo').optional(),
-costo_u: z.number().min(0, 'El costo debe ser positivo').optional(),
-
-// DESPUÉS (con coerción y manejo de strings vacíos)
-precio1: z.union([
-  z.literal('').transform(() => undefined),
-  z.coerce.number().min(0, 'El precio debe ser positivo')
-]).optional(),
-impuesto: z.union([
-  z.literal('').transform(() => undefined),
-  z.coerce.number().min(0).max(100, 'El impuesto debe ser entre 0 y 100')
-]).optional(),
-minimo: z.union([
-  z.literal('').transform(() => undefined),
-  z.coerce.number().min(0, 'El mínimo debe ser positivo')
-]).optional(),
-maximo: z.union([
-  z.literal('').transform(() => undefined),
-  z.coerce.number().min(0, 'El máximo debe ser positivo')
-]).optional(),
-costo_u: z.union([
-  z.literal('').transform(() => undefined),
-  z.coerce.number().min(0, 'El costo debe ser positivo')
-]).optional(),
+// Función helper para formatear cantidades con máximo 1 decimal
+const formatQuantity = (value: number | string | null | undefined): string => {
+  if (value === null || value === undefined) return '-';
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(num)) return '-';
+  // Si es entero, no mostrar decimales; si tiene decimales, máximo 1
+  return num % 1 === 0 
+    ? num.toLocaleString('es-MX') 
+    : num.toLocaleString('es-MX', { maximumFractionDigits: 1 });
+};
 ```
 
-**Cambio 2: Usar `register()` en lugar de `defaultValue` + `onChange`**
-
-Esto permite que react-hook-form maneje los valores directamente:
+**Cambio 2: Aplicar a Mínimo/Máximo (líneas 201, 205)**
 
 ```tsx
 // ANTES
-<Input
-  id="precio1"
-  type="number"
-  step="0.01"
-  defaultValue={product.precio1 ?? ''}
-  onChange={handleNumberChange('precio1')}
-  placeholder="0.00"
-/>
+<p className="font-semibold">{product.minimo ?? '-'} {product.unidad ?? 'PZA'}</p>
+<p className="font-semibold">{product.maximo ?? '-'} {product.unidad ?? 'PZA'}</p>
 
 // DESPUÉS
-<Input
-  id="precio1"
-  type="number"
-  step="0.01"
-  {...register('precio1')}
-  placeholder="0.00"
-/>
+<p className="font-semibold">{formatQuantity(product.minimo)} {product.unidad ?? 'PZA'}</p>
+<p className="font-semibold">{formatQuantity(product.maximo)} {product.unidad ?? 'PZA'}</p>
 ```
 
-**Cambio 3: Eliminar `handleNumberChange` (ya no es necesario)**
+**Cambio 3: Aplicar a Total Stock (línea 153)**
 
-La función `handleNumberChange` se puede eliminar porque Zod con `z.coerce.number()` se encarga de la conversión automáticamente.
+```tsx
+// ANTES
+Total: {totalStock.toLocaleString()} {product.unidad ?? 'PZA'}
+
+// DESPUÉS
+Total: {formatQuantity(totalStock)} {product.unidad ?? 'PZA'}
+```
+
+**Cambio 4: Corregir precios con exactamente 2 decimales (líneas 284, 289, 295)**
+
+```tsx
+// ANTES
+${priceInfo.base.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN
+
+// DESPUÉS (agregar maximumFractionDigits: 2)
+${priceInfo.base.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN
+```
+
+**Cambio 5: Aplicar a Existencia en tabla (línea 181)**
+
+```tsx
+// ANTES
+{parseFloat(String(inv.existencia)).toLocaleString()} {product.unidad ?? 'PZA'}
+
+// DESPUÉS
+{formatQuantity(inv.existencia)} {product.unidad ?? 'PZA'}
+```
 
 ## Resumen de Cambios
 
-| Líneas | Cambio |
-|--------|--------|
-| 22-35 | Actualizar schema con `z.coerce.number()` y manejo de strings vacíos |
-| 106-118 | Eliminar función `handleNumberChange` |
-| 194-201, 208-215, 244-251, 258-265 | Cambiar inputs numéricos para usar `register()` |
+| Ubicación | Antes | Después |
+|-----------|-------|---------|
+| Mínimo (línea 201) | 10.0000 PZA | 10 PZA |
+| Máximo (línea 205) | 100.0000 PZA | 100 PZA |
+| Total stock (línea 153) | Sin límite | Máx 1 decimal |
+| Existencia tabla (línea 181) | Sin límite | Máx 1 decimal |
+| Precios (líneas 284, 289, 295) | $30.000 | $30.00 |
 
 ## Resultado Esperado
 
-1. El usuario puede abrir el modal y dar "Guardar" sin modificar nada (el modal se cierra sin errores)
-2. Si no hay cambios, no se envía request a la API (comportamiento actual conservado)
-3. Los errores de tipo "Expected number, received string" desaparecen
-4. La validación de rangos (min/max) sigue funcionando correctamente
+- Cantidades enteras se muestran sin decimales (ej: "10 PZA")
+- Cantidades fraccionarias muestran máximo 1 decimal (ej: "10.5 PZA")
+- Precios siempre muestran exactamente 2 decimales (ej: "$30.00 MXN")
 
-## Detalle Técnico
-
-La clave es usar `z.union([z.literal(''), z.coerce.number()])` que:
-- Si el valor es string vacío `''` → lo transforma a `undefined`
-- Si el valor es un string numérico como `"30.00"` → lo convierte a número `30`
-- Si el valor ya es número → lo mantiene
