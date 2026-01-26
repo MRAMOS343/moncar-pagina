@@ -1,153 +1,92 @@
 
-# Plan: Corrección de KPIs y Datos en Tiempo Real
+# Plan: Corrección del KPI de Transacciones
 
-## Problema Identificado
-Los KPIs (Ventas Totales, Ticket Promedio, Transacciones) no se actualizan cuando el usuario cambia el período debido a:
-1. Cache agresivo de React Query (`staleTime: 60s`)
-2. `useInfiniteQuery` mantiene datos de páginas anteriores
-3. Solo se calculan KPIs con la primera página de datos (100 ventas)
+## Problemas Identificados
 
-## Solución Propuesta
+### Problema 1: Texto de truncado confuso
+El mensaje "Basado en las últimas X transacciones" muestra `totalItems` (incluye canceladas) cuando el KPI de Transacciones solo cuenta ventas activas. Esto genera confusión.
 
-### Fase 1: Forzar recarga al cambiar período
-**Archivo:** `src/hooks/useSales.ts`
+### Problema 2: Warning de React refs
+El componente `KPICard` usa `memo()` pero no implementa `forwardRef`, generando warnings y posibles problemas de renderizado.
 
-Cambios:
-- Reducir `staleTime` a 0 para forzar recarga cuando cambia queryKey
-- Agregar `refetchOnMount: true` para asegurar datos frescos
+### Problema 3: Posible cache stale
+Aunque `staleTime: 0`, al cambiar período rápidamente podría mostrar datos del período anterior momentáneamente.
 
-```text
-Antes:
-staleTime: 60 * 1000  // 1 minuto
+---
 
-Después:
-staleTime: 0  // Siempre refetch cuando queryKey cambia
-refetchOnMount: 'always'
+## Solución
+
+### Cambio 1: Corregir texto de truncado
+**Archivo:** `src/pages/VentasPage.tsx` (líneas 336-340)
+
+Cambiar el mensaje para que sea coherente:
+```tsx
+// ANTES:
+{kpisData?.truncated && (
+  <p className="text-xs text-muted-foreground text-center -mt-2">
+    * Basado en las últimas {kpisData.totalItems.toLocaleString()} transacciones del período
+  </p>
+)}
+
+// DESPUÉS:
+{kpisData?.truncated && (
+  <p className="text-xs text-muted-foreground text-center -mt-2">
+    * KPIs basados en {kpisData.transacciones.toLocaleString()} ventas activas de un total de {kpisData.totalItems.toLocaleString()} registros
+  </p>
+)}
+```
+
+### Cambio 2: Agregar forwardRef al KPICard
+**Archivo:** `src/components/ui/kpi-card.tsx`
+
+```tsx
+// ANTES:
+const KPICardComponent = ({ data, className }: KPICardProps) => { ... };
+export const KPICard = memo(KPICardComponent);
+
+// DESPUÉS:
+import { memo, forwardRef } from "react";
+
+const KPICardComponent = forwardRef<HTMLDivElement, KPICardProps>(
+  ({ data, className }, ref) => {
+    // ... mismo código interno
+    return <div ref={ref} className={...}>...</div>;
+  }
+);
+
+KPICardComponent.displayName = "KPICard";
+export const KPICard = memo(KPICardComponent);
+```
+
+### Cambio 3: Forzar limpieza de datos al cambiar período
+**Archivo:** `src/hooks/useVentasKPIs.ts`
+
+Agregar `keepPreviousData: false` para evitar mostrar datos viejos:
+```tsx
+return useQuery<VentasKPIsResult>({
+  queryKey: ["ventas-kpis", params.from, params.sucursal_id],
+  queryFn: async () => { ... },
+  staleTime: 0,
+  enabled: !!token,
+  placeholderData: undefined,  // No usar datos previos como placeholder
+  refetchOnMount: true,
+});
 ```
 
 ---
 
-### Fase 2: Crear hook dedicado para KPIs con más datos
-**Nuevo archivo:** `src/hooks/useVentasKPIs.ts`
+## Resumen de Archivos a Modificar
 
-Este hook cargará múltiples páginas para tener KPIs más precisos:
-
-```text
-- Usar useQuery normal (no infinite) con paginación interna
-- Cargar hasta 500-1000 ventas para KPIs
-- Cache separado del listado de tabla
-- Indicador si datos están truncados
-```
-
-Estructura:
-```typescript
-export function useVentasKPIs(params: { from: string; sucursal_id?: string }) {
-  // Cargar hasta 5 páginas de 200 ventas = 1000 max
-  // Calcular totales en el hook
-  // Devolver: { totalVentas, ticketPromedio, transacciones, truncated }
-}
-```
-
----
-
-### Fase 3: Actualizar VentasPage para usar el nuevo hook
-**Archivo:** `src/pages/VentasPage.tsx`
-
-Cambios:
-- Usar `useVentasKPIs` para los 3 KPIs
-- Mantener `useSales` solo para la tabla (con paginación manual)
-- Mostrar indicador si los datos de KPIs están truncados
-
----
-
-## Detalle Técnico
-
-### Hook useVentasKPIs
-
-```typescript
-const MAX_PAGES = 5;
-const PAGE_SIZE = 200;
-
-export function useVentasKPIs(params: { from: string; sucursal_id?: string }) {
-  const { token } = useAuth();
-
-  return useQuery({
-    queryKey: ["ventas-kpis", params.from, params.sucursal_id],
-    queryFn: async () => {
-      const allItems: SaleListItem[] = [];
-      let cursor = undefined;
-      let pageCount = 0;
-
-      // Fetch múltiples páginas
-      do {
-        const response = await fetchSales(token!, {
-          from: params.from,
-          sucursal_id: params.sucursal_id,
-          include_cancelled: true, // Necesitamos ambas para calcular ratio
-          limit: PAGE_SIZE,
-          cursor_fecha: cursor?.cursor_fecha,
-          cursor_venta_id: cursor?.cursor_venta_id,
-        });
-
-        allItems.push(...response.items);
-        cursor = response.next_cursor;
-        pageCount++;
-      } while (cursor && pageCount < MAX_PAGES);
-
-      // Calcular KPIs
-      const ventasActivas = allItems.filter(s => !s.cancelada);
-      const totalVentas = ventasActivas.reduce((sum, s) => sum + toNumber(s.total), 0);
-      const ticketPromedio = ventasActivas.length > 0 
-        ? totalVentas / ventasActivas.length 
-        : 0;
-
-      return {
-        totalVentas,
-        ticketPromedio,
-        transacciones: ventasActivas.length,
-        truncated: pageCount >= MAX_PAGES,
-        totalItems: allItems.length
-      };
-    },
-    staleTime: 0, // Siempre refetch al cambiar período
-    enabled: !!token,
-  });
-}
-```
-
----
-
-## Archivos a Modificar/Crear
-
-| Archivo | Acción | Cambio |
-|---------|--------|--------|
-| `src/hooks/useVentasKPIs.ts` | Crear | Hook dedicado para KPIs con múltiples páginas |
-| `src/hooks/useSales.ts` | Modificar | Reducir staleTime, agregar refetchOnMount |
-| `src/pages/VentasPage.tsx` | Modificar | Usar nuevo hook para KPIs, mostrar indicador de truncado |
+| Archivo | Cambio |
+|---------|--------|
+| `src/pages/VentasPage.tsx` | Corregir texto de truncado para distinguir transacciones activas vs total |
+| `src/components/ui/kpi-card.tsx` | Agregar forwardRef para eliminar warning de React |
+| `src/hooks/useVentasKPIs.ts` | Agregar `placeholderData: undefined` y `refetchOnMount: true` |
 
 ---
 
 ## Resultado Esperado
 
-1. **KPIs se actualizan inmediatamente** al cambiar el período
-2. **Datos más precisos** al cargar hasta 1000 ventas para KPIs
-3. **Indicador visual** si hay más datos de los mostrados (ej: "Basado en las últimas 1000 transacciones")
-4. **Tabla separada** con su propia paginación infinita para navegar todas las ventas
-
----
-
-## Sobre "Cachear Total de Ventas"
-
-Para tener el total EXACTO de todas las ventas, la mejor opción sería:
-
-**Solución ideal (requiere cambio en backend):**
-- Endpoint `/sales/stats?from=X&to=Y` que devuelva solo agregados:
-  ```json
-  { "total": 1234567.89, "count": 823, "cancelled": 12 }
-  ```
-- Esto sería instantáneo y preciso
-
-**Solución actual (frontend):**
-- Cargar hasta 1000-2500 ventas para KPIs
-- Mostrar indicador si hay más datos
-- Aceptar que es una aproximación para períodos con muchas ventas
+1. El texto de truncado será claro: "KPIs basados en X ventas activas de Y registros totales"
+2. No habrá warnings de React en la consola
+3. Al cambiar período, los KPIs mostrarán loading en lugar de datos viejos mientras cargan los nuevos
