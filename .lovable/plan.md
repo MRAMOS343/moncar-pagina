@@ -1,72 +1,161 @@
 
 
-# Plan: Corregir Dropdown de Sucursales usando `/warehouses`
+# Plan: Selector de Usuarios para Lider de Equipo
 
-## Diagnóstico
+## Objetivo
 
-El endpoint `/sucursales` **NO existe** en el backend. El endpoint correcto es **`/warehouses`**, que ya funciona en otras partes de la aplicación.
-
-La solución es modificar el servicio de sucursales para usar `/warehouses` y mapear la respuesta al formato esperado.
+Reemplazar el campo de texto "ID del Lider (UUID)" por un dropdown que muestre los usuarios disponibles con su nombre y email, haciendo la seleccion mucho mas intuitiva.
 
 ---
 
 ## Cambios a Implementar
 
-### 1. Actualizar `sucursalService.ts` para usar `/warehouses`
+### 1. Crear Tipo e Interfaz para Usuarios
 
-**Archivo:** `src/services/sucursalService.ts`
-
-Modificar para llamar al endpoint existente y transformar la respuesta:
+**Nuevo archivo: `src/types/usuarios.ts`**
 
 ```typescript
-import { apiRequest } from "./apiClient";
-import type { Sucursal, SucursalesListResponse } from "@/types/sucursales";
-
-interface WarehouseResponse {
-  id: string;     // Este es el código (ej: "moncar")
-  nombre: string;
-  direccion?: string;
-  telefono?: string;
+export interface UsuarioListItem {
+  id: string;          // UUID del usuario
+  nombre: string;      // "Juan Perez"
+  email: string;       // "juan@empresa.com"
+  role?: string;       // "admin" | "gerente" | "cajero"
 }
 
-export async function fetchSucursales(token: string): Promise<SucursalesListResponse> {
-  // Usar el endpoint que SÍ existe
-  const warehouses = await apiRequest<WarehouseResponse[]>("/warehouses?activo=true", { token });
-  
-  // Mapear id -> codigo para alinear con el formato de equipos
-  const items: Sucursal[] = warehouses.map(w => ({
-    codigo: w.id,      // El "id" del warehouse ES el código
-    nombre: w.nombre,
-    direccion: w.direccion,
-    telefono: w.telefono,
-    activo: true,
-  }));
-  
-  return { ok: true, items };
+export interface UsuariosListResponse {
+  ok: true;
+  items: UsuarioListItem[];
 }
 ```
 
 ---
 
-## Por Qué Esta Solución
+### 2. Crear Servicio para Fetch de Usuarios
 
-1. **No requiere cambios en el backend**: Usamos el endpoint `/warehouses` que ya existe
-2. **Mantiene la arquitectura del plan anterior**: El resto del código de equipos sigue funcionando con `sucursal_codigo`
-3. **Mapeo simple**: El campo `id` del warehouse contiene el código (ej: `"moncar"`), solo lo renombramos a `codigo`
+**Nuevo archivo: `src/services/usuarioService.ts`**
+
+```typescript
+import { apiRequest } from "./apiClient";
+import type { UsuariosListResponse } from "@/types/usuarios";
+
+export async function fetchUsuarios(token: string): Promise<UsuariosListResponse> {
+  return apiRequest<UsuariosListResponse>("/users", { token });
+}
+```
 
 ---
 
-## Resumen de Cambios
+### 3. Crear Hook React Query
 
-| Archivo | Cambio |
+**Nuevo archivo: `src/hooks/useUsuarios.ts`**
+
+```typescript
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
+import { fetchUsuarios } from "@/services/usuarioService";
+
+export function useUsuarios() {
+  const { token } = useAuth();
+  return useQuery({
+    queryKey: ["usuarios"],
+    queryFn: () => fetchUsuarios(token!),
+    enabled: !!token,
+    staleTime: 5 * 60 * 1000,  // 5 minutos cache
+    select: (data) => data.items,
+  });
+}
+```
+
+---
+
+### 4. Actualizar Formulario de Equipos
+
+**Archivo: `src/components/modals/EquipoFormModal.tsx`**
+
+Cambios principales:
+
+1. **Importar hook de usuarios**:
+```typescript
+import { useUsuarios } from "@/hooks/useUsuarios";
+```
+
+2. **Obtener lista de usuarios**:
+```typescript
+const { data: usuarios = [], isLoading: loadingUsuarios } = useUsuarios();
+```
+
+3. **Reemplazar Input por Select para el lider**:
+
+```tsx
+// ANTES (lineas 162-176):
+<div className="space-y-2">
+  <Label htmlFor="lider_usuario_id">ID del Lider (opcional)</Label>
+  <Input
+    id="lider_usuario_id"
+    value={formData.lider_usuario_id}
+    onChange={(e) => setFormData({ ...formData, lider_usuario_id: e.target.value })}
+    placeholder="UUID del usuario lider"
+    disabled={isPending}
+  />
+  <p className="text-xs text-muted-foreground">
+    Ingresa el ID del usuario que sera lider del equipo
+  </p>
+</div>
+
+// DESPUES:
+<div className="space-y-2">
+  <Label htmlFor="lider">Lider del Equipo (opcional)</Label>
+  <Select
+    value={formData.lider_usuario_id}
+    onValueChange={(value) => 
+      setFormData({ ...formData, lider_usuario_id: value === "none" ? "" : value })
+    }
+    disabled={isPending || loadingUsuarios}
+  >
+    <SelectTrigger>
+      <SelectValue placeholder="Seleccionar lider" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="none">Sin lider asignado</SelectItem>
+      {usuarios.map((u) => (
+        <SelectItem key={u.id} value={u.id}>
+          {u.nombre} ({u.email})
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+  <p className="text-xs text-muted-foreground">
+    El lider tendra permisos especiales sobre el equipo
+  </p>
+</div>
+```
+
+---
+
+## Resumen de Archivos
+
+| Archivo | Accion |
 |---------|--------|
-| `src/services/sucursalService.ts` | Usar `/warehouses` y mapear respuesta |
+| `src/types/usuarios.ts` | **Crear** - Tipos para usuario |
+| `src/services/usuarioService.ts` | **Crear** - Servicio GET /users |
+| `src/hooks/useUsuarios.ts` | **Crear** - Hook React Query |
+| `src/components/modals/EquipoFormModal.tsx` | **Modificar** - Usar Select en lugar de Input |
 
 ---
 
-## Resultado Esperado
+## Flujo de Usuario Mejorado
 
-1. El dropdown de sucursales mostrará las opciones (Moncar, etc.)
-2. Al crear/editar equipo, se enviará `sucursal_codigo: "moncar"` al backend
-3. No más errores 404 de `/sucursales`
+1. Usuario abre modal "Crear Equipo"
+2. Ve dropdown "Lider del Equipo" con lista de usuarios
+3. Cada opcion muestra: **Nombre (email)**
+4. Puede seleccionar "Sin lider asignado" para dejar vacio
+5. Al guardar, se envia el UUID internamente
+
+---
+
+## Notas Tecnicas
+
+- El endpoint GET /users debe retornar `{ ok: true, items: [...] }` o un array directo
+- Si el formato de respuesta es diferente, ajustaremos el servicio como hicimos con sucursales
+- El dropdown incluye opcion "Sin lider" para permitir equipos sin lider inicial
 
