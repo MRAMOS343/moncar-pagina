@@ -29,7 +29,8 @@ export function useSales(params: Omit<FetchSalesParams, 'cursor_fecha' | 'cursor
     enabled: !!token,
     initialPageParam: undefined as SalesCursor | undefined,
     getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
-    staleTime: 60 * 1000, // 1 minuto
+    staleTime: 0, // Siempre refetch al cambiar período
+    refetchOnMount: 'always',
     retry: (failureCount, error) => {
       // No reintentar en cursor inválido o 401
       if (error && typeof error === 'object' && 'status' in error) {

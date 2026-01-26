@@ -25,6 +25,7 @@ import { showSuccessToast, showErrorToast, showInfoToast } from '@/utils/toastHe
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSales } from '@/hooks/useSales';
+import { useVentasKPIs } from '@/hooks/useVentasKPIs';
 import { SaleDetailModal } from '@/components/modals/SaleDetailModal';
 import { toNumber, formatCurrency } from '@/utils/formatters';
 import type { SaleListItem } from '@/types/sales';
@@ -76,19 +77,28 @@ export default function VentasPage() {
     }
   }, [dateRange]);
 
-  // Hook para obtener ventas desde API real
+  // Hook para obtener ventas desde API real (para tabla)
   const { 
     data, 
     fetchNextPage, 
     hasNextPage, 
     isFetchingNextPage, 
-    isLoading, 
+    isLoading: isLoadingTable, 
     error, 
     refetch 
   } = useSales({
     from: fromDate,
     sucursal_id: currentWarehouse === 'all' ? undefined : currentWarehouse,
     include_cancelled: includeCancelled,
+  });
+
+  // Hook dedicado para KPIs con más datos
+  const { 
+    data: kpisData, 
+    isLoading: isLoadingKPIs 
+  } = useVentasKPIs({
+    from: fromDate,
+    sucursal_id: currentWarehouse === 'all' ? undefined : currentWarehouse,
   });
 
   // Aplanar páginas de datos con deduplicación defensiva por venta_id
@@ -109,35 +119,39 @@ export default function VentasPage() {
     return unique.sort((a, b) => b.venta_id - a.venta_id);
   }, [data]);
 
-  // Calcular KPIs desde datos reales (solo ventas activas)
+  // KPIs desde hook dedicado
   const kpis: KPIData[] = useMemo(() => {
-    const ventasActivas = salesData.filter(s => !s.cancelada);
-    const totalVentas = ventasActivas.reduce((sum, sale) => sum + toNumber(sale.total), 0);
-    const avgTicket = ventasActivas.length > 0 ? totalVentas / ventasActivas.length : 0;
+    if (!kpisData) {
+      return [
+        { label: 'Ventas Totales', value: 0, change: 0, changeType: 'neutral' as const, format: 'currency' as const },
+        { label: 'Ticket Promedio', value: 0, change: 0, changeType: 'neutral' as const, format: 'currency' as const },
+        { label: 'Transacciones', value: 0, change: 0, changeType: 'neutral' as const }
+      ];
+    }
 
     return [
       {
         label: 'Ventas Totales',
-        value: totalVentas,
-        change: 0, // Sin comparativo por ahora
+        value: kpisData.totalVentas,
+        change: 0,
         changeType: 'neutral' as const,
         format: 'currency' as const
       },
       {
         label: 'Ticket Promedio',
-        value: avgTicket,
+        value: kpisData.ticketPromedio,
         change: 0,
         changeType: 'neutral' as const,
         format: 'currency' as const
       },
       {
         label: 'Transacciones',
-        value: ventasActivas.length,
+        value: kpisData.transacciones,
         change: 0,
         changeType: 'neutral' as const,
       }
     ];
-  }, [salesData]);
+  }, [kpisData]);
 
   // Generar datos para gráfico
   const chartData: ChartDataPoint[] = useMemo(() => {
@@ -307,7 +321,7 @@ export default function VentasPage() {
 
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {isLoading ? (
+        {isLoadingKPIs ? (
           <>
             <KPISkeleton />
             <KPISkeleton />
@@ -319,9 +333,14 @@ export default function VentasPage() {
           ))
         )}
       </div>
+      {kpisData?.truncated && (
+        <p className="text-xs text-muted-foreground text-center -mt-2">
+          * Basado en las últimas {kpisData.totalItems.toLocaleString()} transacciones del período
+        </p>
+      )}
 
       {/* Chart */}
-      {isLoading ? (
+      {isLoadingTable ? (
         <ChartSkeleton />
       ) : (
         <Card className="chart-card animate-scale-in card-hover">
@@ -439,7 +458,7 @@ export default function VentasPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          {isLoading ? (
+          {isLoadingTable ? (
             <TableSkeleton rows={10} columns={8} />
           ) : salesData.length === 0 ? (
             <EmptyState
