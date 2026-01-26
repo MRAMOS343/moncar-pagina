@@ -19,6 +19,15 @@ import { useUpdateProduct } from '@/hooks/useProductMutations';
 import type { ApiProduct, ProductUpdateRequest } from '@/types/products';
 import { Loader2 } from 'lucide-react';
 
+// Helper para campos numéricos: convierte '' a undefined, strings a números
+const optionalNumber = (min = 0, max?: number, message?: string) =>
+  z.union([
+    z.literal('').transform(() => undefined),
+    z.coerce.number()
+      .min(min, message ?? `El valor debe ser al menos ${min}`)
+      .pipe(max !== undefined ? z.number().max(max, `El valor no puede exceder ${max}`) : z.number())
+  ]).optional();
+
 const productEditSchema = z.object({
   descrip: z.string().min(1, 'La descripción es requerida').optional(),
   marca: z.string().optional(),
@@ -27,11 +36,11 @@ const productEditSchema = z.object({
   ubicacion: z.string().optional(),
   notes: z.string().optional(),
   image_url: z.string().url('URL inválida').optional().or(z.literal('')),
-  precio1: z.number().min(0, 'El precio debe ser positivo').optional(),
-  impuesto: z.number().min(0).max(100, 'El impuesto debe ser entre 0 y 100').optional(),
-  minimo: z.number().min(0, 'El mínimo debe ser positivo').optional(),
-  maximo: z.number().min(0, 'El máximo debe ser positivo').optional(),
-  costo_u: z.number().min(0, 'El costo debe ser positivo').optional(),
+  precio1: optionalNumber(0, undefined, 'El precio debe ser positivo'),
+  impuesto: optionalNumber(0, 100, 'El impuesto debe ser entre 0 y 100'),
+  minimo: optionalNumber(0, undefined, 'El mínimo debe ser positivo'),
+  maximo: optionalNumber(0, undefined, 'El máximo debe ser positivo'),
+  costo_u: optionalNumber(0, undefined, 'El costo debe ser positivo'),
 });
 
 type ProductEditFormData = z.infer<typeof productEditSchema>;
@@ -103,19 +112,6 @@ export function ProductEditModal({
     onOpenChange(false);
   };
 
-  const handleNumberChange = (field: keyof ProductEditFormData) => (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const value = e.target.value;
-    if (value === '') {
-      setValue(field, undefined, { shouldDirty: true });
-    } else {
-      const parsed = parseFloat(value);
-      if (!isNaN(parsed)) {
-        setValue(field, parsed, { shouldDirty: true });
-      }
-    }
-  };
 
   if (!product) return null;
 
@@ -195,12 +191,11 @@ export function ProductEditModal({
                     id="precio1"
                     type="number"
                     step="0.01"
-                    defaultValue={product.precio1 ?? ''}
-                    onChange={handleNumberChange('precio1')}
+                    {...register('precio1')}
                     placeholder="0.00"
                   />
                   {errors.precio1 && (
-                    <p className="text-sm text-destructive">{errors.precio1.message}</p>
+                    <p className="text-sm text-destructive">{String(errors.precio1.message ?? '')}</p>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -209,12 +204,11 @@ export function ProductEditModal({
                     id="impuesto"
                     type="number"
                     step="0.01"
-                    defaultValue={product.impuesto ?? ''}
-                    onChange={handleNumberChange('impuesto')}
+                    {...register('impuesto')}
                     placeholder="16"
                   />
                   {errors.impuesto && (
-                    <p className="text-sm text-destructive">{errors.impuesto.message}</p>
+                    <p className="text-sm text-destructive">{String(errors.impuesto.message ?? '')}</p>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -223,11 +217,11 @@ export function ProductEditModal({
                     id="costo_u"
                     type="number"
                     step="0.01"
-                    onChange={handleNumberChange('costo_u')}
+                    {...register('costo_u')}
                     placeholder="0.00"
                   />
                   {errors.costo_u && (
-                    <p className="text-sm text-destructive">{errors.costo_u.message}</p>
+                    <p className="text-sm text-destructive">{String(errors.costo_u.message ?? '')}</p>
                   )}
                 </div>
               </div>
@@ -245,12 +239,11 @@ export function ProductEditModal({
                     id="minimo"
                     type="number"
                     step="1"
-                    defaultValue={product.minimo ?? ''}
-                    onChange={handleNumberChange('minimo')}
+                    {...register('minimo')}
                     placeholder="0"
                   />
                   {errors.minimo && (
-                    <p className="text-sm text-destructive">{errors.minimo.message}</p>
+                    <p className="text-sm text-destructive">{String(errors.minimo.message ?? '')}</p>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -259,12 +252,11 @@ export function ProductEditModal({
                     id="maximo"
                     type="number"
                     step="1"
-                    defaultValue={product.maximo ?? ''}
-                    onChange={handleNumberChange('maximo')}
+                    {...register('maximo')}
                     placeholder="0"
                   />
                   {errors.maximo && (
-                    <p className="text-sm text-destructive">{errors.maximo.message}</p>
+                    <p className="text-sm text-destructive">{String(errors.maximo.message ?? '')}</p>
                   )}
                 </div>
               </div>
