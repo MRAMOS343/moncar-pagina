@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, forwardRef } from "react";
 import { cn } from "@/lib/utils";
 import { KPIData } from "../../types";
 import { TrendingUp, TrendingDown, Minus, DollarSign, Package, ShoppingCart, AlertTriangle } from "lucide-react";
@@ -8,10 +8,8 @@ interface KPICardProps {
   className?: string;
 }
 
-const KPICardComponent = ({
-  data,
-  className
-}: KPICardProps) => {
+const KPICardComponent = forwardRef<HTMLDivElement, KPICardProps>(
+  ({ data, className }, ref) => {
   const formatValue = (value: number | string, format?: string) => {
     if (typeof value === 'string') return value;
     switch (format) {
@@ -57,10 +55,14 @@ const KPICardComponent = ({
     return null;
   };
 
-  return <div className={cn(
-      "bg-card p-6 rounded-lg border shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] group",
-      className
-    )}>
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "bg-card p-6 rounded-lg border shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02] group",
+        className
+      )}
+    >
       <div className="flex items-start justify-between">
         <div className="space-y-3 flex-1 min-w-0">
           <div className="flex items-center gap-2">
@@ -75,13 +77,18 @@ const KPICardComponent = ({
             {formatValue(data.value, data.format)}
           </p>
         </div>
-        {data.change !== undefined && <div className={cn("flex items-center gap-1 text-sm font-medium flex-shrink-0 ml-2", getChangeColorClass())}>
+        {data.change !== undefined && (
+          <div className={cn("flex items-center gap-1 text-sm font-medium flex-shrink-0 ml-2", getChangeColorClass())}>
             {getChangeIcon()}
             <span>{data.change > 0 ? '+' : ''}{data.change}%</span>
-          </div>}
+          </div>
+        )}
       </div>
-    </div>;
-};
+    </div>
+  );
+});
+
+KPICardComponent.displayName = "KPICard";
 
 // Memoized export for performance
 export const KPICard = memo(KPICardComponent);

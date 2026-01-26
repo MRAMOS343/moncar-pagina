@@ -335,7 +335,7 @@ export default function VentasPage() {
       </div>
       {kpisData?.truncated && (
         <p className="text-xs text-muted-foreground text-center -mt-2">
-          * Basado en las últimas {kpisData.totalItems.toLocaleString()} transacciones del período
+          * KPIs basados en {kpisData.transacciones.toLocaleString()} ventas activas de un total de {kpisData.totalItems.toLocaleString()} registros
         </p>
       )}
 
