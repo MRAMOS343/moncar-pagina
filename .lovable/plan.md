@@ -1,60 +1,153 @@
 
-# Plan: Corrección de KPIs en Página de Ventas
+# Plan: Corrección de KPIs y Datos en Tiempo Real
 
-## Problema
-Los KPIs de la página de ventas muestran información incorrecta debido a:
-1. Incluir ventas canceladas en los totales
-2. Cálculo inconsistente del ticket promedio
-3. Solo usar la primera página de datos (20 ventas)
+## Problema Identificado
+Los KPIs (Ventas Totales, Ticket Promedio, Transacciones) no se actualizan cuando el usuario cambia el período debido a:
+1. Cache agresivo de React Query (`staleTime: 60s`)
+2. `useInfiniteQuery` mantiene datos de páginas anteriores
+3. Solo se calculan KPIs con la primera página de datos (100 ventas)
 
-## Solución
+## Solución Propuesta
 
-### Cambios en `src/pages/VentasPage.tsx`
+### Fase 1: Forzar recarga al cambiar período
+**Archivo:** `src/hooks/useSales.ts`
 
-**Corregir el cálculo de KPIs (líneas 112-140):**
+Cambios:
+- Reducir `staleTime` a 0 para forzar recarga cuando cambia queryKey
+- Agregar `refetchOnMount: true` para asegurar datos frescos
 
-```typescript
-// ANTES (incorrecto):
-const totalVentas = salesData.reduce((sum, sale) => sum + toNumber(sale.total), 0);
-const ventasActivas = salesData.filter(s => !s.cancelada);
-const avgTicket = totalVentas / (ventasActivas.length || 1);
+```text
+Antes:
+staleTime: 60 * 1000  // 1 minuto
 
-// DESPUÉS (correcto):
-const ventasActivas = salesData.filter(s => !s.cancelada);
-const totalVentas = ventasActivas.reduce((sum, sale) => sum + toNumber(sale.total), 0);
-const avgTicket = ventasActivas.length > 0 ? totalVentas / ventasActivas.length : 0;
+Después:
+staleTime: 0  // Siempre refetch cuando queryKey cambia
+refetchOnMount: 'always'
 ```
-
-**Actualizar los valores de KPIs:**
-- **Ventas Totales**: Usar `totalVentas` (calculado solo de ventas activas)
-- **Ticket Promedio**: Usar `avgTicket` (ahora consistente)
-- **Transacciones**: Usar `ventasActivas.length` en lugar de `salesData.length`
-
-### Cambios en `src/hooks/useSales.ts`
-
-**Aumentar el límite por defecto para mejor precisión:**
-
-```typescript
-// ANTES:
-limit: params.limit ?? 20,
-
-// DESPUÉS:
-limit: params.limit ?? 100,
-```
-
-Esto reduce la cantidad de páginas necesarias para obtener datos representativos.
 
 ---
 
-## Resumen de Cambios
+### Fase 2: Crear hook dedicado para KPIs con más datos
+**Nuevo archivo:** `src/hooks/useVentasKPIs.ts`
 
-| Archivo | Líneas | Cambio |
+Este hook cargará múltiples páginas para tener KPIs más precisos:
+
+```text
+- Usar useQuery normal (no infinite) con paginación interna
+- Cargar hasta 500-1000 ventas para KPIs
+- Cache separado del listado de tabla
+- Indicador si datos están truncados
+```
+
+Estructura:
+```typescript
+export function useVentasKPIs(params: { from: string; sucursal_id?: string }) {
+  // Cargar hasta 5 páginas de 200 ventas = 1000 max
+  // Calcular totales en el hook
+  // Devolver: { totalVentas, ticketPromedio, transacciones, truncated }
+}
+```
+
+---
+
+### Fase 3: Actualizar VentasPage para usar el nuevo hook
+**Archivo:** `src/pages/VentasPage.tsx`
+
+Cambios:
+- Usar `useVentasKPIs` para los 3 KPIs
+- Mantener `useSales` solo para la tabla (con paginación manual)
+- Mostrar indicador si los datos de KPIs están truncados
+
+---
+
+## Detalle Técnico
+
+### Hook useVentasKPIs
+
+```typescript
+const MAX_PAGES = 5;
+const PAGE_SIZE = 200;
+
+export function useVentasKPIs(params: { from: string; sucursal_id?: string }) {
+  const { token } = useAuth();
+
+  return useQuery({
+    queryKey: ["ventas-kpis", params.from, params.sucursal_id],
+    queryFn: async () => {
+      const allItems: SaleListItem[] = [];
+      let cursor = undefined;
+      let pageCount = 0;
+
+      // Fetch múltiples páginas
+      do {
+        const response = await fetchSales(token!, {
+          from: params.from,
+          sucursal_id: params.sucursal_id,
+          include_cancelled: true, // Necesitamos ambas para calcular ratio
+          limit: PAGE_SIZE,
+          cursor_fecha: cursor?.cursor_fecha,
+          cursor_venta_id: cursor?.cursor_venta_id,
+        });
+
+        allItems.push(...response.items);
+        cursor = response.next_cursor;
+        pageCount++;
+      } while (cursor && pageCount < MAX_PAGES);
+
+      // Calcular KPIs
+      const ventasActivas = allItems.filter(s => !s.cancelada);
+      const totalVentas = ventasActivas.reduce((sum, s) => sum + toNumber(s.total), 0);
+      const ticketPromedio = ventasActivas.length > 0 
+        ? totalVentas / ventasActivas.length 
+        : 0;
+
+      return {
+        totalVentas,
+        ticketPromedio,
+        transacciones: ventasActivas.length,
+        truncated: pageCount >= MAX_PAGES,
+        totalItems: allItems.length
+      };
+    },
+    staleTime: 0, // Siempre refetch al cambiar período
+    enabled: !!token,
+  });
+}
+```
+
+---
+
+## Archivos a Modificar/Crear
+
+| Archivo | Acción | Cambio |
 |---------|--------|--------|
-| `src/pages/VentasPage.tsx` | 113-139 | Filtrar ventas activas ANTES de calcular totales |
-| `src/hooks/useSales.ts` | 19 | Aumentar límite de 20 a 100 |
+| `src/hooks/useVentasKPIs.ts` | Crear | Hook dedicado para KPIs con múltiples páginas |
+| `src/hooks/useSales.ts` | Modificar | Reducir staleTime, agregar refetchOnMount |
+| `src/pages/VentasPage.tsx` | Modificar | Usar nuevo hook para KPIs, mostrar indicador de truncado |
+
+---
 
 ## Resultado Esperado
-- **Ventas Totales**: Solo sumará ventas completadas (no canceladas)
-- **Ticket Promedio**: Dividirá el total correcto entre el número de transacciones activas
-- **Transacciones**: Mostrará solo el conteo de ventas activas
-- Datos más completos al cargar más ventas por página
+
+1. **KPIs se actualizan inmediatamente** al cambiar el período
+2. **Datos más precisos** al cargar hasta 1000 ventas para KPIs
+3. **Indicador visual** si hay más datos de los mostrados (ej: "Basado en las últimas 1000 transacciones")
+4. **Tabla separada** con su propia paginación infinita para navegar todas las ventas
+
+---
+
+## Sobre "Cachear Total de Ventas"
+
+Para tener el total EXACTO de todas las ventas, la mejor opción sería:
+
+**Solución ideal (requiere cambio en backend):**
+- Endpoint `/sales/stats?from=X&to=Y` que devuelva solo agregados:
+  ```json
+  { "total": 1234567.89, "count": 823, "cancelled": 12 }
+  ```
+- Esto sería instantáneo y preciso
+
+**Solución actual (frontend):**
+- Cargar hasta 1000-2500 ventas para KPIs
+- Mostrar indicador si hay más datos
+- Aceptar que es una aproximación para períodos con muchas ventas
