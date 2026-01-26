@@ -1,88 +1,50 @@
 
 
-# Plan: Limitar Decimales en Modal de Detalle de Producto
+# Plan: Corregir Formato de Precios en Modal de Producto
 
 ## Problema Identificado
 
-En el modal de detalle de producto, varios valores numéricos muestran demasiados decimales:
-- **Mínimo/Máximo:** 10.0000 PZA, 100.0000 PZA (4 decimales)
-- **Total precio:** $30.000 MXN (3 decimales, debería ser 2)
-- **Total stock:** Puede mostrar decimales innecesarios
+En la imagen se ve que el Total muestra **"$50.000.08 MXN"** cuando debería mostrar **"$50,000.08 MXN"** (usando coma como separador de miles).
+
+**Causa:** `toLocaleString('es-MX')` puede comportarse de forma inconsistente entre navegadores, mezclando separadores de punto y coma incorrectamente.
+
+## Solución
+
+Usar la función `formatCurrency` que ya existe en `src/utils/formatters.ts` y que usa `Intl.NumberFormat` con configuración de moneda MXN que garantiza formato consistente.
 
 ## Cambios Requeridos
 
 ### Archivo: `src/components/inventory/ProductDetailModal.tsx`
 
-**Cambio 1: Crear helper para formatear cantidades (máximo 1 decimal)**
+**Cambio 1: Importar `formatCurrency` desde formatters**
 
 ```typescript
-// Función helper para formatear cantidades con máximo 1 decimal
-const formatQuantity = (value: number | string | null | undefined): string => {
-  if (value === null || value === undefined) return '-';
-  const num = typeof value === 'string' ? parseFloat(value) : value;
-  if (isNaN(num)) return '-';
-  // Si es entero, no mostrar decimales; si tiene decimales, máximo 1
-  return num % 1 === 0 
-    ? num.toLocaleString('es-MX') 
-    : num.toLocaleString('es-MX', { maximumFractionDigits: 1 });
-};
+// Línea 27 - agregar formatCurrency al import existente
+import { formatQuantity, formatCurrency } from '@/utils/formatters';
 ```
 
-**Cambio 2: Aplicar a Mínimo/Máximo (líneas 201, 205)**
+**Cambio 2: Usar `formatCurrency` en lugar de `toLocaleString` (líneas 285, 290, 296)**
 
 ```tsx
-// ANTES
-<p className="font-semibold">{product.minimo ?? '-'} {product.unidad ?? 'PZA'}</p>
-<p className="font-semibold">{product.maximo ?? '-'} {product.unidad ?? 'PZA'}</p>
-
-// DESPUÉS
-<p className="font-semibold">{formatQuantity(product.minimo)} {product.unidad ?? 'PZA'}</p>
-<p className="font-semibold">{formatQuantity(product.maximo)} {product.unidad ?? 'PZA'}</p>
-```
-
-**Cambio 3: Aplicar a Total Stock (línea 153)**
-
-```tsx
-// ANTES
-Total: {totalStock.toLocaleString()} {product.unidad ?? 'PZA'}
-
-// DESPUÉS
-Total: {formatQuantity(totalStock)} {product.unidad ?? 'PZA'}
-```
-
-**Cambio 4: Corregir precios con exactamente 2 decimales (líneas 284, 289, 295)**
-
-```tsx
-// ANTES
-${priceInfo.base.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN
-
-// DESPUÉS (agregar maximumFractionDigits: 2)
+// ANTES (líneas 285, 290, 296)
 ${priceInfo.base.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN
-```
-
-**Cambio 5: Aplicar a Existencia en tabla (línea 181)**
-
-```tsx
-// ANTES
-{parseFloat(String(inv.existencia)).toLocaleString()} {product.unidad ?? 'PZA'}
 
 // DESPUÉS
-{formatQuantity(inv.existencia)} {product.unidad ?? 'PZA'}
+{formatCurrency(priceInfo.base)}
+
+// Aplicar a los 3 lugares:
+// - Precio (línea 285)
+// - IVA (línea 290) 
+// - Total (línea 296)
 ```
-
-## Resumen de Cambios
-
-| Ubicación | Antes | Después |
-|-----------|-------|---------|
-| Mínimo (línea 201) | 10.0000 PZA | 10 PZA |
-| Máximo (línea 205) | 100.0000 PZA | 100 PZA |
-| Total stock (línea 153) | Sin límite | Máx 1 decimal |
-| Existencia tabla (línea 181) | Sin límite | Máx 1 decimal |
-| Precios (líneas 284, 289, 295) | $30.000 | $30.00 |
 
 ## Resultado Esperado
 
-- Cantidades enteras se muestran sin decimales (ej: "10 PZA")
-- Cantidades fraccionarias muestran máximo 1 decimal (ej: "10.5 PZA")
-- Precios siempre muestran exactamente 2 decimales (ej: "$30.00 MXN")
+| Antes | Después |
+|-------|---------|
+| $50.000.08 MXN | $50,000.08 MXN |
+| $0.08 MXN | $0.08 MXN |
+| $50.00 MXN | $50.00 MXN |
+
+La función `formatCurrency` ya incluye el símbolo "$" y la moneda "MXN", así que el formato será consistente y correcto.
 
