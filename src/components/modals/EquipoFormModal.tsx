@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useSucursales } from "@/hooks/useSucursales";
+import { useUsuarios } from "@/hooks/useUsuarios";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreateEquipo, useUpdateEquipo } from "@/hooks/useEquipoMutations";
 import type { EquipoListItem } from "@/types/equipos";
@@ -38,6 +39,7 @@ export function EquipoFormModal({
 }: EquipoFormModalProps) {
   const { currentUser } = useAuth();
   const { data: sucursales = [], isLoading: loadingSucursales } = useSucursales();
+  const { data: usuarios = [], isLoading: loadingUsuarios } = useUsuarios();
   const createMutation = useCreateEquipo();
   const updateMutation = useUpdateEquipo();
 
@@ -160,18 +162,28 @@ export function EquipoFormModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="lider_usuario_id">ID del Líder (opcional)</Label>
-            <Input
-              id="lider_usuario_id"
-              value={formData.lider_usuario_id}
-              onChange={(e) =>
-                setFormData({ ...formData, lider_usuario_id: e.target.value })
+            <Label htmlFor="lider">Líder del Equipo (opcional)</Label>
+            <Select
+              value={formData.lider_usuario_id || "none"}
+              onValueChange={(value) =>
+                setFormData({ ...formData, lider_usuario_id: value === "none" ? "" : value })
               }
-              placeholder="UUID del usuario líder"
-              disabled={isPending}
-            />
+              disabled={isPending || loadingUsuarios}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar líder" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sin líder asignado</SelectItem>
+                {usuarios.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.nombre} ({u.email})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <p className="text-xs text-muted-foreground">
-              Ingresa el ID del usuario que será líder del equipo
+              El líder tendrá permisos especiales sobre el equipo
             </p>
           </div>
 
