@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -22,9 +23,9 @@ import {
 import { useSucursales } from "@/hooks/useSucursales";
 import { useUsuarios } from "@/hooks/useUsuarios";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCreateEquipo, useUpdateEquipo } from "@/hooks/useEquipoMutations";
+import { useCreateEquipo, useUpdateEquipo, useAddMiembro } from "@/hooks/useEquipoMutations";
 import type { EquipoListItem } from "@/types/equipos";
-import { Loader2 } from "lucide-react";
+import { Loader2, Users } from "lucide-react";
 
 interface EquipoFormModalProps {
   open: boolean;
@@ -42,6 +43,7 @@ export function EquipoFormModal({
   const { data: usuarios = [], isLoading: loadingUsuarios } = useUsuarios();
   const createMutation = useCreateEquipo();
   const updateMutation = useUpdateEquipo();
+  const addMiembroMutation = useAddMiembro();
 
   const isEditing = !!equipo;
   const isAdmin = currentUser?.role === "admin";
@@ -56,6 +58,8 @@ export function EquipoFormModal({
   });
 
   const [errors, setErrors] = useState<{ sucursal?: string }>({});
+  const [selectedMiembros, setSelectedMiembros] = useState<string[]>([]);
+  const [isAddingMembers, setIsAddingMembers] = useState(false);
 
   // Reset form when modal opens/closes or equipo changes
   useEffect(() => {
@@ -68,9 +72,9 @@ export function EquipoFormModal({
           sucursal_codigo: equipo.sucursal_codigo || "",
           activo: equipo.activo,
         });
+        setSelectedMiembros([]);
       } else {
         // For new equipo, default to user's warehouse code if gerente
-        // Note: currentUser.warehouseId might be a code, adjust if needed
         setFormData({
           nombre: "",
           descripcion: "",
@@ -78,9 +82,15 @@ export function EquipoFormModal({
           sucursal_codigo: isGerente && currentUser?.warehouseId ? currentUser.warehouseId : "",
           activo: true,
         });
+        setSelectedMiembros([]);
       }
     }
   }, [open, equipo, isGerente, currentUser?.warehouseId]);
+
+  // Filter available users for member selection (exclude leader)
+  const availableUsersForMembers = usuarios.filter(
+    (u) => u.usuario_id !== formData.lider_usuario_id
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,15 +118,32 @@ export function EquipoFormModal({
       if (isEditing && equipo) {
         await updateMutation.mutateAsync({ id: equipo.equipo_id, data: payload });
       } else {
-        await createMutation.mutateAsync(payload);
+        const result = await createMutation.mutateAsync(payload);
+        
+        // Add selected members after creating the team
+        if (selectedMiembros.length > 0 && result?.equipo?.equipo_id) {
+          setIsAddingMembers(true);
+          for (const usuarioId of selectedMiembros) {
+            try {
+              await addMiembroMutation.mutateAsync({
+                equipoId: result.equipo.equipo_id,
+                data: { usuario_id: usuarioId },
+              });
+            } catch {
+              // Continue adding other members even if one fails
+            }
+          }
+          setIsAddingMembers(false);
+        }
       }
       onOpenChange(false);
     } catch {
+      setIsAddingMembers(false);
       // Error handled by mutation
     }
   };
 
-  const isPending = createMutation.isPending || updateMutation.isPending;
+  const isPending = createMutation.isPending || updateMutation.isPending || isAddingMembers;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -217,6 +244,57 @@ export function EquipoFormModal({
               </p>
             )}
           </div>
+
+          {/* Member selection for new teams only */}
+          {!isEditing && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Miembros Iniciales (opcional)
+              </Label>
+              <div className="border rounded-lg p-3 space-y-2 max-h-48 overflow-y-auto bg-muted/30">
+                {loadingUsuarios ? (
+                  <p className="text-sm text-muted-foreground text-center py-2">
+                    Cargando usuarios...
+                  </p>
+                ) : availableUsersForMembers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-2">
+                    No hay usuarios disponibles
+                  </p>
+                ) : (
+                  availableUsersForMembers.map((u) => (
+                    <div key={u.usuario_id} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`miembro-${u.usuario_id}`}
+                        checked={selectedMiembros.includes(u.usuario_id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedMiembros([...selectedMiembros, u.usuario_id]);
+                          } else {
+                            setSelectedMiembros(
+                              selectedMiembros.filter((id) => id !== u.usuario_id)
+                            );
+                          }
+                        }}
+                        disabled={isPending}
+                      />
+                      <Label
+                        htmlFor={`miembro-${u.usuario_id}`}
+                        className="font-normal cursor-pointer"
+                      >
+                        {u.nombre} ({u.email})
+                      </Label>
+                    </div>
+                  ))
+                )}
+              </div>
+              {selectedMiembros.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {selectedMiembros.length} miembro(s) seleccionado(s)
+                </p>
+              )}
+            </div>
+          )}
 
           {isEditing && (isAdmin || isGerente) && (
             <div className="flex items-center justify-between rounded-lg border p-3">

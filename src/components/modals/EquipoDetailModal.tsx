@@ -7,8 +7,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -31,6 +37,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useEquipoDetail } from "@/hooks/useEquipos";
 import { useAddMiembro, useRemoveMiembro } from "@/hooks/useEquipoMutations";
+import { useUsuarios } from "@/hooks/useUsuarios";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Users,
@@ -56,11 +63,17 @@ export function EquipoDetailModal({
 }: EquipoDetailModalProps) {
   const { currentUser } = useAuth();
   const { data, isLoading, isError } = useEquipoDetail(equipoId, open);
+  const { data: usuarios = [], isLoading: loadingUsuarios } = useUsuarios();
   const addMiembroMutation = useAddMiembro();
   const removeMiembroMutation = useRemoveMiembro();
 
   const [showAddMiembro, setShowAddMiembro] = useState(false);
   const [newMiembro, setNewMiembro] = useState({ usuario_id: "", rol_equipo: "" });
+
+  // Filter out users who are already members
+  const usuariosDisponibles = usuarios.filter(
+    (u) => !equipo?.miembros?.some((m) => m.usuario_id === u.usuario_id)
+  );
   const [miembroToRemove, setMiembroToRemove] = useState<{
     usuario_id: string;
     nombre: string;
@@ -213,34 +226,55 @@ export function EquipoDetailModal({
                   <div className="mb-4 p-4 border rounded-lg bg-muted/30 space-y-3">
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="space-y-1">
-                        <Label htmlFor="new_usuario_id">ID Usuario *</Label>
-                        <Input
-                          id="new_usuario_id"
+                        <Label htmlFor="new_usuario_id">Usuario *</Label>
+                        <Select
                           value={newMiembro.usuario_id}
-                          onChange={(e) =>
-                            setNewMiembro({
-                              ...newMiembro,
-                              usuario_id: e.target.value,
-                            })
+                          onValueChange={(value) =>
+                            setNewMiembro({ ...newMiembro, usuario_id: value })
                           }
-                          placeholder="UUID del usuario"
-                          disabled={addMiembroMutation.isPending}
-                        />
+                          disabled={addMiembroMutation.isPending || loadingUsuarios}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar usuario" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {usuariosDisponibles.length === 0 ? (
+                              <div className="p-2 text-center text-sm text-muted-foreground">
+                                No hay usuarios disponibles
+                              </div>
+                            ) : (
+                              usuariosDisponibles.map((u) => (
+                                <SelectItem key={u.usuario_id} value={u.usuario_id}>
+                                  {u.nombre} ({u.email})
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-1">
                         <Label htmlFor="new_rol_equipo">Rol (opcional)</Label>
-                        <Input
-                          id="new_rol_equipo"
-                          value={newMiembro.rol_equipo}
-                          onChange={(e) =>
+                        <Select
+                          value={newMiembro.rol_equipo || "none"}
+                          onValueChange={(value) =>
                             setNewMiembro({
                               ...newMiembro,
-                              rol_equipo: e.target.value,
+                              rol_equipo: value === "none" ? "" : value,
                             })
                           }
-                          placeholder="Ej: Vendedor, Técnico"
                           disabled={addMiembroMutation.isPending}
-                        />
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar rol" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Sin rol específico</SelectItem>
+                            <SelectItem value="Vendedor">Vendedor</SelectItem>
+                            <SelectItem value="Técnico">Técnico</SelectItem>
+                            <SelectItem value="Administrativo">Administrativo</SelectItem>
+                            <SelectItem value="Soporte">Soporte</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                     <div className="flex gap-2 justify-end">
