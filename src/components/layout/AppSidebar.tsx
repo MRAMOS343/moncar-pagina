@@ -85,7 +85,7 @@ export function AppSidebar({
           </div>
           {!collapsed && <div className="min-w-0">
               <h2 className="text-lg font-bold text-foreground truncate">Grupo Monzalvo</h2>
-              <p className="text-sm text-muted-foreground truncate">Sistema de refaccionaria</p>
+              <p className="text-sm text-muted-foreground truncate">Sistema de Gestión</p>
             </div>}
         </div>
       </SidebarHeader>
