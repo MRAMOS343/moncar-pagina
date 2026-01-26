@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchSales } from "@/services/salesService";
 import type { SaleListItem, SalesCursor } from "@/types/sales";
@@ -8,13 +8,14 @@ interface DashboardSalesParams {
   sucursal_id?: string;
 }
 
-// Límites de seguridad para evitar loops infinitos
-const MAX_PAGES = 20;
-const MAX_ITEMS = 10000;
+// Límites de seguridad optimizados para carga rápida
+const MAX_PAGES = 5;
+const MAX_ITEMS = 2500;
+const PAGE_SIZE = 500;
 
 /**
  * Hook para obtener ventas del dashboard.
- * Implementa paginación por cursor para traer TODO el historial del período.
+ * Implementa paginación por cursor con límites optimizados para carga rápida.
  */
 export function useDashboardSales(params: DashboardSalesParams) {
   const { token } = useAuth();
@@ -33,7 +34,7 @@ export function useDashboardSales(params: DashboardSalesParams) {
           from: params.from,
           sucursal_id: params.sucursal_id,
           include_cancelled: true,
-          limit: 1000,
+          limit: PAGE_SIZE,
           cursor_fecha: cursor?.cursor_fecha,
           cursor_venta_id: cursor?.cursor_venta_id,
         });
@@ -49,23 +50,16 @@ export function useDashboardSales(params: DashboardSalesParams) {
         }
       } while (cursor);
 
-      // Log de diagnóstico (temporal para debugging)
-      if (allItems.length > 0) {
-        const fechas = allItems.map(i => i.fecha_emision.split('T')[0]);
-        const minFecha = fechas.reduce((a, b) => a < b ? a : b);
-        const maxFecha = fechas.reduce((a, b) => a > b ? a : b);
-        console.log(`[Dashboard Sales] from=${params.from}, pages=${pageCount}, items=${allItems.length}, rango=[${minFecha} → ${maxFecha}]${truncated ? ' (TRUNCADO)' : ''}`);
-      } else {
-        console.log(`[Dashboard Sales] from=${params.from}, pages=${pageCount}, items=0 (sin ventas)`);
-      }
-
-      if (truncated) {
-        console.warn(`[Dashboard Sales] Datos truncados: se alcanzó el límite de ${MAX_PAGES} páginas o ${MAX_ITEMS} items`);
+      // Log de diagnóstico (compacto)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[Dashboard] ${allItems.length} ventas, ${pageCount} páginas${truncated ? ' (truncado)' : ''}`);
       }
 
       return allItems;
     },
     enabled: !!token,
-    staleTime: 2 * 60 * 1000, // 2 minutos
+    staleTime: 5 * 60 * 1000, // 5 minutos - datos se consideran frescos
+    gcTime: 10 * 60 * 1000, // 10 minutos en cache
+    placeholderData: keepPreviousData, // Muestra datos anteriores mientras recarga
   });
 }

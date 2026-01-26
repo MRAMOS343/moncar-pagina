@@ -41,7 +41,7 @@ export default function DashboardPage() {
   // Determinar si es sucursal específica
   const isSpecificWarehouse = currentWarehouse !== 'all';
 
-  // Obtener métodos de pago solo cuando hay sucursal específica
+  // Obtener métodos de pago solo cuando hay sucursal específica (ahora es síncrono)
   const { 
     data: paymentMethodsData = [], 
     isLoading: paymentMethodsLoading 
