@@ -1,8 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/AuthContext";
-import { fetchSaleDetail } from "@/services/salesService";
-import type { SaleListItem, SalePayment } from "@/types/sales";
-import { toNumber } from "@/utils/formatters";
+import { useMemo } from "react";
+import type { SaleListItem } from "@/types/sales";
 
 interface PaymentMethodData {
   name: string;
@@ -27,56 +24,66 @@ const PAYMENT_METHOD_NAMES: Record<string, string> = {
 };
 
 /**
- * Hook que obtiene los detalles de pagos de una lista de ventas
- * y calcula la distribución por método de pago
+ * Parsea el campo pagos_resumen que viene con formato "EFE:116.00" o "EFE:100.00,TRA:50.00"
+ */
+function parsePagosResumen(resumen: string | null | undefined): Record<string, number> {
+  if (!resumen) return {};
+  
+  const result: Record<string, number> = {};
+  resumen.split(',').forEach(part => {
+    const [metodo, monto] = part.trim().split(':');
+    if (metodo && monto) {
+      const key = metodo.toLowerCase();
+      result[key] = (result[key] || 0) + parseFloat(monto);
+    }
+  });
+  return result;
+}
+
+/**
+ * Hook que calcula la distribución por método de pago
+ * directamente desde pagos_resumen (sin llamadas API adicionales)
  */
 export function useDashboardPaymentMethods(
   sales: SaleListItem[],
   enabled: boolean = true
-) {
-  const { token } = useAuth();
+): { data: PaymentMethodData[]; isLoading: boolean } {
+  
+  const data = useMemo((): PaymentMethodData[] => {
+    if (!enabled || sales.length === 0) return [];
 
-  // Solo ventas activas (no canceladas)
-  const ventasActivas = sales.filter((s) => !s.cancelada);
-  const ventaIds = ventasActivas.map((s) => s.venta_id);
+    // Solo ventas activas (no canceladas)
+    const ventasActivas = sales.filter((s) => !s.cancelada);
 
-  return useQuery({
-    queryKey: ["dashboard-payment-methods", ventaIds],
-    queryFn: async (): Promise<PaymentMethodData[]> => {
-      // Fetch detalles de todas las ventas en paralelo
-      const detalles = await Promise.all(
-        ventaIds.map((id) => fetchSaleDetail(token!, id))
-      );
+    // Agregar todos los pagos desde pagos_resumen
+    const porMetodo: Record<string, { total: number; count: number }> = {};
 
-      // Agregar todos los pagos
-      const todosPagos: SalePayment[] = detalles.flatMap((d) => d.pagos);
-
-      // Agrupar por método
-      const porMetodo: Record<string, { total: number; count: number }> = {};
-
-      todosPagos.forEach((pago) => {
-        const metodo = pago.metodo.toLowerCase();
+    ventasActivas.forEach((venta) => {
+      const pagos = parsePagosResumen(venta.pagos_resumen);
+      
+      Object.entries(pagos).forEach(([metodo, monto]) => {
         if (!porMetodo[metodo]) {
           porMetodo[metodo] = { total: 0, count: 0 };
         }
-        porMetodo[metodo].total += toNumber(pago.monto);
+        porMetodo[metodo].total += monto;
         porMetodo[metodo].count++;
       });
+    });
 
-      const totalMonto = Object.values(porMetodo).reduce(
-        (sum, m) => sum + m.total,
-        0
-      );
+    const totalMonto = Object.values(porMetodo).reduce(
+      (sum, m) => sum + m.total,
+      0
+    );
 
-      return Object.entries(porMetodo).map(([metodo, data]) => ({
-        name: PAYMENT_METHOD_NAMES[metodo] || metodo.charAt(0).toUpperCase() + metodo.slice(1),
-        value: data.total,
-        count: data.count,
-        percentage:
-          totalMonto > 0 ? ((data.total / totalMonto) * 100).toFixed(1) : "0.0",
-      }));
-    },
-    enabled: enabled && !!token && ventaIds.length > 0,
-    staleTime: 5 * 60 * 1000, // 5 minutos cache
-  });
+    return Object.entries(porMetodo).map(([metodo, stats]) => ({
+      name: PAYMENT_METHOD_NAMES[metodo] || metodo.charAt(0).toUpperCase() + metodo.slice(1),
+      value: stats.total,
+      count: stats.count,
+      percentage:
+        totalMonto > 0 ? ((stats.total / totalMonto) * 100).toFixed(1) : "0.0",
+    }));
+  }, [sales, enabled]);
+
+  // Ya no hay llamadas async, siempre es síncrono e instantáneo
+  return { data, isLoading: false };
 }
