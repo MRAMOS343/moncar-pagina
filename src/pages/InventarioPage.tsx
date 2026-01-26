@@ -15,6 +15,7 @@ import { Download, Upload, Package, Plus, X, Filter, LayoutGrid, List, Loader2 }
 import { useData } from '@/contexts/DataContext';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useProducts } from '@/hooks/useProducts';
+import { useProductosKPIs } from '@/hooks/useProductosKPIs';
 import { Product, User, KPIData } from '../types';
 import type { ApiProduct } from '@/types/products';
 import { exportToCSV } from '@/utils/exportCSV';
@@ -78,11 +79,16 @@ export default function InventarioPage() {
     isFetchingNextPage, 
     hasNextPage, 
     fetchNextPage,
-    totalCount
   } = useProducts({ 
     q: debouncedSearchQuery,
     limit: 100,
   });
+
+  // Hook dedicado para KPIs con carga completa del catálogo
+  const { 
+    data: kpiData, 
+    isLoading: kpiLoading 
+  } = useProductosKPIs();
 
   // Mapear productos de la API al formato de tabla
   const tableProducts = useMemo(() => 
@@ -138,31 +144,35 @@ export default function InventarioPage() {
     },
   ], []);
 
-  // Calculate KPIs based on loaded products
+  // Calculate KPIs using dedicated hook for complete catalog data
   const productKPIs = useMemo((): KPIData[] => {
+    const totalProductos = kpiData?.totalProductos ?? 0;
+    const totalMarcas = kpiData?.marcas.length ?? 0;
+    const totalLineas = kpiData?.lineas.length ?? 0;
+
     return [
       {
-        label: "Productos Cargados",
-        value: totalCount,
+        label: "Total Productos",
+        value: totalProductos,
         format: "number",
       },
       {
-        label: "Productos Filtrados",
+        label: "Productos Mostrados",
         value: filteredProducts.length,
         format: "number",
       },
       {
         label: "Marcas",
-        value: marcas.length,
+        value: totalMarcas,
         format: "number",
       },
       {
         label: "Líneas",
-        value: categorias.length,
+        value: totalLineas,
         format: "number",
       },
     ];
-  }, [totalCount, filteredProducts.length, marcas.length, categorias.length]);
+  }, [kpiData, filteredProducts.length]);
 
   // Calculate global totals across all warehouses (using local inventory data)
   const globalTotals = useMemo(() => {
@@ -295,7 +305,7 @@ export default function InventarioPage() {
         <TabsContent value="products" className="space-y-6">
           {/* KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {isLoading ? (
+            {(isLoading || kpiLoading) ? (
               <>
                 <KPISkeleton />
                 <KPISkeleton />
