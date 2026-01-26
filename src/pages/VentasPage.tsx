@@ -109,11 +109,11 @@ export default function VentasPage() {
     return unique.sort((a, b) => b.venta_id - a.venta_id);
   }, [data]);
 
-  // Calcular KPIs desde datos reales
+  // Calcular KPIs desde datos reales (solo ventas activas)
   const kpis: KPIData[] = useMemo(() => {
-    const totalVentas = salesData.reduce((sum, sale) => sum + toNumber(sale.total), 0);
     const ventasActivas = salesData.filter(s => !s.cancelada);
-    const avgTicket = totalVentas / (ventasActivas.length || 1);
+    const totalVentas = ventasActivas.reduce((sum, sale) => sum + toNumber(sale.total), 0);
+    const avgTicket = ventasActivas.length > 0 ? totalVentas / ventasActivas.length : 0;
 
     return [
       {
@@ -132,7 +132,7 @@ export default function VentasPage() {
       },
       {
         label: 'Transacciones',
-        value: salesData.length,
+        value: ventasActivas.length,
         change: 0,
         changeType: 'neutral' as const,
       }
