@@ -1,92 +1,218 @@
 
-# Plan: Corrección del KPI de Transacciones
+# Plan: Corrección de Bugs y Mejoras de Estabilidad
 
-## Problemas Identificados
-
-### Problema 1: Texto de truncado confuso
-El mensaje "Basado en las últimas X transacciones" muestra `totalItems` (incluye canceladas) cuando el KPI de Transacciones solo cuenta ventas activas. Esto genera confusión.
-
-### Problema 2: Warning de React refs
-El componente `KPICard` usa `memo()` pero no implementa `forwardRef`, generando warnings y posibles problemas de renderizado.
-
-### Problema 3: Posible cache stale
-Aunque `staleTime: 0`, al cambiar período rápidamente podría mostrar datos del período anterior momentáneamente.
+## Resumen Ejecutivo
+Se han identificado 10 problemas potenciales en el código que van desde errores runtime hasta inconsistencias de datos y vulnerabilidades de parsing. Este plan propone correcciones ordenadas por prioridad.
 
 ---
 
-## Solución
+## Bugs Críticos (Prioridad Alta)
 
-### Cambio 1: Corregir texto de truncado
-**Archivo:** `src/pages/VentasPage.tsx` (líneas 336-340)
+### 1. Error Runtime "Component is not a function"
+**Causa probable:** Los lazy-loaded charts pueden fallar si Recharts no exporta correctamente el componente.
 
-Cambiar el mensaje para que sea coherente:
-```tsx
-// ANTES:
-{kpisData?.truncated && (
-  <p className="text-xs text-muted-foreground text-center -mt-2">
-    * Basado en las últimas {kpisData.totalItems.toLocaleString()} transacciones del período
-  </p>
-)}
+**Archivo:** `src/components/charts/LazyLineChart.tsx`
 
-// DESPUÉS:
-{kpisData?.truncated && (
-  <p className="text-xs text-muted-foreground text-center -mt-2">
-    * KPIs basados en {kpisData.transacciones.toLocaleString()} ventas activas de un total de {kpisData.totalItems.toLocaleString()} registros
-  </p>
-)}
+**Solución:**
+```typescript
+// Agregar fallback más robusto
+const RechartsLineChart = React.lazy(() => 
+  import('recharts').then(module => {
+    if (!module.LineChart) {
+      throw new Error('LineChart not found in recharts module');
+    }
+    return { default: module.LineChart };
+  }).catch(err => {
+    console.error('Failed to load LineChart:', err);
+    return { default: () => <div>Error loading chart</div> };
+  })
+);
 ```
 
-### Cambio 2: Agregar forwardRef al KPICard
+### 2. Datos Truncados No Expuestos en Dashboard
+**Archivo:** `src/hooks/useDashboardSales.ts`
+
+**Solución:** Retornar objeto con metadata en lugar de solo array.
+
+```typescript
+// ANTES
+return allItems;
+
+// DESPUÉS
+return {
+  items: allItems,
+  truncated,
+  pageCount,
+  totalFetched: allItems.length
+};
+```
+
+**Cambio en DashboardPage.tsx:** Actualizar para usar la nueva estructura.
+
+### 3. Parser de Pagos Vulnerable a NaN
+**Archivo:** `src/hooks/useDashboardPaymentMethods.ts`
+
+**Solución:**
+```typescript
+function parsePagosResumen(resumen: string | null | undefined): Record<string, number> {
+  if (!resumen) return {};
+  
+  const result: Record<string, number> = {};
+  resumen.split(',').forEach(part => {
+    const [metodo, monto] = part.trim().split(':');
+    if (metodo && monto) {
+      const key = metodo.toLowerCase();
+      const numMonto = parseFloat(monto);
+      // Validar que no sea NaN antes de sumar
+      if (!isNaN(numMonto)) {
+        result[key] = (result[key] || 0) + numMonto;
+      }
+    }
+  });
+  return result;
+}
+```
+
+---
+
+## Bugs Moderados (Prioridad Media)
+
+### 4. Redirección 401 con window.location
+**Archivo:** `src/services/apiClient.ts`
+
+**Problema:** Pérdida de estado de React y posibles bucles.
+
+**Solución alternativa:** Usar un flag global en lugar de redirección forzada.
+
+```typescript
+// Crear un evento global que AuthContext escuche
+if (res.status === 401) {
+  localStorage.removeItem('moncar_token');
+  localStorage.removeItem('moncar_user');
+  
+  // Disparar evento en lugar de redirección forzada
+  window.dispatchEvent(new CustomEvent('auth:expired'));
+  throw new ApiError('Sesión expirada', 401, data);
+}
+```
+
+### 5. Validación de Fechas en SaleDetailModal
+**Archivo:** `src/components/modals/SaleDetailModal.tsx`
+
+**Solución:**
+```typescript
+// Crear helper de formateo seguro
+const safeFormatDate = (dateStr: string | null | undefined) => {
+  if (!dateStr) return '---';
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '---';
+    return format(date, "dd/MM/yyyy HH:mm", { locale: es });
+  } catch {
+    return '---';
+  }
+};
+```
+
+### 6. Ícono Faltante para KPI "Transacciones"
 **Archivo:** `src/components/ui/kpi-card.tsx`
 
-```tsx
-// ANTES:
-const KPICardComponent = ({ data, className }: KPICardProps) => { ... };
-export const KPICard = memo(KPICardComponent);
+**Solución:**
+```typescript
+const getContextualIcon = () => {
+  const iconClass = "w-5 h-5";
+  if (data.label.includes("Ventas")) return <DollarSign className={iconClass} />;
+  if (data.label.includes("Transacciones")) return <Receipt className={iconClass} />; // Agregar
+  if (data.label.includes("Productos")) return <Package className={iconClass} />;
+  if (data.label.includes("Ticket")) return <ShoppingCart className={iconClass} />;
+  if (data.label.includes("Stock")) return <AlertTriangle className={iconClass} />;
+  if (data.label.includes("Canceladas")) return <XCircle className={iconClass} />; // Agregar
+  return null;
+};
+```
 
-// DESPUÉS:
-import { memo, forwardRef } from "react";
+---
 
-const KPICardComponent = forwardRef<HTMLDivElement, KPICardProps>(
-  ({ data, className }, ref) => {
-    // ... mismo código interno
-    return <div ref={ref} className={...}>...</div>;
+## Mejoras de Consistencia (Prioridad Baja)
+
+### 7. Unificar Configuración de Cache
+**Crear constante compartida:**
+
+```typescript
+// src/constants/queryConfig.ts
+export const QUERY_CONFIG = {
+  SALES_TABLE: { staleTime: 0, refetchOnMount: 'always' },
+  SALES_KPI: { staleTime: 0, refetchOnMount: true },
+  DASHBOARD: { staleTime: 5 * 60 * 1000 },
+} as const;
+```
+
+### 8. Logging de Valores Nulos en toNumber
+**Archivo:** `src/utils/formatters.ts`
+
+```typescript
+export function toNumber(value: string | number | undefined | null, fieldName?: string): number {
+  if (value === undefined || value === null) {
+    if (import.meta.env.DEV && fieldName) {
+      console.warn(`[toNumber] Campo '${fieldName}' es nulo, usando 0`);
+    }
+    return 0;
   }
-);
-
-KPICardComponent.displayName = "KPICard";
-export const KPICard = memo(KPICardComponent);
-```
-
-### Cambio 3: Forzar limpieza de datos al cambiar período
-**Archivo:** `src/hooks/useVentasKPIs.ts`
-
-Agregar `keepPreviousData: false` para evitar mostrar datos viejos:
-```tsx
-return useQuery<VentasKPIsResult>({
-  queryKey: ["ventas-kpis", params.from, params.sucursal_id],
-  queryFn: async () => { ... },
-  staleTime: 0,
-  enabled: !!token,
-  placeholderData: undefined,  // No usar datos previos como placeholder
-  refetchOnMount: true,
-});
+  // ...
+}
 ```
 
 ---
 
-## Resumen de Archivos a Modificar
+## Archivos a Modificar
 
-| Archivo | Cambio |
-|---------|--------|
-| `src/pages/VentasPage.tsx` | Corregir texto de truncado para distinguir transacciones activas vs total |
-| `src/components/ui/kpi-card.tsx` | Agregar forwardRef para eliminar warning de React |
-| `src/hooks/useVentasKPIs.ts` | Agregar `placeholderData: undefined` y `refetchOnMount: true` |
+| Archivo | Cambios |
+|---------|---------|
+| `src/components/charts/LazyLineChart.tsx` | Agregar manejo de error en lazy import |
+| `src/components/charts/LazyPieChart.tsx` | Agregar manejo de error en lazy import |
+| `src/hooks/useDashboardSales.ts` | Retornar metadata de truncado |
+| `src/hooks/useDashboardPaymentMethods.ts` | Validar NaN en parseFloat |
+| `src/pages/DashboardPage.tsx` | Usar nueva estructura de datos con truncated |
+| `src/services/apiClient.ts` | Cambiar redirección por evento |
+| `src/contexts/AuthContext.tsx` | Escuchar evento auth:expired |
+| `src/components/modals/SaleDetailModal.tsx` | Agregar formateo seguro de fechas |
+| `src/components/ui/kpi-card.tsx` | Agregar íconos faltantes |
+| `src/utils/formatters.ts` | Logging opcional de valores nulos |
 
 ---
 
-## Resultado Esperado
+## Orden de Implementación Sugerido
 
-1. El texto de truncado será claro: "KPIs basados en X ventas activas de Y registros totales"
-2. No habrá warnings de React en la consola
-3. Al cambiar período, los KPIs mostrarán loading en lugar de datos viejos mientras cargan los nuevos
+1. **Fase 1 (Crítico):** Lazy charts error handling + Parser NaN validation
+2. **Fase 2 (Importante):** Dashboard truncated metadata + Fecha segura
+3. **Fase 3 (Mejoras):** Íconos KPI + Evento auth:expired + Logging
+
+---
+
+## Sección Técnica
+
+### Diagrama de Dependencias de Hooks de Ventas
+
+```text
++------------------+     +-------------------+     +----------------------+
+|   VentasPage     | --> |    useSales       | --> |   fetchSales (API)   |
++------------------+     +-------------------+     +----------------------+
+        |                        |
+        |                        v
+        |                +-------------------+
+        +--------------> |   useVentasKPIs   | (limite: 1000)
+                         +-------------------+
+                                |
+                                v
+                         +-------------------+
+                         |   KPICard x 3     |
+                         +-------------------+
+```
+
+### Notas sobre el Error Runtime
+
+El error `Component is not a function` en `updateSimpleMemoComponent` sugiere que:
+1. Un componente envuelto en `memo()` no es válido
+2. O un lazy-load retornó algo que no es un componente
+
+La solución propuesta agrega catch blocks a los lazy imports para diagnosticar mejor.
