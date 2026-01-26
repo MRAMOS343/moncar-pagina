@@ -69,19 +69,20 @@ export function EquipoDetailModal({
 
   const [showAddMiembro, setShowAddMiembro] = useState(false);
   const [newMiembro, setNewMiembro] = useState({ usuario_id: "", rol_equipo: "" });
-
-  // Filter out users who are already members
-  const usuariosDisponibles = usuarios.filter(
-    (u) => !equipo?.miembros?.some((m) => m.usuario_id === u.usuario_id)
-  );
   const [miembroToRemove, setMiembroToRemove] = useState<{
     usuario_id: string;
     nombre: string;
   } | null>(null);
 
+  // Declarar equipo PRIMERO
   const equipo = data?.equipo;
   const canManageMembers =
     currentUser?.role === "admin" || currentUser?.role === "gerente";
+
+  // Ahora sí podemos usarlo para filtrar
+  const usuariosDisponibles = usuarios.filter(
+    (u) => !equipo?.miembros?.some((m) => m.usuario_id === u.usuario_id)
+  );
 
   const handleAddMiembro = async () => {
     if (!equipoId || !newMiembro.usuario_id.trim()) return;
