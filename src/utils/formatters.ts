@@ -5,9 +5,17 @@
 /**
  * Convierte string/number a number de forma segura
  * Útil para valores que vienen como string desde Postgres (numeric)
+ * @param value - Valor a convertir
+ * @param fieldName - Nombre del campo (opcional, para logging en dev)
  */
-export function toNumber(value: string | number | undefined | null): number {
-  if (value === undefined || value === null) return 0;
+export function toNumber(value: string | number | undefined | null, fieldName?: string): number {
+  if (value === undefined || value === null) {
+    // Log en dev para detectar datos nulos inesperados
+    if (import.meta.env.DEV && fieldName) {
+      console.warn(`[toNumber] Campo '${fieldName}' es nulo, usando 0`);
+    }
+    return 0;
+  }
   if (typeof value === "number") return value;
   const parsed = Number(value);
   return isNaN(parsed) ? 0 : parsed;

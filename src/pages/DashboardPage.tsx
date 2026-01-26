@@ -33,10 +33,13 @@ export default function DashboardPage() {
   const [productModalOpen, setProductModalOpen] = useState(false);
 
   // Obtener ventas reales de la API (últimos 30 días)
-  const { data: salesData = [], isLoading } = useDashboardSales({
+  const { data: salesResult, isLoading } = useDashboardSales({
     from: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
     sucursal_id: currentWarehouse === 'all' ? undefined : currentWarehouse,
   });
+
+  // Extraer items del resultado (con fallback seguro)
+  const salesData = salesResult?.items ?? [];
 
   // Determinar si es sucursal específica
   const isSpecificWarehouse = currentWarehouse !== 'all';

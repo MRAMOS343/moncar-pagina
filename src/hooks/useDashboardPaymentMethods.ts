@@ -34,7 +34,11 @@ function parsePagosResumen(resumen: string | null | undefined): Record<string, n
     const [metodo, monto] = part.trim().split(':');
     if (metodo && monto) {
       const key = metodo.toLowerCase();
-      result[key] = (result[key] || 0) + parseFloat(monto);
+      const numMonto = parseFloat(monto);
+      // Validar que no sea NaN antes de sumar
+      if (!isNaN(numMonto)) {
+        result[key] = (result[key] || 0) + numMonto;
+      }
     }
   });
   return result;

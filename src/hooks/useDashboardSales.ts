@@ -8,6 +8,14 @@ interface DashboardSalesParams {
   sucursal_id?: string;
 }
 
+// Respuesta con metadata de truncado
+export interface DashboardSalesResult {
+  items: SaleListItem[];
+  truncated: boolean;
+  pageCount: number;
+  totalFetched: number;
+}
+
 // Límites de seguridad optimizados para carga rápida
 const MAX_PAGES = 5;
 const MAX_ITEMS = 2500;
@@ -16,13 +24,14 @@ const PAGE_SIZE = 500;
 /**
  * Hook para obtener ventas del dashboard.
  * Implementa paginación por cursor con límites optimizados para carga rápida.
+ * Retorna metadata de truncado para que la UI pueda informar al usuario.
  */
 export function useDashboardSales(params: DashboardSalesParams) {
   const { token } = useAuth();
 
   return useQuery({
     queryKey: ["dashboard-sales", params.from, params.sucursal_id],
-    queryFn: async (): Promise<SaleListItem[]> => {
+    queryFn: async (): Promise<DashboardSalesResult> => {
       const allItems: SaleListItem[] = [];
       let cursor: SalesCursor | undefined = undefined;
       let pageCount = 0;
@@ -51,11 +60,16 @@ export function useDashboardSales(params: DashboardSalesParams) {
       } while (cursor);
 
       // Log de diagnóstico (compacto)
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.DEV) {
         console.log(`[Dashboard] ${allItems.length} ventas, ${pageCount} páginas${truncated ? ' (truncado)' : ''}`);
       }
 
-      return allItems;
+      return {
+        items: allItems,
+        truncated,
+        pageCount,
+        totalFetched: allItems.length,
+      };
     },
     enabled: !!token,
     staleTime: 5 * 60 * 1000, // 5 minutos - datos se consideran frescos

@@ -38,11 +38,13 @@ export async function apiRequest<T>(
   const text = await res.text();
   const data = text ? safeJson(text) : null;
 
-  // Manejo de 401: limpiar tokens y redirigir a login
+  // Manejo de 401: limpiar tokens y disparar evento global
+  // AuthContext escucha este evento para manejar logout de forma controlada
   if (res.status === 401) {
     localStorage.removeItem('moncar_token');
     localStorage.removeItem('moncar_user');
-    window.location.href = '/login';
+    // Disparar evento en lugar de redirección forzada para evitar pérdida de estado React
+    window.dispatchEvent(new CustomEvent('auth:expired'));
     throw new ApiError('Sesión expirada', 401, data);
   }
 
