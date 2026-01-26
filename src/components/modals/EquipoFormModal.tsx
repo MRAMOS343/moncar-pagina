@@ -53,6 +53,8 @@ export function EquipoFormModal({
     activo: true,
   });
 
+  const [errors, setErrors] = useState<{ sucursal?: string }>({});
+
   // Reset form when modal opens/closes or equipo changes
   useEffect(() => {
     if (open) {
@@ -84,11 +86,18 @@ export function EquipoFormModal({
       return;
     }
 
+    if (!formData.sucursal_id) {
+      setErrors({ sucursal: "Debes seleccionar una sucursal" });
+      return;
+    }
+
+    setErrors({});
+
     const payload = {
       nombre: formData.nombre.trim(),
       descripcion: formData.descripcion.trim() || null,
       lider_usuario_id: formData.lider_usuario_id.trim() || null,
-      sucursal_id: formData.sucursal_id || null,
+      sucursal_id: formData.sucursal_id,
       ...(isEditing && { activo: formData.activo }),
     };
 
@@ -166,15 +175,16 @@ export function EquipoFormModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="sucursal">Sucursal</Label>
+            <Label htmlFor="sucursal">Sucursal *</Label>
             <Select
               value={formData.sucursal_id}
-              onValueChange={(value) =>
-                setFormData({ ...formData, sucursal_id: value })
-              }
+              onValueChange={(value) => {
+                setFormData({ ...formData, sucursal_id: value });
+                if (errors.sucursal) setErrors({ ...errors, sucursal: undefined });
+              }}
               disabled={isPending || loadingWarehouses || (!isAdmin && isGerente)}
             >
-              <SelectTrigger>
+              <SelectTrigger className={errors.sucursal ? "border-destructive" : ""}>
                 <SelectValue placeholder="Seleccionar sucursal" />
               </SelectTrigger>
               <SelectContent>
@@ -185,6 +195,9 @@ export function EquipoFormModal({
                 ))}
               </SelectContent>
             </Select>
+            {errors.sucursal && (
+              <p className="text-sm text-destructive">{errors.sucursal}</p>
+            )}
             {!isAdmin && isGerente && (
               <p className="text-xs text-muted-foreground">
                 Solo puedes crear equipos en tu sucursal asignada
@@ -220,7 +233,7 @@ export function EquipoFormModal({
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isPending || !formData.nombre.trim()}>
+            <Button type="submit" disabled={isPending || !formData.nombre.trim() || !formData.sucursal_id}>
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEditing ? "Actualizar" : "Crear"}
             </Button>
