@@ -1,149 +1,215 @@
 
-# Plan: Corregir Errores 400/500 en Formulario de Equipos
 
-## Diagnostico Confirmado
+# Plan: Migrar Equipos de `sucursal_id` a `sucursal_codigo`
 
-Basado en el analisis de la respuesta de la API de equipos:
-- El equipo existente usa `sucursal_id: "00000000-0000-0000-0000-000000000001"` (UUID completo)
-- El formulario actual envia `sucursal_id: null` cuando no se selecciona ninguna sucursal (linea 91)
-- El backend rechaza con error 400 "SUCURSAL_REQUIRED"
+## Resumen
 
-## Solucion Recomendada: Validacion Frontend + UX Mejorada
-
-La mejor solucion es **prevenir el envio de datos invalidos desde el frontend** con validacion clara y mensajes de error amigables.
+Actualizar el modulo de Equipos para usar el codigo de sucursal (ej: `"moncar"`) en lugar de UUIDs. Esto alinea el frontend con la estructura del backend donde las sucursales se identifican por codigo.
 
 ---
 
 ## Cambios a Implementar
 
-### 1. Marcar Sucursal como Campo Requerido en UI
+### 1. Crear Tipo y Servicio para Sucursales
 
-**Archivo:** `src/components/modals/EquipoFormModal.tsx`
-
-Cambios:
-- Agregar asterisco (*) al label de Sucursal
-- Mostrar mensaje de error si no se selecciona sucursal
-- Deshabilitar boton "Crear/Actualizar" si sucursal esta vacia
-
-```text
-Antes:  <Label htmlFor="sucursal">Sucursal</Label>
-Despues: <Label htmlFor="sucursal">Sucursal *</Label>
-```
-
-### 2. Agregar Validacion en handleSubmit
-
-**Archivo:** `src/components/modals/EquipoFormModal.tsx`
-
-Agregar validacion antes de enviar:
+**Nuevo archivo: `src/types/sucursales.ts`**
 
 ```typescript
-// Agregar estado para errores
-const [errors, setErrors] = useState<{ sucursal?: string }>({});
+export interface Sucursal {
+  codigo: string;     // "moncar"
+  nombre: string;     // "Moncar"
+  direccion?: string;
+  telefono?: string;
+  activo: boolean;
+}
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  // Validaciones
-  const newErrors: { sucursal?: string } = {};
-  
-  if (!formData.nombre.trim()) {
-    return;
-  }
-  
-  if (!formData.sucursal_id) {
-    newErrors.sucursal = "Debes seleccionar una sucursal";
-    setErrors(newErrors);
-    return;
-  }
-  
-  setErrors({});
-  
-  // Solo enviar sucursal_id si tiene valor (nunca null en creacion)
-  const payload = {
-    nombre: formData.nombre.trim(),
-    descripcion: formData.descripcion.trim() || null,
-    lider_usuario_id: formData.lider_usuario_id.trim() || null,
-    sucursal_id: formData.sucursal_id, // Ya validamos que no esta vacio
-    ...(isEditing && { activo: formData.activo }),
-  };
-  
-  // ... resto igual
-};
+export interface SucursalesListResponse {
+  ok: true;
+  items: Sucursal[];
+}
 ```
 
-### 3. Mostrar Error Visual en Campo Sucursal
+**Nuevo archivo: `src/services/sucursalService.ts`**
 
-**Archivo:** `src/components/modals/EquipoFormModal.tsx`
+```typescript
+import { apiRequest } from "./apiClient";
+import type { SucursalesListResponse } from "@/types/sucursales";
 
-Agregar mensaje de error debajo del Select:
-
-```tsx
-<div className="space-y-2">
-  <Label htmlFor="sucursal">Sucursal *</Label>
-  <Select
-    value={formData.sucursal_id}
-    onValueChange={(value) => {
-      setFormData({ ...formData, sucursal_id: value });
-      if (errors.sucursal) setErrors({ ...errors, sucursal: undefined });
-    }}
-    disabled={isPending || loadingWarehouses || (!isAdmin && isGerente)}
-  >
-    <SelectTrigger className={errors.sucursal ? "border-destructive" : ""}>
-      <SelectValue placeholder="Seleccionar sucursal" />
-    </SelectTrigger>
-    <SelectContent>
-      {warehouses.map((w) => (
-        <SelectItem key={w.id} value={w.id}>
-          {w.nombre}
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
-  {errors.sucursal && (
-    <p className="text-sm text-destructive">{errors.sucursal}</p>
-  )}
-  {!isAdmin && isGerente && (
-    <p className="text-xs text-muted-foreground">
-      Solo puedes crear equipos en tu sucursal asignada
-    </p>
-  )}
-</div>
+export async function fetchSucursales(token: string): Promise<SucursalesListResponse> {
+  return apiRequest<SucursalesListResponse>("/sucursales", { token });
+}
 ```
 
-### 4. Deshabilitar Boton si Falta Sucursal
+**Nuevo archivo: `src/hooks/useSucursales.ts`**
 
-**Archivo:** `src/components/modals/EquipoFormModal.tsx`
+```typescript
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
+import { fetchSucursales } from "@/services/sucursalService";
 
-```tsx
-<Button 
-  type="submit" 
-  disabled={isPending || !formData.nombre.trim() || !formData.sucursal_id}
->
-  {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-  {isEditing ? "Actualizar" : "Crear"}
-</Button>
+export function useSucursales() {
+  const { token } = useAuth();
+  return useQuery({
+    queryKey: ["sucursales"],
+    queryFn: () => fetchSucursales(token!),
+    enabled: !!token,
+    staleTime: 5 * 60 * 1000,
+    select: (data) => data.items,
+  });
+}
 ```
 
 ---
 
-## Resumen de Cambios
+### 2. Actualizar Tipos de Equipo
 
-| Archivo | Cambio |
+**Archivo: `src/types/equipos.ts`**
+
+Cambios:
+- Reemplazar `sucursal_id` por `sucursal_codigo` en todas las interfaces
+
+```typescript
+// Antes
+export interface EquipoListItem {
+  sucursal_id: string | null;
+  sucursal_nombre: string | null;
+  // ...
+}
+
+// Despues
+export interface EquipoListItem {
+  sucursal_codigo: string | null;  // <- Cambio
+  sucursal_nombre: string | null;
+  // ...
+}
+```
+
+Lo mismo para:
+- `CreateEquipoRequest`: `sucursal_id` -> `sucursal_codigo`
+- `UpdateEquipoRequest`: `sucursal_id` -> `sucursal_codigo`
+
+---
+
+### 3. Actualizar Formulario de Creacion/Edicion
+
+**Archivo: `src/components/modals/EquipoFormModal.tsx`**
+
+Cambios principales:
+
+1. **Importar nuevo hook**: Reemplazar `useWarehouses` por `useSucursales`
+
+2. **Actualizar estado del formulario**:
+```typescript
+// Antes
+const [formData, setFormData] = useState({
+  sucursal_id: "",
+  // ...
+});
+
+// Despues
+const [formData, setFormData] = useState({
+  sucursal_codigo: "",
+  // ...
+});
+```
+
+3. **Actualizar Select de sucursales**:
+```tsx
+// Antes
+{warehouses.map((w) => (
+  <SelectItem key={w.id} value={w.id}>
+    {w.nombre}
+  </SelectItem>
+))}
+
+// Despues
+{sucursales.map((s) => (
+  <SelectItem key={s.codigo} value={s.codigo}>
+    {s.nombre}
+  </SelectItem>
+))}
+```
+
+4. **Actualizar payload en handleSubmit**:
+```typescript
+const payload = {
+  nombre: formData.nombre.trim(),
+  descripcion: formData.descripcion.trim() || null,
+  lider_usuario_id: formData.lider_usuario_id.trim() || null,
+  sucursal_codigo: formData.sucursal_codigo,  // <- Cambio
+  // ...
+};
+```
+
+5. **Actualizar validacion**:
+```typescript
+if (!formData.sucursal_codigo) {
+  setErrors({ sucursal: "Debes seleccionar una sucursal" });
+  return;
+}
+```
+
+---
+
+### 4. Actualizar Modal de Detalle (Opcional)
+
+**Archivo: `src/components/modals/EquipoDetailModal.tsx`**
+
+Si se requiere mostrar el codigo ademas del nombre:
+
+```tsx
+<div className="flex items-start gap-3">
+  <Building className="h-4 w-4 mt-1 text-muted-foreground" />
+  <div>
+    <p className="text-xs text-muted-foreground">Sucursal</p>
+    <p className="font-medium">
+      {equipo.sucursal_nombre || "Sin asignar"}
+    </p>
+    {equipo.sucursal_codigo && (
+      <p className="text-xs text-muted-foreground">
+        Codigo: {equipo.sucursal_codigo}
+      </p>
+    )}
+  </div>
+</div>
+```
+
+---
+
+### 5. Verificar/Actualizar Filtros (Si Aplica)
+
+Revisar `src/hooks/useEquipos.ts` para ver si hay filtros por sucursal.
+
+**Estado actual**: El hook `useEquipos` solo filtra por `q` (busqueda) y no por sucursal. No se requieren cambios aqui a menos que se agregue filtrado por sucursal en el futuro.
+
+---
+
+## Resumen de Archivos
+
+| Archivo | Accion |
 |---------|--------|
-| `src/components/modals/EquipoFormModal.tsx` | Agregar validacion, mensajes de error, y deshabilitar boton |
+| `src/types/sucursales.ts` | **Crear** - Nuevo tipo Sucursal |
+| `src/services/sucursalService.ts` | **Crear** - Servicio GET /sucursales |
+| `src/hooks/useSucursales.ts` | **Crear** - Hook React Query |
+| `src/types/equipos.ts` | **Modificar** - Cambiar sucursal_id por sucursal_codigo |
+| `src/components/modals/EquipoFormModal.tsx` | **Modificar** - Usar useSucursales y enviar sucursal_codigo |
+| `src/components/modals/EquipoDetailModal.tsx` | **Modificar** - Mostrar sucursal_codigo (opcional) |
 
-## Beneficios de Esta Solucion
+---
 
-1. **Previene errores 400**: El usuario no puede enviar sin sucursal
-2. **UX clara**: Mensaje de error visible y campo resaltado en rojo
-3. **Boton deshabilitado**: Indicador visual de que falta informacion
-4. **Consistente**: Sigue el patron de validacion del resto de la app
-5. **No requiere cambios en backend**: Solo ajustes en frontend
+## Pruebas de Aceptacion
 
-## Nota sobre Error 500
+1. Crear equipo seleccionando sucursal "Moncar" del dropdown
+2. Verificar que el request POST envia `sucursal_codigo: "moncar"`
+3. Ver en el listado que aparece "Moncar" como nombre de sucursal
+4. Abrir detalle del equipo y confirmar que muestra `sucursal_codigo = "moncar"`
+5. Editar equipo y verificar que el dropdown muestra la sucursal correcta preseleccionada
 
-Los errores 500 probablemente ocurren cuando:
-- Se envia un `lider_usuario_id` invalido (UUID que no existe)
-- El backend tiene un error no manejado
+---
 
-**Recomendacion adicional**: Agregar validacion de formato UUID para el campo `lider_usuario_id` (opcional, pero mejoraria la robustez).
+## Notas Tecnicas
+
+- El endpoint `GET /sucursales` debe retornar `{ ok: true, items: [{ codigo, nombre, ... }] }`
+- Si el endpoint actual es diferente (ej: `/warehouses`), ajustar el servicio segun la respuesta real del backend
+- La validacion frontend previene enviar equipos sin sucursal seleccionada
+
