@@ -25,6 +25,7 @@ import {
 import { InventoryAdjustModal } from '@/components/modals/InventoryAdjustModal';
 import { ProductEditModal } from '@/components/modals/ProductEditModal';
 import { TechSheetEditModal } from '@/components/modals/TechSheetEditModal';
+import { formatQuantity } from '@/utils/formatters';
 
 interface ProductDetailModalProps {
   open: boolean;
@@ -150,7 +151,7 @@ export function ProductDetailModal({ open, onOpenChange, sku }: ProductDetailMod
                         </h3>
                         <div className="flex items-center gap-2">
                           <Badge variant="secondary">
-                            Total: {totalStock.toLocaleString()} {product.unidad ?? 'PZA'}
+                            Total: {formatQuantity(totalStock)} {product.unidad ?? 'PZA'}
                           </Badge>
                           <Button 
                             variant="outline" 
@@ -178,7 +179,7 @@ export function ProductDetailModal({ open, onOpenChange, sku }: ProductDetailMod
                               <TableRow key={`${inv.sku}-${inv.almacen}`}>
                                 <TableCell className="font-medium">{inv.almacen}</TableCell>
                                 <TableCell className="text-right">
-                                  {parseFloat(String(inv.existencia)).toLocaleString()} {product.unidad ?? 'PZA'}
+                                  {formatQuantity(inv.existencia)} {product.unidad ?? 'PZA'}
                                 </TableCell>
                                 <TableCell className="text-right text-muted-foreground text-sm">
                                   {new Date(inv.actualizado_el).toLocaleDateString('es-MX')}
@@ -198,11 +199,11 @@ export function ProductDetailModal({ open, onOpenChange, sku }: ProductDetailMod
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-3 bg-muted/30 rounded-lg">
                         <span className="text-sm text-muted-foreground">Mínimo</span>
-                        <p className="font-semibold">{product.minimo ?? '-'} {product.unidad ?? 'PZA'}</p>
+                        <p className="font-semibold">{formatQuantity(product.minimo)} {product.unidad ?? 'PZA'}</p>
                       </div>
                       <div className="p-3 bg-muted/30 rounded-lg">
                         <span className="text-sm text-muted-foreground">Máximo</span>
-                        <p className="font-semibold">{product.maximo ?? '-'} {product.unidad ?? 'PZA'}</p>
+                        <p className="font-semibold">{formatQuantity(product.maximo)} {product.unidad ?? 'PZA'}</p>
                       </div>
                     </div>
                   </div>
@@ -281,18 +282,18 @@ export function ProductDetailModal({ open, onOpenChange, sku }: ProductDetailMod
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Precio:</span>
                           <span className="text-xl font-bold">
-                            ${priceInfo.base.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN
+                            ${priceInfo.base.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN
                           </span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-muted-foreground">IVA ({priceInfo.impuesto}%):</span>
-                          <span>${priceInfo.impuestoAmount.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN</span>
+                          <span>${priceInfo.impuestoAmount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN</span>
                         </div>
                         <Separator />
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground font-medium">Total:</span>
                           <span className="text-lg font-bold text-primary">
-                            ${priceInfo.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN
+                            ${priceInfo.total.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN
                           </span>
                         </div>
                       </div>

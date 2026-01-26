@@ -77,3 +77,16 @@ export function formatValue(
       return String(value);
   }
 }
+
+/**
+ * Formatea una cantidad con máximo 1 decimal
+ * Si es entero, no muestra decimales
+ */
+export function formatQuantity(value: number | string | null | undefined): string {
+  if (value === null || value === undefined) return '-';
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(num)) return '-';
+  return num % 1 === 0 
+    ? num.toLocaleString('es-MX') 
+    : num.toLocaleString('es-MX', { maximumFractionDigits: 1 });
+}
