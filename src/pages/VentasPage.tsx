@@ -52,6 +52,8 @@ export default function VentasPage() {
   const fromDate = useMemo(() => {
     const now = new Date();
     switch (dateRange) {
+      case '1d':
+        return format(now, 'yyyy-MM-dd');
       case '7d':
         return format(subDays(now, 7), 'yyyy-MM-dd');
       case '30d':
@@ -60,6 +62,17 @@ export default function VentasPage() {
         return format(subDays(now, 90), 'yyyy-MM-dd');
       default:
         return format(subDays(now, 30), 'yyyy-MM-dd');
+    }
+  }, [dateRange]);
+
+  // Helper para mostrar texto del período
+  const periodLabel = useMemo(() => {
+    switch (dateRange) {
+      case '1d': return 'Hoy';
+      case '7d': return '7 días';
+      case '30d': return '30 días';
+      case '90d': return '90 días';
+      default: return '30 días';
     }
   }, [dateRange]);
 
@@ -276,6 +289,22 @@ export default function VentasPage() {
         </Alert>
       )}
 
+      {/* Selector de período global */}
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-medium text-muted-foreground">Período:</span>
+        <Select value={dateRange} onValueChange={setDateRange}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1d">Hoy</SelectItem>
+            <SelectItem value="7d">Últimos 7 días</SelectItem>
+            <SelectItem value="30d">Últimos 30 días</SelectItem>
+            <SelectItem value="90d">Últimos 90 días</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {isLoading ? (
@@ -299,7 +328,7 @@ export default function VentasPage() {
           <CardHeader>
             <CardTitle>Tendencia de Ventas</CardTitle>
             <CardDescription>
-              Ventas diarias en los últimos {dateRange === '7d' ? '7 días' : dateRange === '30d' ? '30 días' : '90 días'}
+              Ventas diarias {dateRange === '1d' ? 'de hoy' : `en los últimos ${periodLabel}`}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -341,20 +370,6 @@ export default function VentasPage() {
             </AccordionTrigger>
             <AccordionContent>
               <div className="px-4 pb-4 space-y-4">
-                <div className="space-y-2">
-                  <label className="text-base font-medium">Período</label>
-                  <Select value={dateRange} onValueChange={setDateRange}>
-                    <SelectTrigger className="mobile-select">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="7d">Últimos 7 días</SelectItem>
-                      <SelectItem value="30d">Últimos 30 días</SelectItem>
-                      <SelectItem value="90d">Últimos 90 días</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
                 <div className="flex items-center justify-between">
                   <Label htmlFor="include-cancelled-mobile" className="text-base font-medium">
                     Incluir canceladas
@@ -383,46 +398,28 @@ export default function VentasPage() {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Filtros</CardTitle>
-            <CardDescription>
-              Filtra las ventas por período y estado
-            </CardDescription>
+            <CardTitle>Filtros Adicionales</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Período</label>
-                <Select value={dateRange} onValueChange={setDateRange}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="7d">Últimos 7 días</SelectItem>
-                    <SelectItem value="30d">Últimos 30 días</SelectItem>
-                    <SelectItem value="90d">Últimos 90 días</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="flex items-center gap-3 h-10">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
                 <Switch 
                   id="include-cancelled"
                   checked={includeCancelled} 
                   onCheckedChange={setIncludeCancelled} 
                 />
-                <Label htmlFor="include-cancelled">Incluir canceladas</Label>
+                <Label htmlFor="include-cancelled">Incluir ventas canceladas</Label>
               </div>
 
-              <Button 
-                onClick={() => {
-                  setIncludeCancelled(false);
-                  setDateRange('30d');
-                }} 
-                variant="outline"
-                className="w-full"
-              >
-                Limpiar filtros
-              </Button>
+              {includeCancelled && (
+                <Button 
+                  onClick={() => setIncludeCancelled(false)} 
+                  variant="ghost"
+                  size="sm"
+                >
+                  Limpiar
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
