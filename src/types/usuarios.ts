@@ -1,8 +1,7 @@
 export interface UsuarioListItem {
-  id: string;
+  usuario_id: string;
   nombre: string;
   email: string;
-  role?: string;
 }
 
 export interface UsuariosListResponse {

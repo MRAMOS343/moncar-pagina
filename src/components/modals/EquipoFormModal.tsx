@@ -176,7 +176,7 @@ export function EquipoFormModal({
               <SelectContent>
                 <SelectItem value="none">Sin líder asignado</SelectItem>
                 {usuarios.map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
+                  <SelectItem key={u.usuario_id} value={u.usuario_id}>
                     {u.nombre} ({u.email})
                   </SelectItem>
                 ))}
