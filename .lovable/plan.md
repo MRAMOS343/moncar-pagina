@@ -1,218 +1,105 @@
 
-# Plan: Corrección de Bugs y Mejoras de Estabilidad
+# Plan: Permitir Guardar sin Modificar Campos en ProductEditModal
 
-## Resumen Ejecutivo
-Se han identificado 10 problemas potenciales en el código que van desde errores runtime hasta inconsistencias de datos y vulnerabilidades de parsing. Este plan propone correcciones ordenadas por prioridad.
+## Problema Identificado
 
----
+Los campos numéricos (Precio, Impuesto, Mínimo, Máximo) muestran error "Expected number, received string" porque:
 
-## Bugs Críticos (Prioridad Alta)
+1. Los inputs usan `defaultValue` (no controlados por react-hook-form)
+2. El schema de Zod espera `z.number()` pero HTML inputs siempre retornan strings
+3. `handleNumberChange` solo se ejecuta cuando el usuario modifica el campo
+4. Si el usuario no toca nada y da "Guardar", react-hook-form no tiene los valores correctamente tipados
 
-### 1. Error Runtime "Component is not a function"
-**Causa probable:** Los lazy-loaded charts pueden fallar si Recharts no exporta correctamente el componente.
+## Solución
 
-**Archivo:** `src/components/charts/LazyLineChart.tsx`
+### Opción Elegida: Usar `z.coerce.number()` + valores iniciales correctos
 
-**Solución:**
-```typescript
-// Agregar fallback más robusto
-const RechartsLineChart = React.lazy(() => 
-  import('recharts').then(module => {
-    if (!module.LineChart) {
-      throw new Error('LineChart not found in recharts module');
-    }
-    return { default: module.LineChart };
-  }).catch(err => {
-    console.error('Failed to load LineChart:', err);
-    return { default: () => <div>Error loading chart</div> };
-  })
-);
-```
+Cambiar el schema para que Zod automáticamente convierta strings a números, y asegurar que los valores iniciales se carguen correctamente.
 
-### 2. Datos Truncados No Expuestos en Dashboard
-**Archivo:** `src/hooks/useDashboardSales.ts`
+## Cambios Requeridos
 
-**Solución:** Retornar objeto con metadata en lugar de solo array.
+### Archivo: `src/components/modals/ProductEditModal.tsx`
+
+**Cambio 1: Actualizar el schema con coerción automática**
 
 ```typescript
 // ANTES
-return allItems;
+precio1: z.number().min(0, 'El precio debe ser positivo').optional(),
+impuesto: z.number().min(0).max(100, 'El impuesto debe ser entre 0 y 100').optional(),
+minimo: z.number().min(0, 'El mínimo debe ser positivo').optional(),
+maximo: z.number().min(0, 'El máximo debe ser positivo').optional(),
+costo_u: z.number().min(0, 'El costo debe ser positivo').optional(),
+
+// DESPUÉS (con coerción y manejo de strings vacíos)
+precio1: z.union([
+  z.literal('').transform(() => undefined),
+  z.coerce.number().min(0, 'El precio debe ser positivo')
+]).optional(),
+impuesto: z.union([
+  z.literal('').transform(() => undefined),
+  z.coerce.number().min(0).max(100, 'El impuesto debe ser entre 0 y 100')
+]).optional(),
+minimo: z.union([
+  z.literal('').transform(() => undefined),
+  z.coerce.number().min(0, 'El mínimo debe ser positivo')
+]).optional(),
+maximo: z.union([
+  z.literal('').transform(() => undefined),
+  z.coerce.number().min(0, 'El máximo debe ser positivo')
+]).optional(),
+costo_u: z.union([
+  z.literal('').transform(() => undefined),
+  z.coerce.number().min(0, 'El costo debe ser positivo')
+]).optional(),
+```
+
+**Cambio 2: Usar `register()` en lugar de `defaultValue` + `onChange`**
+
+Esto permite que react-hook-form maneje los valores directamente:
+
+```tsx
+// ANTES
+<Input
+  id="precio1"
+  type="number"
+  step="0.01"
+  defaultValue={product.precio1 ?? ''}
+  onChange={handleNumberChange('precio1')}
+  placeholder="0.00"
+/>
 
 // DESPUÉS
-return {
-  items: allItems,
-  truncated,
-  pageCount,
-  totalFetched: allItems.length
-};
+<Input
+  id="precio1"
+  type="number"
+  step="0.01"
+  {...register('precio1')}
+  placeholder="0.00"
+/>
 ```
 
-**Cambio en DashboardPage.tsx:** Actualizar para usar la nueva estructura.
+**Cambio 3: Eliminar `handleNumberChange` (ya no es necesario)**
 
-### 3. Parser de Pagos Vulnerable a NaN
-**Archivo:** `src/hooks/useDashboardPaymentMethods.ts`
+La función `handleNumberChange` se puede eliminar porque Zod con `z.coerce.number()` se encarga de la conversión automáticamente.
 
-**Solución:**
-```typescript
-function parsePagosResumen(resumen: string | null | undefined): Record<string, number> {
-  if (!resumen) return {};
-  
-  const result: Record<string, number> = {};
-  resumen.split(',').forEach(part => {
-    const [metodo, monto] = part.trim().split(':');
-    if (metodo && monto) {
-      const key = metodo.toLowerCase();
-      const numMonto = parseFloat(monto);
-      // Validar que no sea NaN antes de sumar
-      if (!isNaN(numMonto)) {
-        result[key] = (result[key] || 0) + numMonto;
-      }
-    }
-  });
-  return result;
-}
-```
+## Resumen de Cambios
 
----
+| Líneas | Cambio |
+|--------|--------|
+| 22-35 | Actualizar schema con `z.coerce.number()` y manejo de strings vacíos |
+| 106-118 | Eliminar función `handleNumberChange` |
+| 194-201, 208-215, 244-251, 258-265 | Cambiar inputs numéricos para usar `register()` |
 
-## Bugs Moderados (Prioridad Media)
+## Resultado Esperado
 
-### 4. Redirección 401 con window.location
-**Archivo:** `src/services/apiClient.ts`
+1. El usuario puede abrir el modal y dar "Guardar" sin modificar nada (el modal se cierra sin errores)
+2. Si no hay cambios, no se envía request a la API (comportamiento actual conservado)
+3. Los errores de tipo "Expected number, received string" desaparecen
+4. La validación de rangos (min/max) sigue funcionando correctamente
 
-**Problema:** Pérdida de estado de React y posibles bucles.
+## Detalle Técnico
 
-**Solución alternativa:** Usar un flag global en lugar de redirección forzada.
-
-```typescript
-// Crear un evento global que AuthContext escuche
-if (res.status === 401) {
-  localStorage.removeItem('moncar_token');
-  localStorage.removeItem('moncar_user');
-  
-  // Disparar evento en lugar de redirección forzada
-  window.dispatchEvent(new CustomEvent('auth:expired'));
-  throw new ApiError('Sesión expirada', 401, data);
-}
-```
-
-### 5. Validación de Fechas en SaleDetailModal
-**Archivo:** `src/components/modals/SaleDetailModal.tsx`
-
-**Solución:**
-```typescript
-// Crear helper de formateo seguro
-const safeFormatDate = (dateStr: string | null | undefined) => {
-  if (!dateStr) return '---';
-  try {
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return '---';
-    return format(date, "dd/MM/yyyy HH:mm", { locale: es });
-  } catch {
-    return '---';
-  }
-};
-```
-
-### 6. Ícono Faltante para KPI "Transacciones"
-**Archivo:** `src/components/ui/kpi-card.tsx`
-
-**Solución:**
-```typescript
-const getContextualIcon = () => {
-  const iconClass = "w-5 h-5";
-  if (data.label.includes("Ventas")) return <DollarSign className={iconClass} />;
-  if (data.label.includes("Transacciones")) return <Receipt className={iconClass} />; // Agregar
-  if (data.label.includes("Productos")) return <Package className={iconClass} />;
-  if (data.label.includes("Ticket")) return <ShoppingCart className={iconClass} />;
-  if (data.label.includes("Stock")) return <AlertTriangle className={iconClass} />;
-  if (data.label.includes("Canceladas")) return <XCircle className={iconClass} />; // Agregar
-  return null;
-};
-```
-
----
-
-## Mejoras de Consistencia (Prioridad Baja)
-
-### 7. Unificar Configuración de Cache
-**Crear constante compartida:**
-
-```typescript
-// src/constants/queryConfig.ts
-export const QUERY_CONFIG = {
-  SALES_TABLE: { staleTime: 0, refetchOnMount: 'always' },
-  SALES_KPI: { staleTime: 0, refetchOnMount: true },
-  DASHBOARD: { staleTime: 5 * 60 * 1000 },
-} as const;
-```
-
-### 8. Logging de Valores Nulos en toNumber
-**Archivo:** `src/utils/formatters.ts`
-
-```typescript
-export function toNumber(value: string | number | undefined | null, fieldName?: string): number {
-  if (value === undefined || value === null) {
-    if (import.meta.env.DEV && fieldName) {
-      console.warn(`[toNumber] Campo '${fieldName}' es nulo, usando 0`);
-    }
-    return 0;
-  }
-  // ...
-}
-```
-
----
-
-## Archivos a Modificar
-
-| Archivo | Cambios |
-|---------|---------|
-| `src/components/charts/LazyLineChart.tsx` | Agregar manejo de error en lazy import |
-| `src/components/charts/LazyPieChart.tsx` | Agregar manejo de error en lazy import |
-| `src/hooks/useDashboardSales.ts` | Retornar metadata de truncado |
-| `src/hooks/useDashboardPaymentMethods.ts` | Validar NaN en parseFloat |
-| `src/pages/DashboardPage.tsx` | Usar nueva estructura de datos con truncated |
-| `src/services/apiClient.ts` | Cambiar redirección por evento |
-| `src/contexts/AuthContext.tsx` | Escuchar evento auth:expired |
-| `src/components/modals/SaleDetailModal.tsx` | Agregar formateo seguro de fechas |
-| `src/components/ui/kpi-card.tsx` | Agregar íconos faltantes |
-| `src/utils/formatters.ts` | Logging opcional de valores nulos |
-
----
-
-## Orden de Implementación Sugerido
-
-1. **Fase 1 (Crítico):** Lazy charts error handling + Parser NaN validation
-2. **Fase 2 (Importante):** Dashboard truncated metadata + Fecha segura
-3. **Fase 3 (Mejoras):** Íconos KPI + Evento auth:expired + Logging
-
----
-
-## Sección Técnica
-
-### Diagrama de Dependencias de Hooks de Ventas
-
-```text
-+------------------+     +-------------------+     +----------------------+
-|   VentasPage     | --> |    useSales       | --> |   fetchSales (API)   |
-+------------------+     +-------------------+     +----------------------+
-        |                        |
-        |                        v
-        |                +-------------------+
-        +--------------> |   useVentasKPIs   | (limite: 1000)
-                         +-------------------+
-                                |
-                                v
-                         +-------------------+
-                         |   KPICard x 3     |
-                         +-------------------+
-```
-
-### Notas sobre el Error Runtime
-
-El error `Component is not a function` en `updateSimpleMemoComponent` sugiere que:
-1. Un componente envuelto en `memo()` no es válido
-2. O un lazy-load retornó algo que no es un componente
-
-La solución propuesta agrega catch blocks a los lazy imports para diagnosticar mejor.
+La clave es usar `z.union([z.literal(''), z.coerce.number()])` que:
+- Si el valor es string vacío `''` → lo transforma a `undefined`
+- Si el valor es un string numérico como `"30.00"` → lo convierte a número `30`
+- Si el valor ya es número → lo mantiene
