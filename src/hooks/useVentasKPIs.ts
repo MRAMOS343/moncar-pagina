@@ -4,8 +4,9 @@ import { fetchSales } from "@/services/salesService";
 import { toNumber } from "@/utils/formatters";
 import type { SaleListItem, SalesCursor } from "@/types/sales";
 
-const MAX_PAGES = 5;
-const PAGE_SIZE = 200;
+const MAX_PAGES = 10;
+const PAGE_SIZE = 500;
+const MAX_ITEMS = 5000;
 
 interface VentasKPIsParams {
   from: string;
@@ -22,7 +23,7 @@ interface VentasKPIsResult {
 
 /**
  * Hook dedicado para calcular KPIs de ventas con múltiples páginas.
- * Carga hasta 1000 ventas (5 páginas x 200) para tener datos más precisos.
+ * Carga hasta 5000 ventas (10 páginas x 500) para tener datos precisos.
  */
 export function useVentasKPIs(params: VentasKPIsParams) {
   const { token } = useAuth();
@@ -48,7 +49,7 @@ export function useVentasKPIs(params: VentasKPIsParams) {
         allItems.push(...response.items);
         cursor = response.next_cursor;
         pageCount++;
-      } while (cursor && pageCount < MAX_PAGES);
+      } while (cursor && pageCount < MAX_PAGES && allItems.length < MAX_ITEMS);
 
       // Calcular KPIs solo con ventas activas
       const ventasActivas = allItems.filter(s => !s.cancelada);
