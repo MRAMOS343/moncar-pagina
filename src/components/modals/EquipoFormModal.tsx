@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useWarehouses } from "@/hooks/useWarehouses";
+import { useSucursales } from "@/hooks/useSucursales";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreateEquipo, useUpdateEquipo } from "@/hooks/useEquipoMutations";
 import type { EquipoListItem } from "@/types/equipos";
@@ -37,7 +37,7 @@ export function EquipoFormModal({
   equipo,
 }: EquipoFormModalProps) {
   const { currentUser } = useAuth();
-  const { data: warehouses = [], isLoading: loadingWarehouses } = useWarehouses();
+  const { data: sucursales = [], isLoading: loadingSucursales } = useSucursales();
   const createMutation = useCreateEquipo();
   const updateMutation = useUpdateEquipo();
 
@@ -49,7 +49,7 @@ export function EquipoFormModal({
     nombre: "",
     descripcion: "",
     lider_usuario_id: "",
-    sucursal_id: "",
+    sucursal_codigo: "",
     activo: true,
   });
 
@@ -63,16 +63,17 @@ export function EquipoFormModal({
           nombre: equipo.nombre,
           descripcion: equipo.descripcion || "",
           lider_usuario_id: equipo.lider_usuario_id || "",
-          sucursal_id: equipo.sucursal_id || "",
+          sucursal_codigo: equipo.sucursal_codigo || "",
           activo: equipo.activo,
         });
       } else {
-        // For new equipo, default to user's warehouse if gerente
+        // For new equipo, default to user's warehouse code if gerente
+        // Note: currentUser.warehouseId might be a code, adjust if needed
         setFormData({
           nombre: "",
           descripcion: "",
           lider_usuario_id: "",
-          sucursal_id: isGerente && currentUser?.warehouseId ? currentUser.warehouseId : "",
+          sucursal_codigo: isGerente && currentUser?.warehouseId ? currentUser.warehouseId : "",
           activo: true,
         });
       }
@@ -86,7 +87,7 @@ export function EquipoFormModal({
       return;
     }
 
-    if (!formData.sucursal_id) {
+    if (!formData.sucursal_codigo) {
       setErrors({ sucursal: "Debes seleccionar una sucursal" });
       return;
     }
@@ -97,7 +98,7 @@ export function EquipoFormModal({
       nombre: formData.nombre.trim(),
       descripcion: formData.descripcion.trim() || null,
       lider_usuario_id: formData.lider_usuario_id.trim() || null,
-      sucursal_id: formData.sucursal_id,
+      sucursal_codigo: formData.sucursal_codigo,
       ...(isEditing && { activo: formData.activo }),
     };
 
@@ -177,20 +178,20 @@ export function EquipoFormModal({
           <div className="space-y-2">
             <Label htmlFor="sucursal">Sucursal *</Label>
             <Select
-              value={formData.sucursal_id}
+              value={formData.sucursal_codigo}
               onValueChange={(value) => {
-                setFormData({ ...formData, sucursal_id: value });
+                setFormData({ ...formData, sucursal_codigo: value });
                 if (errors.sucursal) setErrors({ ...errors, sucursal: undefined });
               }}
-              disabled={isPending || loadingWarehouses || (!isAdmin && isGerente)}
+              disabled={isPending || loadingSucursales || (!isAdmin && isGerente)}
             >
               <SelectTrigger className={errors.sucursal ? "border-destructive" : ""}>
                 <SelectValue placeholder="Seleccionar sucursal" />
               </SelectTrigger>
               <SelectContent>
-                {warehouses.map((w) => (
-                  <SelectItem key={w.id} value={w.id}>
-                    {w.nombre}
+                {sucursales.map((s) => (
+                  <SelectItem key={s.codigo} value={s.codigo}>
+                    {s.nombre}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -233,7 +234,7 @@ export function EquipoFormModal({
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isPending || !formData.nombre.trim() || !formData.sucursal_id}>
+            <Button type="submit" disabled={isPending || !formData.nombre.trim() || !formData.sucursal_codigo}>
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEditing ? "Actualizar" : "Crear"}
             </Button>

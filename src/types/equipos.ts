@@ -5,7 +5,7 @@ export interface EquipoListItem {
   descripcion: string | null;
   lider_usuario_id: string | null;
   lider_nombre: string | null;
-  sucursal_id: string | null;
+  sucursal_codigo: string | null;
   sucursal_nombre: string | null;
   activo: boolean;
   created_at: string;
@@ -44,14 +44,14 @@ export interface CreateEquipoRequest {
   nombre: string;
   descripcion?: string;
   lider_usuario_id?: string | null;
-  sucursal_id?: string | null;
+  sucursal_codigo?: string | null;
 }
 
 export interface UpdateEquipoRequest {
   nombre?: string;
   descripcion?: string | null;
   lider_usuario_id?: string | null;
-  sucursal_id?: string | null;
+  sucursal_codigo?: string | null;
   activo?: boolean;
 }
 

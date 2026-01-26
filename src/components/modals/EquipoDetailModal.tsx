@@ -149,6 +149,11 @@ export function EquipoDetailModal({
                     <p className="font-medium">
                       {equipo.sucursal_nombre || "Sin asignar"}
                     </p>
+                    {equipo.sucursal_codigo && (
+                      <p className="text-xs text-muted-foreground">
+                        Código: {equipo.sucursal_codigo}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
