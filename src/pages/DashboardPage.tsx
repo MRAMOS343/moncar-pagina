@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LazyLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from "@/components/charts/LazyLineChart";
 import { LazyPieChart, Pie, Cell } from "@/components/charts/LazyPieChart";
-import { TrendingUp, ShoppingCart, Package, Store, AlertTriangle, Plus, Clock, CreditCard } from "lucide-react";
+import { TrendingUp, ShoppingCart, Package, Store, AlertTriangle, Plus, Clock, CreditCard, RefreshCw } from "lucide-react";
 import { User, KPIData, Warehouse } from "@/types";
 import { ProductModal } from "@/components/modals/ProductModal";
 import { COLORES_GRAFICOS } from "@/constants";
@@ -33,13 +33,15 @@ export default function DashboardPage() {
   const [productModalOpen, setProductModalOpen] = useState(false);
 
   // Obtener ventas reales de la API (últimos 30 días)
-  const { data: salesResult, isLoading } = useDashboardSales({
+  const { data: salesResult, isLoading, isFetching, refetch } = useDashboardSales({
     from: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
     sucursal_id: currentWarehouse === 'all' ? undefined : currentWarehouse,
   });
 
   // Extraer items del resultado (con fallback seguro)
   const salesData = salesResult?.items ?? [];
+  const isTruncated = salesResult?.truncated ?? false;
+  const totalFetched = salesResult?.totalFetched ?? 0;
 
   // Determinar si es sucursal específica
   const isSpecificWarehouse = currentWarehouse !== 'all';
@@ -123,6 +125,15 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => refetch()} 
+            disabled={isFetching}
+            className="btn-hover"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+            {isFetching ? 'Actualizando...' : 'Actualizar'}
+          </Button>
           <Button onClick={handleNewSale} className="btn-hover">
             <Plus className="w-4 h-4 mr-2" />
             Nueva Venta
@@ -149,6 +160,25 @@ export default function DashboardPage() {
           ))
         )}
       </div>
+
+      {/* Aviso de datos truncados */}
+      {isTruncated && !isLoading && (
+        <div className="flex items-center gap-3 p-4 border border-warning/30 rounded-lg bg-warning/10 animate-fade-in">
+          <AlertTriangle className="w-5 h-5 text-warning shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-foreground">
+              Datos parciales ({totalFetched.toLocaleString()} ventas cargadas)
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Los KPIs podrían ser menores a los reales. Considera filtrar por sucursal o reducir el período.
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${isFetching ? 'animate-spin' : ''}`} />
+            Reintentar
+          </Button>
+        </div>
+      )}
 
       {/* Fila de gráficos principales */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -16,9 +16,9 @@ export interface DashboardSalesResult {
   totalFetched: number;
 }
 
-// Límites de seguridad optimizados para carga rápida
-const MAX_PAGES = 5;
-const MAX_ITEMS = 2500;
+// Límites de seguridad - balanceados para datos completos sin sobrecargar
+const MAX_PAGES = 10;
+const MAX_ITEMS = 5000;
 const PAGE_SIZE = 500;
 
 /**
@@ -75,5 +75,7 @@ export function useDashboardSales(params: DashboardSalesParams) {
     staleTime: 5 * 60 * 1000, // 5 minutos - datos se consideran frescos
     gcTime: 10 * 60 * 1000, // 10 minutos en cache
     placeholderData: keepPreviousData, // Muestra datos anteriores mientras recarga
+    refetchOnMount: 'always', // Siempre refetch al montar para datos frescos
+    refetchOnWindowFocus: true, // Refetch cuando el usuario vuelve a la pestaña
   });
 }
