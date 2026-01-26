@@ -25,7 +25,7 @@ import {
 import { InventoryAdjustModal } from '@/components/modals/InventoryAdjustModal';
 import { ProductEditModal } from '@/components/modals/ProductEditModal';
 import { TechSheetEditModal } from '@/components/modals/TechSheetEditModal';
-import { formatQuantity } from '@/utils/formatters';
+import { formatQuantity, formatCurrency } from '@/utils/formatters';
 
 interface ProductDetailModalProps {
   open: boolean;
@@ -282,18 +282,18 @@ export function ProductDetailModal({ open, onOpenChange, sku }: ProductDetailMod
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground">Precio:</span>
                           <span className="text-xl font-bold">
-                            ${priceInfo.base.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN
+                            {formatCurrency(priceInfo.base)}
                           </span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-muted-foreground">IVA ({priceInfo.impuesto}%):</span>
-                          <span>${priceInfo.impuestoAmount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN</span>
+                          <span>{formatCurrency(priceInfo.impuestoAmount)}</span>
                         </div>
                         <Separator />
                         <div className="flex justify-between items-center">
                           <span className="text-muted-foreground font-medium">Total:</span>
                           <span className="text-lg font-bold text-primary">
-                            ${priceInfo.total.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN
+                            {formatCurrency(priceInfo.total)}
                           </span>
                         </div>
                       </div>
