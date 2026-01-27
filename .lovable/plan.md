@@ -1,22 +1,18 @@
 
-# Plan: Corregir Cálculo de Total en Detalle de Producto
 
-## Problema Identificado
+# Plan: Mostrar Campo `notes` en el Detalle del Producto
 
-En el modal de detalle del producto, el "Total" muestra $0.00 cuando debería mostrar la suma de Precio + IVA.
+## Contexto
 
-### Causa Raíz
-Los valores `precio1` e `impuesto` vienen de la API como **strings** (ej: `"474.14"`, `"16.00"`), pero el código los trata como números sin convertirlos primero. Esto causa que las operaciones matemáticas fallen.
+El campo `notes` de la base de datos ya está disponible en la API (`GET /products/:sku`), pero actualmente no se muestra en el modal de detalle del producto.
 
----
+Según los datos de la API vistos en network requests, el campo contiene información útil como:
+- `"ACEITE SINTETICO 10W30 1LT. =19434702"`
+- `"FILTRO AIRE CHEVY 94-12 1.4 1.6 =FA9494 =GA134"`
 
 ## Solución
 
-Actualizar el cálculo de `priceInfo` en `ProductDetailModal.tsx` para:
-
-1. Convertir explícitamente los valores a números usando `parseFloat()`
-2. Normalizar el impuesto (manejar tanto formato `0.16` como `16`)
-3. Calcular correctamente: `Total = Precio Base + (Precio * Tasa Impuesto)`
+Agregar una sección para mostrar el campo `notes` dentro del área de "Ficha Técnica", justo antes de los atributos técnicos.
 
 ---
 
@@ -24,56 +20,102 @@ Actualizar el cálculo de `priceInfo` en `ProductDetailModal.tsx` para:
 
 **Archivo: `src/components/inventory/ProductDetailModal.tsx`**
 
-Actualizar el `useMemo` de `priceInfo` (líneas 51-63):
+Agregar visualización del campo `notes` del producto en la sección de Ficha Técnica:
 
 ```typescript
-// Calcular precio con impuesto
-const priceInfo = useMemo(() => {
-  if (!product || product.precio1 == null) return null;
+{/* Tech Sheet */}
+<div className="space-y-3">
+  <div className="flex items-center justify-between">
+    <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
+      <FileText className="w-5 h-5" />
+      Ficha Técnica
+    </h3>
+    ...
+  </div>
+  <Separator />
   
-  // Convertir a número (la API puede devolver strings)
-  const base = typeof product.precio1 === 'string' 
-    ? parseFloat(product.precio1) 
-    : product.precio1;
+  {/* NUEVO: Notas del producto (campo notes) */}
+  {product.notes && (
+    <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+      <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
+        Notas del producto:
+      </span>
+      <p className="text-sm mt-1 text-blue-900 dark:text-blue-100">
+        {product.notes}
+      </p>
+    </div>
+  )}
   
-  // Manejar impuesto null y convertir a número
-  let impuestoRate = 0;
-  if (product.impuesto != null) {
-    const rawImpuesto = typeof product.impuesto === 'string' 
-      ? parseFloat(product.impuesto) 
-      : product.impuesto;
-    
-    // Normalizar: si es > 1 (ej: 16), dividir entre 100 para obtener 0.16
-    impuestoRate = rawImpuesto > 1 ? rawImpuesto / 100 : rawImpuesto;
-  }
-  
-  // Calcular montos
-  const impuestoAmount = base * impuestoRate;
-  const total = base + impuestoAmount;
-  
-  return {
-    base,
-    impuesto: impuestoRate * 100, // Mostrar como porcentaje (16%)
-    impuestoAmount,
-    total,
-  };
-}, [product]);
+  {/* Resto del contenido de la ficha técnica... */}
+  {loadingTechSheet ? (
+    ...
+  ) : techSheet ? (
+    ...
+  ) : (
+    ...
+  )}
+</div>
 ```
 
 ---
 
-## Resultado Esperado
+## Ubicación Visual
 
-| Campo | Antes | Después |
-|-------|-------|---------|
-| Precio | $474.14 | $474.14 |
-| IVA (16%) | $75.86 | $75.86 |
-| Total | $0.00 | $549.99 |
+```text
+┌──────────────────────────────────────┐
+│  Ficha Técnica              [Editar] │
+├──────────────────────────────────────┤
+│ ┌──────────────────────────────────┐ │
+│ │ 📝 Notas del producto:           │ │  ← NUEVO
+│ │ ACEITE SINTETICO 10W30 1LT...    │ │
+│ └──────────────────────────────────┘ │
+│                                      │
+│ ┌──────────────────────────────────┐ │
+│ │ Notas generales (tech sheet):   │ │  ← Existente
+│ │ ...                              │ │
+│ └──────────────────────────────────┘ │
+│                                      │
+│ Voltaje:                      120V   │  ← Atributos existentes
+│ Material:                   Acero   │
+└──────────────────────────────────────┘
+```
 
 ---
 
-## Archivos a Modificar
+## Diferenciación Visual
+
+| Elemento | Color | Fuente |
+|----------|-------|--------|
+| Notas del producto (`notes`) | Fondo azul claro | Distintivo del producto |
+| Notas generales (tech sheet) | Fondo gris (`muted/30`) | De la ficha técnica |
+
+Esta diferenciación ayuda a distinguir entre las notas que vienen directamente del producto vs las notas de la ficha técnica.
+
+---
+
+## Tipo de Datos
+
+El campo `notes` ya existe en el tipo `ApiProduct`:
+
+```typescript
+// src/types/products.ts
+export interface ApiProduct {
+  sku: string;
+  descrip: string | null;
+  marca: string | null;
+  // ... otros campos
+  notes?: string | null;  // ← Ya definido (verificar)
+}
+```
+
+Si no existe, se agregará al tipo.
+
+---
+
+## Resumen de Cambios
 
 | Archivo | Cambio |
 |---------|--------|
-| `src/components/inventory/ProductDetailModal.tsx` | Corregir cálculo de priceInfo con conversión de tipos |
+| `src/components/inventory/ProductDetailModal.tsx` | Agregar visualización del campo `notes` en sección de Ficha Técnica |
+| `src/types/products.ts` | Verificar/agregar campo `notes` al tipo `ApiProduct` (si no existe) |
+
