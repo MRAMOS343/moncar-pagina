@@ -197,7 +197,7 @@ export function ProductModal({ open, onOpenChange, product, onSave }: ProductMod
                   <FormItem>
                     <FormLabel>Marca *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ej: Bosch" {...field} />
+                      <Input placeholder="Ej: Roshfrans" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
