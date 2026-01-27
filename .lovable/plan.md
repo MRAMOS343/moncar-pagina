@@ -1,29 +1,29 @@
 
-# Plan: Unificar Placeholder de Marca en Todos los Formularios de Productos
+# Plan: Actualizar Placeholder del Campo "Línea"
 
 ## Contexto
 
-Actualmente hay dos formularios de productos con diferentes placeholders para el campo "Marca":
-
-| Archivo | Placeholder Actual |
-|---------|-------------------|
-| `ProductModal.tsx` | ✅ "Ej: Roshfrans" (ya actualizado) |
-| `ProductEditModal.tsx` | ❌ "Ej: Samsung" |
+El campo "Línea" solo existe como Input de texto en `ProductEditModal.tsx`. En el otro formulario (`ProductModal.tsx`) el concepto equivalente es "Categoría" pero usa un dropdown, no un campo de texto.
 
 ## Cambio a Realizar
 
 **Archivo: `src/components/modals/ProductEditModal.tsx`**
 
-Cambiar el placeholder en la línea 149:
+Cambiar el placeholder en la línea 153:
 
 ```typescript
 // Antes
-<Input id="marca" {...register('marca')} placeholder="Ej: Samsung" />
+<Input id="linea" {...register('linea')} placeholder="Ej: Galaxy" />
 
-// Después
-<Input id="marca" {...register('marca')} placeholder="Ej: Roshfrans" />
+// Después  
+<Input id="linea" {...register('linea')} placeholder="Ej: Aceite" />
 ```
 
 ## Resultado
 
-Ambos formularios de productos mostrarán consistentemente "Ej: Roshfrans" como ejemplo de marca.
+El campo "Línea" mostrará "Ej: Aceite" como ejemplo de placeholder.
+
+| Archivo | Campo | Placeholder |
+|---------|-------|-------------|
+| `ProductEditModal.tsx` | Línea | ✅ "Ej: Aceite" |
+| `ProductModal.tsx` | Categoría | N/A (es dropdown, no Input) |
