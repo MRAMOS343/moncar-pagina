@@ -146,7 +146,7 @@ export function ProductEditModal({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="marca">Marca</Label>
-                  <Input id="marca" {...register('marca')} placeholder="Ej: Samsung" />
+                  <Input id="marca" {...register('marca')} placeholder="Ej: Roshfrans" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="linea">Línea</Label>
