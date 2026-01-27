@@ -246,6 +246,18 @@ export function ProductDetailModal({ open, onOpenChange, sku }: ProductDetailMod
                       </div>
                       <Separator />
                       
+                      {/* Notas del producto (campo notes) */}
+                      {product.notes && (
+                        <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                          <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
+                            Notas del producto:
+                          </span>
+                          <p className="text-sm mt-1 text-blue-900 dark:text-blue-100">
+                            {product.notes}
+                          </p>
+                        </div>
+                      )}
+                      
                       {loadingTechSheet ? (
                         <div className="space-y-2">
                           <Skeleton className="h-6 w-full" />

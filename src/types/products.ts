@@ -11,6 +11,7 @@ export interface ApiProduct {
   minimo: number | null;
   maximo: number | null;
   image_url?: string | null;
+  notes?: string | null;
 }
 
 export interface ProductsListResponse {
