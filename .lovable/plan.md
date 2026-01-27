@@ -1,177 +1,79 @@
 
-# Plan: Actualizar KPIs de Inventario para No Limitar a 100 Productos
+# Plan: Corregir Cálculo de Total en Detalle de Producto
 
-## Problema Actual
+## Problema Identificado
 
-Los KPIs de la página de inventario muestran "Productos Cargados" basándose únicamente en los primeros 100 productos que se cargan inicialmente. Esto no refleja el catálogo completo de productos.
+En el modal de detalle del producto, el "Total" muestra $0.00 cuando debería mostrar la suma de Precio + IVA.
 
-## Solución Propuesta
+### Causa Raíz
+Los valores `precio1` e `impuesto` vienen de la API como **strings** (ej: `"474.14"`, `"16.00"`), pero el código los trata como números sin convertirlos primero. Esto causa que las operaciones matemáticas fallen.
 
-Crear un hook dedicado para KPIs de productos que cargue múltiples páginas automáticamente (similar a `useVentasKPIs`), y actualizar la página de inventario para usar este hook.
+---
+
+## Solución
+
+Actualizar el cálculo de `priceInfo` en `ProductDetailModal.tsx` para:
+
+1. Convertir explícitamente los valores a números usando `parseFloat()`
+2. Normalizar el impuesto (manejar tanto formato `0.16` como `16`)
+3. Calcular correctamente: `Total = Precio Base + (Precio * Tasa Impuesto)`
 
 ---
 
 ## Cambios a Implementar
 
-### 1. Crear Hook Dedicado para KPIs de Productos
+**Archivo: `src/components/inventory/ProductDetailModal.tsx`**
 
-**Nuevo archivo: `src/hooks/useProductosKPIs.ts`**
+Actualizar el `useMemo` de `priceInfo` (líneas 51-63):
 
 ```typescript
-import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/AuthContext";
-import { fetchProducts } from "@/services/productService";
-import type { ApiProduct } from "@/types/products";
-
-const MAX_PAGES = 20;
-const PAGE_SIZE = 500;
-const MAX_ITEMS = 10000;
-
-interface ProductosKPIsResult {
-  totalProductos: number;
-  marcas: string[];
-  lineas: string[];
-  truncated: boolean;
-  products: ApiProduct[];
-}
-
-export function useProductosKPIs() {
-  const { token } = useAuth();
-
-  return useQuery<ProductosKPIsResult>({
-    queryKey: ["productos-kpis"],
-    queryFn: async () => {
-      const allItems: ApiProduct[] = [];
-      let cursor: string | undefined = undefined;
-      let pageCount = 0;
-
-      // Cargar múltiples páginas para KPIs más precisos
-      do {
-        const response = await fetchProducts(token!, {
-          limit: PAGE_SIZE,
-          cursor,
-        });
-
-        allItems.push(...response.items);
-        cursor = response.next_cursor ?? undefined;
-        pageCount++;
-      } while (cursor && pageCount < MAX_PAGES && allItems.length < MAX_ITEMS);
-
-      // Deduplicar por SKU
-      const seen = new Set<string>();
-      const uniqueProducts = allItems.filter(item => {
-        if (seen.has(item.sku)) return false;
-        seen.add(item.sku);
-        return true;
-      });
-
-      // Calcular marcas y líneas únicas
-      const marcas = [...new Set(uniqueProducts.map(p => p.marca).filter(Boolean))] as string[];
-      const lineas = [...new Set(uniqueProducts.map(p => p.linea).filter(Boolean))] as string[];
-
-      return {
-        totalProductos: uniqueProducts.length,
-        marcas,
-        lineas,
-        truncated: pageCount >= MAX_PAGES && cursor !== undefined,
-        products: uniqueProducts,
-      };
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutos de cache
-    enabled: !!token,
-  });
-}
+// Calcular precio con impuesto
+const priceInfo = useMemo(() => {
+  if (!product || product.precio1 == null) return null;
+  
+  // Convertir a número (la API puede devolver strings)
+  const base = typeof product.precio1 === 'string' 
+    ? parseFloat(product.precio1) 
+    : product.precio1;
+  
+  // Manejar impuesto null y convertir a número
+  let impuestoRate = 0;
+  if (product.impuesto != null) {
+    const rawImpuesto = typeof product.impuesto === 'string' 
+      ? parseFloat(product.impuesto) 
+      : product.impuesto;
+    
+    // Normalizar: si es > 1 (ej: 16), dividir entre 100 para obtener 0.16
+    impuestoRate = rawImpuesto > 1 ? rawImpuesto / 100 : rawImpuesto;
+  }
+  
+  // Calcular montos
+  const impuestoAmount = base * impuestoRate;
+  const total = base + impuestoAmount;
+  
+  return {
+    base,
+    impuesto: impuestoRate * 100, // Mostrar como porcentaje (16%)
+    impuestoAmount,
+    total,
+  };
+}, [product]);
 ```
 
 ---
 
-### 2. Actualizar InventarioPage para Usar el Nuevo Hook
+## Resultado Esperado
 
-**Archivo: `src/pages/InventarioPage.tsx`**
-
-**Cambios:**
-
-1. Importar el nuevo hook:
-```typescript
-import { useProductosKPIs } from "@/hooks/useProductosKPIs";
-```
-
-2. Usar el hook para los KPIs:
-```typescript
-const { 
-  data: kpiData, 
-  isLoading: kpiLoading 
-} = useProductosKPIs();
-```
-
-3. Actualizar el cálculo de KPIs para usar datos del hook:
-```typescript
-const productKPIs = useMemo((): KPIData[] => {
-  const totalProductos = kpiData?.totalProductos ?? 0;
-  const totalMarcas = kpiData?.marcas.length ?? 0;
-  const totalLineas = kpiData?.lineas.length ?? 0;
-
-  return [
-    {
-      label: "Total Productos",
-      value: totalProductos,
-      format: "number",
-    },
-    {
-      label: "Productos Mostrados",
-      value: filteredProducts.length,
-      format: "number",
-    },
-    {
-      label: "Marcas",
-      value: totalMarcas,
-      format: "number",
-    },
-    {
-      label: "Líneas",
-      value: totalLineas,
-      format: "number",
-    },
-  ];
-}, [kpiData, filteredProducts.length]);
-```
-
-4. Usar `kpiLoading` para el skeleton de KPIs:
-```typescript
-{(isLoading || kpiLoading) ? (
-  <>
-    <KPISkeleton />
-    ...
-  </>
-) : (
-  productKPIs.map(...)
-)}
-```
+| Campo | Antes | Después |
+|-------|-------|---------|
+| Precio | $474.14 | $474.14 |
+| IVA (16%) | $75.86 | $75.86 |
+| Total | $0.00 | $549.99 |
 
 ---
 
-## Comportamiento Final
+## Archivos a Modificar
 
-| KPI | Antes | Después |
-|-----|-------|---------|
-| Productos | Solo primeros 100 cargados | Hasta 10,000 productos del catálogo |
-| Marcas | Solo de los 100 primeros | Total de marcas en el catálogo |
-| Líneas | Solo de los 100 primeros | Total de líneas en el catálogo |
-
----
-
-## Consideraciones Técnicas
-
-- **Cache de 5 minutos**: Los KPIs se cachean para evitar recargas innecesarias
-- **Carga paralela separada**: El hook de KPIs es independiente del hook de la tabla
-- **Límite de seguridad**: Máximo 10,000 productos o 20 páginas para evitar sobrecarga
-- **Indicador de truncamiento**: Se puede mostrar mensaje si los datos están truncados
-
----
-
-## Archivos a Crear/Modificar
-
-| Archivo | Acción |
+| Archivo | Cambio |
 |---------|--------|
-| `src/hooks/useProductosKPIs.ts` | Crear nuevo hook |
-| `src/pages/InventarioPage.tsx` | Actualizar para usar el nuevo hook |
+| `src/components/inventory/ProductDetailModal.tsx` | Corregir cálculo de priceInfo con conversión de tipos |
