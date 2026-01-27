@@ -51,12 +51,30 @@ export function ProductDetailModal({ open, onOpenChange, sku }: ProductDetailMod
   // Calcular precio con impuesto
   const priceInfo = useMemo(() => {
     if (!product || product.precio1 == null) return null;
-    const impuesto = product.impuesto ?? 0;
-    const impuestoAmount = product.precio1 * (impuesto / 100);
-    const total = product.precio1 + impuestoAmount;
+    
+    // Convertir a número (la API puede devolver strings)
+    const base = typeof product.precio1 === 'string' 
+      ? parseFloat(product.precio1) 
+      : product.precio1;
+    
+    // Manejar impuesto null y convertir a número
+    let impuestoRate = 0;
+    if (product.impuesto != null) {
+      const rawImpuesto = typeof product.impuesto === 'string' 
+        ? parseFloat(product.impuesto) 
+        : product.impuesto;
+      
+      // Normalizar: si es > 1 (ej: 16), dividir entre 100 para obtener 0.16
+      impuestoRate = rawImpuesto > 1 ? rawImpuesto / 100 : rawImpuesto;
+    }
+    
+    // Calcular montos
+    const impuestoAmount = base * impuestoRate;
+    const total = base + impuestoAmount;
+    
     return {
-      base: product.precio1,
-      impuesto,
+      base,
+      impuesto: impuestoRate * 100, // Mostrar como porcentaje (16%)
       impuestoAmount,
       total,
     };
