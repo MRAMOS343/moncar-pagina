@@ -150,7 +150,7 @@ export function ProductEditModal({
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="linea">Línea</Label>
-                  <Input id="linea" {...register('linea')} placeholder="Ej: Galaxy" />
+                  <Input id="linea" {...register('linea')} placeholder="Ej: Aceite" />
                 </div>
               </div>
 
