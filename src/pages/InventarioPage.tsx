@@ -4,18 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { KPICard } from '@/components/ui/kpi-card';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/ui/data-table';
 import { ProductModal } from '@/components/modals/ProductModal';
-import { ProductCardGrid } from '@/components/inventory/ProductCardGrid';
 import { ProductDetailModal } from '@/components/inventory/ProductDetailModal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Download, Upload, Package, Plus, X, Filter, LayoutGrid, List, Loader2 } from 'lucide-react';
-import { useData } from '@/contexts/DataContext';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useProducts } from '@/hooks/useProducts';
 import { useProductosKPIs } from '@/hooks/useProductosKPIs';
+import { useInventarioGlobal } from '@/hooks/useInventarioGlobal';
 import { Product, User, KPIData } from '../types';
 import type { ApiProduct } from '@/types/products';
 import { exportToCSV } from '@/utils/exportCSV';
@@ -61,7 +59,6 @@ function mapApiProductToTableItem(p: ApiProduct): ProductTableItem {
 
 export default function InventarioPage() {
   const { currentWarehouse, searchQuery, currentUser } = useOutletContext<ContextType>();
-  const { getWarehouseById, inventory, getProductById } = useData();
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [selectedMarca, setSelectedMarca] = useState<string>('all');
   const [selectedCategoria, setSelectedCategoria] = useState<string>('all');
@@ -174,35 +171,8 @@ export default function InventarioPage() {
     ];
   }, [kpiData, filteredProducts.length]);
 
-  // Calculate global totals across all warehouses (using local inventory data)
-  const globalTotals = useMemo(() => {
-    const allInventory = inventory.map(inv => {
-      const product = getProductById(inv.productId);
-      return product ? { ...inv, product } : null;
-    }).filter((item): item is NonNullable<typeof item> => item !== null);
-
-    const totalStockValue = allInventory.reduce((sum, inv) => sum + (inv.onHand * inv.product.precio), 0);
-    const uniqueProducts = new Set(allInventory.map(inv => inv.productId)).size;
-    const totalItems = allInventory.reduce((sum, inv) => sum + inv.onHand, 0);
-
-    // Group by warehouse
-    const byWarehouse = allInventory.reduce((acc, inv) => {
-      if (!acc[inv.warehouseId]) {
-        acc[inv.warehouseId] = { products: 0, items: 0, value: 0 };
-      }
-      acc[inv.warehouseId].products += 1;
-      acc[inv.warehouseId].items += inv.onHand;
-      acc[inv.warehouseId].value += inv.onHand * inv.product.precio;
-      return acc;
-    }, {} as Record<string, { products: number; items: number; value: number }>);
-
-    return {
-      totalStockValue,
-      uniqueProducts,
-      totalItems,
-      byWarehouse
-    };
-  }, [inventory, getProductById]);
+  // Hook para totales globales desde API real
+  const globalTotals = useInventarioGlobal();
 
   const handleEditProduct = useCallback((product: Product) => {
     setEditingProduct(product);
@@ -546,32 +516,37 @@ export default function InventarioPage() {
         <TabsContent value="global" className="space-y-6">
           {/* Global KPIs */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <KPICard data={{
-              label: "Valor Total Global",
-              value: globalTotals.totalStockValue,
-              format: "currency",
-              change: 8.3,
-              changeType: "positive"
-            }} />
-            <KPICard data={{
-              label: "Productos Únicos",
-              value: globalTotals.uniqueProducts,
-              format: "number",
-              change: 3.2,
-              changeType: "positive"
-            }} />
-            <KPICard data={{
-              label: "Total de Unidades",
-              value: globalTotals.totalItems,
-              format: "number",
-              change: -0.8,
-              changeType: "negative"
-            }} />
-            <KPICard data={{
-              label: "Sucursales Activas",
-              value: Object.keys(globalTotals.byWarehouse).length,
-              format: "number"
-            }} />
+            {globalTotals.isLoading ? (
+              <>
+                <KPISkeleton />
+                <KPISkeleton />
+                <KPISkeleton />
+                <KPISkeleton />
+              </>
+            ) : (
+              <>
+                <KPICard data={{
+                  label: "Valor Total Global",
+                  value: globalTotals.totalStockValue,
+                  format: "currency",
+                }} />
+                <KPICard data={{
+                  label: "Productos Únicos",
+                  value: globalTotals.uniqueProducts,
+                  format: "number",
+                }} />
+                <KPICard data={{
+                  label: "Total de Unidades",
+                  value: globalTotals.totalItems,
+                  format: "number",
+                }} />
+                <KPICard data={{
+                  label: "Sucursales Activas",
+                  value: globalTotals.warehouseCount,
+                  format: "number",
+                }} />
+              </>
+            )}
           </div>
 
           {/* Breakdown by Warehouse */}
@@ -581,40 +556,49 @@ export default function InventarioPage() {
               <CardDescription>Distribución del inventario por sucursal</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {Object.entries(globalTotals.byWarehouse).map(([warehouseId, data]) => {
-                  const warehouse = getWarehouseById(warehouseId);
-                  return (
+              {globalTotals.isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : Object.keys(globalTotals.byWarehouse).length === 0 ? (
+                <EmptyState
+                  icon={Package}
+                  title="Sin datos de inventario"
+                  description="No se encontraron registros de inventario global"
+                />
+              ) : (
+                <div className="space-y-4">
+                  {Object.entries(globalTotals.byWarehouse).map(([warehouseId, data]) => (
                     <div key={warehouseId} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
                           <Package className="w-5 h-5 text-primary" />
                         </div>
                         <div>
-                          <p className="font-medium">{warehouse?.nombre || 'Sucursal desconocida'}</p>
-                          <p className="text-sm text-muted-foreground">{warehouse?.direccion}</p>
+                          <p className="font-medium">{data.nombre}</p>
+                          <p className="text-sm text-muted-foreground">Código: {warehouseId}</p>
                         </div>
                       </div>
                       <div className="grid grid-cols-3 gap-4 text-right">
                         <div>
                           <p className="text-sm text-muted-foreground">Productos</p>
-                          <p className="font-semibold">{data.products}</p>
+                          <p className="font-semibold">{data.productos.toLocaleString()}</p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Unidades</p>
-                          <p className="font-semibold">{data.items.toLocaleString()}</p>
+                          <p className="font-semibold">{data.unidades.toLocaleString()}</p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Valor</p>
                           <p className="font-semibold">
-                            {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(data.value)}
+                            {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(data.valor)}
                           </p>
                         </div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
