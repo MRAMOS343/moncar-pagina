@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { KPICard } from '@/components/ui/kpi-card';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +10,7 @@ import { ProductModal } from '@/components/modals/ProductModal';
 import { ProductDetailModal } from '@/components/inventory/ProductDetailModal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Download, Upload, Package, Plus, X, Filter, LayoutGrid, List, Loader2 } from 'lucide-react';
+import { Download, Upload, Package, Plus, X, Filter, LayoutGrid, List, Loader2, Search } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useProducts } from '@/hooks/useProducts';
 import { useProductosKPIs } from '@/hooks/useProductosKPIs';
@@ -42,6 +43,7 @@ interface ProductTableItem {
   unidad: string;
   minimo: number | null;
   maximo: number | null;
+  notes: string | null;
 }
 
 function mapApiProductToTableItem(p: ApiProduct): ProductTableItem {
@@ -54,6 +56,7 @@ function mapApiProductToTableItem(p: ApiProduct): ProductTableItem {
     unidad: p.unidad ?? 'PZA',
     minimo: p.minimo,
     maximo: p.maximo,
+    notes: p.notes ?? null,
   };
 }
 
@@ -68,6 +71,10 @@ export default function InventarioPage() {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedSku, setSelectedSku] = useState<string | null>(null);
   const isMobile = useIsMobile();
+  
+  // Estado local para búsqueda por SKU y notas
+  const [localSearch, setLocalSearch] = useState('');
+  const debouncedLocalSearch = useDebounce(localSearch, 300);
 
   // Usar hook de productos con paginación y búsqueda
   const { 
@@ -93,14 +100,26 @@ export default function InventarioPage() {
     [apiProducts]
   );
 
-  // Filtrar por marca y categoría (en frontend ya que la API no soporta estos filtros)
+  // Filtrar por búsqueda local (SKU o notes) + marca y categoría
   const filteredProducts = useMemo(() => {
-    return tableProducts.filter(item => {
+    let result = tableProducts;
+    
+    // Filtrar por búsqueda local (SKU o notes)
+    if (debouncedLocalSearch) {
+      const searchLower = debouncedLocalSearch.toLowerCase();
+      result = result.filter(item => 
+        item.sku.toLowerCase().includes(searchLower) ||
+        (item.notes && item.notes.toLowerCase().includes(searchLower))
+      );
+    }
+    
+    // Filtrar por marca y categoría
+    return result.filter(item => {
       if (selectedMarca !== 'all' && item.marca !== selectedMarca) return false;
       if (selectedCategoria !== 'all' && item.categoria !== selectedCategoria) return false;
       return true;
     });
-  }, [tableProducts, selectedMarca, selectedCategoria]);
+  }, [tableProducts, debouncedLocalSearch, selectedMarca, selectedCategoria]);
 
   // Get unique brands and categories from loaded products
   const marcas = useMemo(() => [...new Set(tableProducts.map(p => p.marca))].sort(), [tableProducts]);
@@ -227,6 +246,7 @@ export default function InventarioPage() {
   const clearFilters = () => {
     setSelectedMarca('all');
     setSelectedCategoria('all');
+    setLocalSearch('');
   };
 
   const handleProductClick = (item: ProductTableItem) => {
@@ -301,6 +321,30 @@ export default function InventarioPage() {
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className="px-4 pb-4 space-y-4">
+                    {/* Búsqueda por SKU y notas */}
+                    <div className="space-y-2">
+                      <label className="text-base font-medium">Buscar</label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Buscar por SKU o notas..."
+                          value={localSearch}
+                          onChange={(e) => setLocalSearch(e.target.value)}
+                          className="pl-10 pr-10"
+                        />
+                        {localSearch && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+                            onClick={() => setLocalSearch('')}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    
                     <div className="space-y-2">
                       <label className="text-base font-medium">Marca</label>
                       <Select value={selectedMarca} onValueChange={setSelectedMarca}>
@@ -335,7 +379,7 @@ export default function InventarioPage() {
                       variant="outline" 
                       onClick={clearFilters}
                       className="w-full mobile-button"
-                      disabled={selectedMarca === 'all' && selectedCategoria === 'all'}
+                      disabled={selectedMarca === 'all' && selectedCategoria === 'all' && !localSearch}
                     >
                       <X className="w-4 h-4 mr-2" />
                       Limpiar Filtros
@@ -348,9 +392,30 @@ export default function InventarioPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Filtros</CardTitle>
-                <CardDescription>Filtra los productos por marca y línea</CardDescription>
+                <CardDescription>Filtra los productos por SKU, notas, marca y línea</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                {/* Búsqueda por SKU y notas */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por SKU o notas del producto..."
+                    value={localSearch}
+                    onChange={(e) => setLocalSearch(e.target.value)}
+                    className="pl-10 pr-10"
+                  />
+                  {localSearch && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+                      onClick={() => setLocalSearch('')}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+                
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-2 block">Marca</label>
@@ -387,7 +452,7 @@ export default function InventarioPage() {
                       variant="outline" 
                       onClick={clearFilters}
                       className="w-full"
-                      disabled={selectedMarca === 'all' && selectedCategoria === 'all'}
+                      disabled={selectedMarca === 'all' && selectedCategoria === 'all' && !localSearch}
                     >
                       <X className="w-4 h-4 mr-2" />
                       Limpiar Filtros
