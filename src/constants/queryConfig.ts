@@ -27,4 +27,11 @@ export const QUERY_CONFIG = {
     staleTime: 10 * 60 * 1000,
     gcTime: 15 * 60 * 1000
   },
+  
+  // Catálogo de productos: cache agresivo (10 minutos)
+  PRODUCTS: {
+    staleTime: 10 * 60 * 1000, // 10 minutos frescos
+    gcTime: 15 * 60 * 1000,    // Mantener en cache 15 minutos
+    refetchOnMount: false,     // No refetch al montar si está fresh
+  },
 } as const;
