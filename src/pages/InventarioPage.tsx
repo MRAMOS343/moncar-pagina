@@ -104,13 +104,25 @@ export default function InventarioPage() {
   const filteredProducts = useMemo(() => {
     let result = tableProducts;
     
-    // Filtrar por búsqueda local (SKU o notes)
+    // Filtrar por búsqueda local (SKU o notes con búsqueda desordenada)
     if (debouncedLocalSearch) {
       const searchLower = debouncedLocalSearch.toLowerCase();
-      result = result.filter(item => 
-        item.sku.toLowerCase().includes(searchLower) ||
-        (item.notes && item.notes.toLowerCase().includes(searchLower))
-      );
+      const searchWords = searchLower.split(/\s+/).filter(word => word.length > 0);
+      
+      result = result.filter(item => {
+        // Para SKU: búsqueda secuencial (el orden importa)
+        if (item.sku.toLowerCase().includes(searchLower)) {
+          return true;
+        }
+        
+        // Para notes: búsqueda por palabras (todas deben coincidir, orden no importa)
+        if (item.notes) {
+          const notesLower = item.notes.toLowerCase();
+          return searchWords.every(word => notesLower.includes(word));
+        }
+        
+        return false;
+      });
     }
     
     // Filtrar por marca y categoría
