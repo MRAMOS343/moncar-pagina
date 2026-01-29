@@ -87,8 +87,9 @@ function calcularPrecioConImpuesto(
     }
   }
   
-  // Calcular total: base + (base * tasa)
-  return base + (base * impuestoRate);
+  // Calcular total: base + (base * tasa), redondeado a 1 decimal
+  const total = base + (base * impuestoRate);
+  return Math.round(total * 10) / 10;
 }
 
 export default function InventarioPage() {
