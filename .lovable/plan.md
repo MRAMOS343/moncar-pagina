@@ -1,82 +1,39 @@
 
 
-# Plan: Corregir Cálculo de Precio Total en Vista Lista y Galería
+# Plan: Redondear Precio Total a 1 Decimal
 
-## Problema Identificado
+## Resumen
 
-La función `calcularPrecioConImpuesto` actual no convierte los valores de string a número como sí lo hace el modal de detalle. Los campos de la API (`precio1`, `impuesto`) pueden venir como **strings** desde Postgres (tipo `numeric`), lo que causa que el cálculo falle o dé resultados incorrectos.
+Modificar la función `calcularPrecioConImpuesto` para que el resultado se redondee a **1 decimal**.
 
-## Ejemplo del Comportamiento Esperado
-
-```text
-┌─────────────────────────────────────────┐
-│  Datos de la API:                       │
-│  precio1 = 86.21 (o "86.21" como string)│
-│  impuesto = 16 (o "16" como string)     │
-├─────────────────────────────────────────┤
-│  Cálculo:                               │
-│  base = 86.21                           │
-│  rate = 16 / 100 = 0.16                 │
-│  impuestoAmount = 86.21 * 0.16 = 13.79  │
-│  total = 86.21 + 13.79 = 100.00         │
-├─────────────────────────────────────────┤
-│  Mostrar en rojo: $100.00               │
-└─────────────────────────────────────────┘
-```
-
-## Cambios a Realizar
+## Cambio a Realizar
 
 ### Archivo: `src/pages/InventarioPage.tsx`
 
-**1. Actualizar la función helper para parsear strings (líneas 66-76)**
+**Actualizar el return de la función (línea 91)**
 
-Replicar exactamente la lógica del modal de detalle que usa `parseFloat()`:
-
-```typescript
-// Helper para calcular precio total (precio + IVA)
-function calcularPrecioConImpuesto(
-  precio: number | string | null, 
-  impuesto: number | string | null
-): number | null {
-  if (precio == null) return null;
-  
-  // Convertir a número (la API puede devolver strings)
-  const base = typeof precio === 'string' ? parseFloat(precio) : precio;
-  if (isNaN(base)) return null;
-  
-  // Manejar impuesto null y convertir a número
-  let impuestoRate = 0;
-  if (impuesto != null) {
-    const rawImpuesto = typeof impuesto === 'string' 
-      ? parseFloat(impuesto) 
-      : impuesto;
-    
-    if (!isNaN(rawImpuesto)) {
-      // Normalizar: si es > 1 (ej: 16), dividir entre 100 para obtener 0.16
-      impuestoRate = rawImpuesto > 1 ? rawImpuesto / 100 : rawImpuesto;
-    }
-  }
-  
-  // Calcular total: base + (base * tasa)
-  return base + (base * impuestoRate);
-}
-```
-
-**2. Actualizar el interface para aceptar strings (líneas 43-44)**
+Agregar `Math.round()` con multiplicador para redondear a 1 decimal:
 
 ```typescript
-precio: number | string | null;
-impuesto: number | string | null;
+// Antes:
+return base + (base * impuestoRate);
+
+// Después:
+const total = base + (base * impuestoRate);
+return Math.round(total * 10) / 10;
 ```
 
-## Resultado Visual
+## Ejemplo
 
-| Vista | Antes | Después |
-|-------|-------|---------|
-| **Lista** | `$86.21` (solo precio base, sin IVA) | `$100.00` (precio + IVA, en rojo) |
-| **Galería** | `$86.21` (solo precio base, azul) | `$100.00` (precio + IVA, en rojo) |
+| Cálculo | Antes | Después |
+|---------|-------|---------|
+| 86.21 + 13.7936 | 99.9936 | 100.0 |
+| 50.00 + 8.00 | 58.00 | 58.0 |
+| 123.45 + 19.752 | 143.202 | 143.2 |
 
-## Consistencia con el Modal
+## Archivo a Modificar
 
-La nueva implementación será **idéntica** a la lógica del `ProductDetailModal.tsx` (líneas 52-81), garantizando que el precio mostrado en la lista/galería coincida con el "Total" que se ve al abrir la ficha técnica.
+| Archivo | Cambio |
+|---------|--------|
+| `src/pages/InventarioPage.tsx` | Agregar redondeo a 1 decimal en `calcularPrecioConImpuesto` |
 
