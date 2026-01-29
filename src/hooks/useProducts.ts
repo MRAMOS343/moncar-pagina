@@ -2,6 +2,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchProducts, fetchProductBySku } from "@/services/productService";
+import { QUERY_CONFIG } from "@/constants/queryConfig";
 import type { ApiProduct } from "@/types/products";
 
 interface UseProductsParams {
@@ -27,7 +28,7 @@ export function useProducts(params: UseProductsParams = {}) {
     enabled: !!token && (params.enabled !== false),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
-    staleTime: 2 * 60 * 1000, // 2 minutos
+    ...QUERY_CONFIG.PRODUCTS, // Cache agresivo: 10 min frescos, 15 min en memoria
   });
 
   // Aplanar páginas + deduplicar por SKU

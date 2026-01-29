@@ -115,6 +115,9 @@ export default function InventarioPage() {
     isFetchingNextPage, 
     hasNextPage, 
     fetchNextPage,
+    refetch,
+    dataUpdatedAt,
+    isFetching,
   } = useProducts({ 
     q: debouncedSearchQuery,
     limit: 100,
@@ -318,7 +321,22 @@ export default function InventarioPage() {
             Catálogo de productos desde la API
           </p>
         </div>
-        <div className="flex gap-2 self-end sm:self-auto flex-wrap">
+        <div className="flex gap-2 self-end sm:self-auto flex-wrap items-center">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="btn-hover touch-target"
+          >
+            <RefreshCw className={`w-4 h-4 sm:mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Actualizar</span>
+          </Button>
+          {dataUpdatedAt && (
+            <span className="text-xs text-muted-foreground hidden lg:inline">
+              Actualizado: {new Date(dataUpdatedAt).toLocaleTimeString('es-MX')}
+            </span>
+          )}
           <Button variant="outline" onClick={handleExportCSV} size="sm" className="btn-hover touch-target">
             <Download className="w-4 h-4 sm:mr-2" />
             <span className="hidden sm:inline">Exportar CSV</span>
