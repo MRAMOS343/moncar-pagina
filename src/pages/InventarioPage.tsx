@@ -40,8 +40,8 @@ interface ProductTableItem {
   nombre: string;
   marca: string;
   categoria: string;
-  precio: number | null;
-  impuesto: number | null;
+  precio: number | string | null;
+  impuesto: number | string | null;
   unidad: string;
   minimo: number | null;
   maximo: number | null;
@@ -64,15 +64,31 @@ function mapApiProductToTableItem(p: ApiProduct): ProductTableItem {
 }
 
 // Helper para calcular precio total (precio + IVA)
-function calcularPrecioConImpuesto(precio: number | null, impuesto: number | null): number | null {
+function calcularPrecioConImpuesto(
+  precio: number | string | null, 
+  impuesto: number | string | null
+): number | null {
   if (precio == null) return null;
-  const base = precio;
-  let rate = 0;
+  
+  // Convertir a número (la API puede devolver strings)
+  const base = typeof precio === 'string' ? parseFloat(precio) : precio;
+  if (isNaN(base)) return null;
+  
+  // Manejar impuesto null y convertir a número
+  let impuestoRate = 0;
   if (impuesto != null) {
-    // Normalizar: si es > 1 asumimos que viene como porcentaje (ej: 16)
-    rate = impuesto > 1 ? impuesto / 100 : impuesto;
+    const rawImpuesto = typeof impuesto === 'string' 
+      ? parseFloat(impuesto) 
+      : impuesto;
+    
+    if (!isNaN(rawImpuesto)) {
+      // Normalizar: si es > 1 (ej: 16), dividir entre 100 para obtener 0.16
+      impuestoRate = rawImpuesto > 1 ? rawImpuesto / 100 : rawImpuesto;
+    }
   }
-  return base + (base * rate);
+  
+  // Calcular total: base + (base * tasa)
+  return base + (base * impuestoRate);
 }
 
 export default function InventarioPage() {
