@@ -1,4 +1,4 @@
-import { useState, useMemo, memo } from "react";
+import { useState, useMemo, memo, useEffect } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 import {
   Table,
@@ -110,7 +110,7 @@ function DataTableComponent<T extends Record<string, any>>({
   const datosPaginados = datosProcesados.slice(indiceInicio, indiceInicio + filasPorPagina);
 
   // Resetear página cuando cambian los datos
-  useMemo(() => {
+  useEffect(() => {
     setPaginaActual(1);
   }, [datosProcesados.length]);
 
