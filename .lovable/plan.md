@@ -1,77 +1,73 @@
 
 
-# Plan: Búsqueda Desordenada por Palabras en Notas del Producto
+# Plan: Corregir useMemo con Side-Effect en DataTable
 
-## Objetivo
+## Problema Identificado
 
-Modificar la lógica de búsqueda para que al buscar en el campo `notes`, cada palabra del término de búsqueda se evalúe independientemente. Esto permitirá encontrar productos sin importar el orden en que el usuario escriba las palabras.
-
-## Ejemplo de Comportamiento
-
-| Notas del Producto | Búsqueda | Actual | Nuevo |
-|--------------------|----------|--------|-------|
-| "BANDA MICRO V FORD AEROSTAR 1986-1997" | "FORD BANDA" | No encuentra | Encuentra |
-| "BANDA MICRO V FORD AEROSTAR 1986-1997" | "AEROSTAR 1997" | No encuentra | Encuentra |
-| "ACEITE MOTOR 5W30 SINTETICO" | "SINTETICO 5W30" | No encuentra | Encuentra |
-
-## Lógica Propuesta
-
-```text
-Término de búsqueda: "FORD BANDA AEROSTAR"
-                           ↓
-         Separar en palabras: ["ford", "banda", "aerostar"]
-                           ↓
-         Verificar que TODAS las palabras existan en notes
-                           ↓
-         "BANDA MICRO V FORD AEROSTAR" contiene las 3 → Coincide
-```
-
-## Cambio Técnico
-
-**Archivo:** `src/pages/InventarioPage.tsx`
+**Archivo:** `src/components/ui/data-table.tsx` (líneas 112-115)
 
 ```typescript
-// Antes (búsqueda secuencial)
-result = result.filter(item => 
-  item.sku.toLowerCase().includes(searchLower) ||
-  (item.notes && item.notes.toLowerCase().includes(searchLower))
-);
-
-// Después (búsqueda por palabras en notes)
-const searchWords = searchLower.split(/\s+/).filter(word => word.length > 0);
-
-result = result.filter(item => {
-  // Para SKU: búsqueda exacta/secuencial (mantener comportamiento actual)
-  if (item.sku.toLowerCase().includes(searchLower)) {
-    return true;
-  }
-  
-  // Para notes: búsqueda por palabras (todas deben coincidir)
-  if (item.notes) {
-    const notesLower = item.notes.toLowerCase();
-    return searchWords.every(word => notesLower.includes(word));
-  }
-  
-  return false;
-});
+// INCORRECTO - side-effect dentro de useMemo
+useMemo(() => {
+  setPaginaActual(1);
+}, [datosProcesados.length]);
 ```
 
-## Comportamiento Detallado
+### Por qué es un problema
 
-| Campo | Tipo de Búsqueda | Razón |
-|-------|------------------|-------|
-| `sku` | Secuencial (contains) | Los SKUs son códigos específicos, el orden importa |
-| `notes` | Por palabras (all words match) | Descripciones largas, el usuario puede no recordar el orden |
+1. **Violación de reglas de React**: `useMemo` es para calcular valores derivados, NO para ejecutar efectos secundarios
+2. **Comportamiento impredecible**: React puede ejecutar `useMemo` múltiples veces durante el render sin garantías de orden
+3. **Warning en consola**: React detecta este patrón y genera warnings en desarrollo
+4. **Bugs de paginación**: La página puede no resetearse correctamente en ciertas condiciones
 
-## Casos Especiales
+## Solución
 
-- **Una sola palabra:** Funciona igual que antes (ej: "FORD" encuentra todo con "FORD")
-- **Palabras repetidas:** Se ignoran duplicados naturalmente
-- **Espacios extra:** Se normalizan automáticamente con `split(/\s+/)`
+Cambiar `useMemo` por `useEffect`, que es el hook correcto para side-effects:
 
-## Archivo a Modificar
+```typescript
+// CORRECTO - side-effect dentro de useEffect
+useEffect(() => {
+  setPaginaActual(1);
+}, [datosProcesados.length]);
+```
+
+## Cambios a Realizar
 
 | Archivo | Cambio |
 |---------|--------|
-| `src/pages/InventarioPage.tsx` | Actualizar lógica de filtrado en `filteredProducts` (líneas 104-114) |
+| `src/components/ui/data-table.tsx` | Línea 1: Añadir `useEffect` al import |
+| `src/components/ui/data-table.tsx` | Líneas 112-115: Cambiar `useMemo` por `useEffect` |
+
+## Código Final
+
+### Import (línea 1)
+
+```typescript
+// Antes
+import { useState, useMemo, memo } from "react";
+
+// Después
+import { useState, useMemo, memo, useEffect } from "react";
+```
+
+### Hook (líneas 112-115)
+
+```typescript
+// Antes
+useMemo(() => {
+  setPaginaActual(1);
+}, [datosProcesados.length]);
+
+// Después
+useEffect(() => {
+  setPaginaActual(1);
+}, [datosProcesados.length]);
+```
+
+## Comportamiento Esperado
+
+- Cuando cambia la cantidad de datos filtrados (`datosProcesados.length`), la paginación se resetea a la página 1
+- El reset ocurre DESPUÉS del render, no durante (comportamiento correcto de efectos)
+- Se elimina el warning de React en consola
+- La paginación funciona de manera predecible y consistente
 
