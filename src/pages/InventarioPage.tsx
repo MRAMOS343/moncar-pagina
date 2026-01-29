@@ -10,8 +10,9 @@ import { ProductModal } from '@/components/modals/ProductModal';
 import { ProductDetailModal } from '@/components/inventory/ProductDetailModal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Download, Upload, Package, Plus, X, Filter, LayoutGrid, List, Loader2, Search } from 'lucide-react';
+import { Download, Upload, Package, Plus, X, Filter, LayoutGrid, List, Loader2, Search, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useProducts } from '@/hooks/useProducts';
 import { useProductosKPIs } from '@/hooks/useProductosKPIs';
 import { useInventarioGlobal } from '@/hooks/useInventarioGlobal';
@@ -591,6 +592,26 @@ export default function InventarioPage() {
         </TabsContent>
 
         <TabsContent value="global" className="space-y-6">
+          {/* Error Alert */}
+          {globalTotals.error && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Error al cargar totales globales</AlertTitle>
+              <AlertDescription className="flex items-center justify-between">
+                <span>{globalTotals.error.message || 'No se pudieron cargar los datos de inventario global. Por favor intenta de nuevo.'}</span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => window.location.reload()}
+                  className="ml-4 shrink-0"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Reintentar
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Global KPIs */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {globalTotals.isLoading ? (
@@ -599,6 +620,14 @@ export default function InventarioPage() {
                 <KPISkeleton />
                 <KPISkeleton />
                 <KPISkeleton />
+              </>
+            ) : globalTotals.error ? (
+              // Show empty KPIs when there's an error
+              <>
+                <KPICard data={{ label: "Valor Total Global", value: 0, format: "currency" }} className="opacity-50" />
+                <KPICard data={{ label: "Productos Únicos", value: 0, format: "number" }} className="opacity-50" />
+                <KPICard data={{ label: "Total de Unidades", value: 0, format: "number" }} className="opacity-50" />
+                <KPICard data={{ label: "Sucursales Activas", value: 0, format: "number" }} className="opacity-50" />
               </>
             ) : (
               <>
