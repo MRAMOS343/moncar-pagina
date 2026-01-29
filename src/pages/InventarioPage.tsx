@@ -41,6 +41,7 @@ interface ProductTableItem {
   marca: string;
   categoria: string;
   precio: number | null;
+  impuesto: number | null;
   unidad: string;
   minimo: number | null;
   maximo: number | null;
@@ -54,11 +55,24 @@ function mapApiProductToTableItem(p: ApiProduct): ProductTableItem {
     marca: p.marca ?? 'Sin marca',
     categoria: p.linea ?? 'Sin línea',
     precio: p.precio1,
+    impuesto: p.impuesto,
     unidad: p.unidad ?? 'PZA',
     minimo: p.minimo,
     maximo: p.maximo,
     notes: p.notes ?? null,
   };
+}
+
+// Helper para calcular precio total (precio + IVA)
+function calcularPrecioConImpuesto(precio: number | null, impuesto: number | null): number | null {
+  if (precio == null) return null;
+  const base = precio;
+  let rate = 0;
+  if (impuesto != null) {
+    // Normalizar: si es > 1 asumimos que viene como porcentaje (ej: 16)
+    rate = impuesto > 1 ? impuesto / 100 : impuesto;
+  }
+  return base + (base * rate);
 }
 
 export default function InventarioPage() {
@@ -162,10 +176,14 @@ export default function InventarioPage() {
     },
     {
       key: 'precio' as const,
-      header: 'Precio',
+      header: 'Precio c/IVA',
       sortable: true,
-      render: (value: number | null | undefined) => 
-        value != null ? `$${value.toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '-',
+      render: (_value: number | null | undefined, row: ProductTableItem) => {
+        const total = calcularPrecioConImpuesto(row.precio, row.impuesto);
+        return total != null 
+          ? <span className="text-destructive font-semibold">${total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+          : '-';
+      },
     },
     {
       key: 'unidad' as const,
@@ -556,10 +574,13 @@ export default function InventarioPage() {
                           </div>
                           <h3 className="font-medium text-sm line-clamp-2 mb-1">{product.nombre}</h3>
                           <p className="text-xs text-muted-foreground mb-2">{product.marca} • {product.categoria}</p>
-                          <p className="font-bold text-primary">
-                            {product.precio != null 
-                              ? `$${product.precio.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
-                              : '-'}
+                          <p className="font-bold text-destructive">
+                            {(() => {
+                              const total = calcularPrecioConImpuesto(product.precio, product.impuesto);
+                              return total != null 
+                                ? `$${total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                                : '-';
+                            })()}
                           </p>
                         </CardContent>
                       </Card>
