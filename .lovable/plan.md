@@ -1,122 +1,77 @@
 
 
-# Plan: Añadir Barra de Búsqueda en Inventario (SKU + Notas del Producto)
+# Plan: Búsqueda Desordenada por Palabras en Notas del Producto
 
 ## Objetivo
 
-Añadir una barra de búsqueda dedicada en la página de Inventario que permita buscar productos por:
-- **SKU** del producto
-- **Notas del producto** (campo `notes` que contiene descripciones como "BANDA MICRO V FORD AEROSTAR...")
+Modificar la lógica de búsqueda para que al buscar en el campo `notes`, cada palabra del término de búsqueda se evalúe independientemente. Esto permitirá encontrar productos sin importar el orden en que el usuario escriba las palabras.
 
-## Situación Actual
+## Ejemplo de Comportamiento
 
-La página de Inventario ya tiene:
-- Una búsqueda global en el topbar que pasa `searchQuery` vía contexto
-- El hook `useProducts` ya envía el parámetro `q` a la API
-- Filtros de Marca y Línea en una tarjeta dedicada
+| Notas del Producto | Búsqueda | Actual | Nuevo |
+|--------------------|----------|--------|-------|
+| "BANDA MICRO V FORD AEROSTAR 1986-1997" | "FORD BANDA" | No encuentra | Encuentra |
+| "BANDA MICRO V FORD AEROSTAR 1986-1997" | "AEROSTAR 1997" | No encuentra | Encuentra |
+| "ACEITE MOTOR 5W30 SINTETICO" | "SINTETICO 5W30" | No encuentra | Encuentra |
 
-Sin embargo, la API puede no buscar en el campo `notes`. Para garantizar la funcionalidad, implementaremos filtrado adicional en el cliente.
-
-## Cambios a Realizar
-
-### Archivo: `src/pages/InventarioPage.tsx`
-
-1. **Añadir estado local para búsqueda**
-   ```typescript
-   const [localSearch, setLocalSearch] = useState('');
-   const debouncedLocalSearch = useDebounce(localSearch, 300);
-   ```
-
-2. **Añadir Input de búsqueda en la sección de filtros**
-   - Icono de lupa a la izquierda
-   - Placeholder: "Buscar por SKU o notas del producto..."
-   - Botón para limpiar búsqueda
-
-3. **Modificar mapeo de productos para incluir `notes`**
-   ```typescript
-   interface ProductTableItem {
-     // ... campos existentes
-     notes: string | null; // Añadir campo notes
-   }
-   ```
-
-4. **Implementar filtrado combinado (API + cliente)**
-   - Enviar `debouncedLocalSearch` a la API (ya soportado con `q`)
-   - Filtrar adicionalmente en el cliente por `notes` para garantizar cobertura
-
-## Diseño Visual
+## Lógica Propuesta
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│  Productos                                                  │
-│  Catálogo de productos desde la API                         │
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│  Filtros                                                    │
-│  ─────────────────────────────────────────────────────────  │
-│                                                             │
-│  🔍 [Buscar por SKU o notas del producto...           ] [X] │
-│                                                             │
-│  ┌───────────────┐ ┌───────────────┐ ┌─────────────────┐   │
-│  │ Marca       ▼ │ │ Línea       ▼ │ │ Limpiar Filtros │   │
-│  └───────────────┘ └───────────────┘ └─────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
+Término de búsqueda: "FORD BANDA AEROSTAR"
+                           ↓
+         Separar en palabras: ["ford", "banda", "aerostar"]
+                           ↓
+         Verificar que TODAS las palabras existan en notes
+                           ↓
+         "BANDA MICRO V FORD AEROSTAR" contiene las 3 → Coincide
 ```
 
-## Detalles Técnicos
+## Cambio Técnico
 
-### Lógica de Filtrado
+**Archivo:** `src/pages/InventarioPage.tsx`
 
 ```typescript
-// Filtrar productos cargados por búsqueda local
-const filteredProducts = useMemo(() => {
-  let result = tableProducts;
-  
-  // Filtrar por búsqueda local (SKU o notes)
-  if (debouncedLocalSearch) {
-    const searchLower = debouncedLocalSearch.toLowerCase();
-    result = result.filter(item => 
-      item.sku.toLowerCase().includes(searchLower) ||
-      (item.notes && item.notes.toLowerCase().includes(searchLower))
-    );
+// Antes (búsqueda secuencial)
+result = result.filter(item => 
+  item.sku.toLowerCase().includes(searchLower) ||
+  (item.notes && item.notes.toLowerCase().includes(searchLower))
+);
+
+// Después (búsqueda por palabras en notes)
+const searchWords = searchLower.split(/\s+/).filter(word => word.length > 0);
+
+result = result.filter(item => {
+  // Para SKU: búsqueda exacta/secuencial (mantener comportamiento actual)
+  if (item.sku.toLowerCase().includes(searchLower)) {
+    return true;
   }
   
-  // Filtros existentes de marca y categoría
-  if (selectedMarca !== 'all') {
-    result = result.filter(item => item.marca === selectedMarca);
-  }
-  if (selectedCategoria !== 'all') {
-    result = result.filter(item => item.categoria === selectedCategoria);
+  // Para notes: búsqueda por palabras (todas deben coincidir)
+  if (item.notes) {
+    const notesLower = item.notes.toLowerCase();
+    return searchWords.every(word => notesLower.includes(word));
   }
   
-  return result;
-}, [tableProducts, debouncedLocalSearch, selectedMarca, selectedCategoria]);
+  return false;
+});
 ```
 
-### Estrategia de Búsqueda
+## Comportamiento Detallado
 
-| Nivel | Acción | Campo |
-|-------|--------|-------|
-| API | `GET /products?q={búsqueda}` | SKU, descrip (según backend) |
-| Cliente | Filtro adicional | `sku`, `notes` |
+| Campo | Tipo de Búsqueda | Razón |
+|-------|------------------|-------|
+| `sku` | Secuencial (contains) | Los SKUs son códigos específicos, el orden importa |
+| `notes` | Por palabras (all words match) | Descripciones largas, el usuario puede no recordar el orden |
 
-Esta estrategia dual garantiza que:
-- Si la API busca en `notes`, los resultados llegan optimizados
-- Si la API NO busca en `notes`, el filtro del cliente lo cubre
+## Casos Especiales
 
-## Archivos a Modificar
+- **Una sola palabra:** Funciona igual que antes (ej: "FORD" encuentra todo con "FORD")
+- **Palabras repetidas:** Se ignoran duplicados naturalmente
+- **Espacios extra:** Se normalizan automáticamente con `split(/\s+/)`
+
+## Archivo a Modificar
 
 | Archivo | Cambio |
 |---------|--------|
-| `src/pages/InventarioPage.tsx` | Añadir Input de búsqueda, estado local, lógica de filtrado |
-
-## Comportamiento Esperado
-
-1. Usuario escribe "BANDA MICRO" en la barra de búsqueda
-2. Después de 300ms (debounce), se filtra la tabla
-3. Se muestran productos donde:
-   - SKU contiene "BANDA MICRO", O
-   - Notas contienen "BANDA MICRO"
-4. Los filtros de Marca/Línea se aplican sobre los resultados de búsqueda
+| `src/pages/InventarioPage.tsx` | Actualizar lógica de filtrado en `filteredProducts` (líneas 104-114) |
 
