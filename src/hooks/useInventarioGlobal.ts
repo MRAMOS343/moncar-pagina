@@ -46,6 +46,7 @@ export function useInventarioGlobal(): InventarioGlobalResult {
     queryFn: async () => {
       const allItems: ApiInventoryItem[] = [];
       let cursor: InventoryCursor | undefined = undefined;
+      let previousCursorKey: string | null = null;
       let pageCount = 0;
 
       do {
@@ -56,7 +57,21 @@ export function useInventarioGlobal(): InventarioGlobalResult {
         });
 
         allItems.push(...response.items);
-        cursor = response.next_cursor ?? undefined;
+        
+        const newCursor = response.next_cursor ?? undefined;
+        
+        // Verificar que el cursor cambió para evitar loop infinito
+        const newCursorKey = newCursor 
+          ? `${newCursor.cursor_sku}|${newCursor.cursor_almacen}` 
+          : null;
+        
+        if (newCursorKey && newCursorKey === previousCursorKey) {
+          console.warn('[useInventarioGlobal] Cursor no cambió entre iteraciones, deteniendo paginación para evitar loop infinito');
+          break;
+        }
+        
+        previousCursorKey = newCursorKey;
+        cursor = newCursor;
         pageCount++;
       } while (cursor && pageCount < MAX_PAGES && allItems.length < MAX_ITEMS);
 
