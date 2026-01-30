@@ -160,8 +160,8 @@ export default function VentasPage() {
     const salesByDay: Record<string, number> = {};
     
     salesData.forEach(sale => {
-      if (!sale.cancelada) {
-        const day = format(new Date(sale.fecha_emision), 'yyyy-MM-dd');
+      if (!sale.cancelada && sale.usu_fecha) {
+        const day = sale.usu_fecha.split('T')[0];
         salesByDay[day] = (salesByDay[day] || 0) + toNumber(sale.total);
       }
     });

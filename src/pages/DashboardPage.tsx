@@ -335,7 +335,11 @@ export default function DashboardPage() {
                       <div>
                         <p className="font-medium">Venta #{venta.venta_id}</p>
                         <p className="text-sm text-muted-foreground">
-                          {getWarehouseName(venta.sucursal_id)} • {new Date(venta.fecha_emision).toLocaleDateString('es-MX')}
+                          {getWarehouseName(venta.sucursal_id)} • {
+                            venta.usu_fecha 
+                              ? new Date(venta.usu_fecha).toLocaleDateString('es-MX') 
+                              : '---'
+                          } {venta.usu_hora || ''}
                         </p>
                       </div>
                     </div>

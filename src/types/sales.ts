@@ -29,8 +29,8 @@ export interface SaleListItem {
   estado_origen: string;
   pagos_resumen: string | null;
   datos_origen: string;
-  usu_fecha: string;
-  usu_hora: string;
+  usu_fecha: string | null;
+  usu_hora: string | null;
   cancelada: boolean;
 }
 
