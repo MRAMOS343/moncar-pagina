@@ -84,7 +84,9 @@ export function SaleDetailModal({ ventaId, open, onOpenChange }: SaleDetailModal
               <div>
                 <span className="text-muted-foreground">Fecha:</span>{" "}
                 <span className="font-medium">
-                  {safeFormatDate(data.venta.fecha_emision)}
+                  {data.venta.usu_fecha 
+                    ? `${new Date(data.venta.usu_fecha).toLocaleDateString('es-MX')} ${data.venta.usu_hora || ''}`
+                    : '---'}
                 </span>
               </div>
               <div>

@@ -66,7 +66,8 @@ export const dashboardKpiService = {
       const totalDia = sales
         .filter(venta => {
           if (venta.cancelada) return false;
-          const fechaVenta = venta.fecha_emision.split('T')[0];
+          if (!venta.usu_fecha) return false;
+          const fechaVenta = venta.usu_fecha.split('T')[0];
           return fechaVenta === fecha;
         })
         .reduce((suma, venta) => suma + toNumber(venta.total), 0);
@@ -121,7 +122,11 @@ export const dashboardKpiService = {
   getRecentSales(sales: SaleListItem[], limit: number = 5) {
     return sales
       .filter(s => !s.cancelada)
-      .sort((a, b) => new Date(b.fecha_emision).getTime() - new Date(a.fecha_emision).getTime())
+      .sort((a, b) => {
+        const dateA = a.usu_fecha ? new Date(a.usu_fecha).getTime() : 0;
+        const dateB = b.usu_fecha ? new Date(b.usu_fecha).getTime() : 0;
+        return dateB - dateA;
+      })
       .slice(0, limit);
   }
 };
