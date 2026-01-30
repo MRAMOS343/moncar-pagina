@@ -1,8 +1,17 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { userProfileSchema, UserProfileFormData } from '@/schemas/userProfileSchema';
+import { 
+  useUserPreferences, 
+  useUpdatePreferences, 
+  useUpdateProfile,
+  useCompanySettings,
+  useUpdateCompanySettings,
+  useInventorySettings,
+  useUpdateInventorySettings
+} from "@/hooks/useSettings";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -11,11 +20,26 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { User, Building2, Package, Shield, Settings, Bell } from "lucide-react";
-import { showSuccessToast } from "@/utils/toastHelpers";
+import { Skeleton } from "@/components/ui/skeleton";
+import { User, Building2, Package, Shield, Settings, Loader2 } from "lucide-react";
+import { showSuccessToast, showErrorToast } from "@/utils/toastHelpers";
 
 export default function ConfiguracionPage() {
   const { currentUser, updateUserRole } = useAuth();
+  
+  // Control de acceso por rol
+  const canManageSettings = currentUser?.role === 'admin' || currentUser?.role === 'gerente';
+  
+  // === Hooks de datos ===
+  const { data: preferences, isLoading: loadingPrefs } = useUserPreferences();
+  const updatePrefs = useUpdatePreferences();
+  const updateProfile = useUpdateProfile();
+  
+  const { data: companySettings, isLoading: loadingCompany } = useCompanySettings();
+  const updateCompany = useUpdateCompanySettings();
+  
+  const { data: inventorySettings, isLoading: loadingInventory } = useInventorySettings();
+  const updateInventory = useUpdateInventorySettings();
   
   // Formulario de Perfil con validación
   const profileForm = useForm<UserProfileFormData>({
@@ -27,44 +51,90 @@ export default function ConfiguracionPage() {
     }
   });
 
-  // Estado para Configuración de Empresa
-  const [companySettings, setCompanySettings] = useState({
-    nombreEmpresa: "Refaccionaria AutoParts",
-    rfc: "RPM850101ABC",
-    direccion: "Av. Insurgentes Sur 1234, CDMX",
-    telefono: "55-1234-5678",
+  // Formulario de Empresa
+  const companyForm = useForm({
+    defaultValues: {
+      nombre_empresa: "",
+      rfc: "",
+      direccion: "",
+      telefono: "",
+    }
   });
 
-  // Estado para Configuración de Inventario
-  const [inventorySettings, setInventorySettings] = useState({
-    stockMinimo: "10",
-    alertasActivas: true,
-    formatoSKU: "AUTO-####",
+  // Formulario de Inventario
+  const inventoryForm = useForm({
+    defaultValues: {
+      stock_minimo_global: 10,
+      alertas_activas: true,
+      formato_sku: "AUTO-####",
+    }
   });
 
-  // Estado para Notificaciones
-  const [notifications, setNotifications] = useState({
-    stockBajo: true,
-    nuevasVentas: true,
-    nuevosProveedores: false,
-    reportesDiarios: true,
-  });
+  // Sincronizar datos del backend con formularios
+  useEffect(() => {
+    if (companySettings) {
+      companyForm.reset({
+        nombre_empresa: companySettings.nombre_empresa || "",
+        rfc: companySettings.rfc || "",
+        direccion: companySettings.direccion || "",
+        telefono: companySettings.telefono || "",
+      });
+    }
+  }, [companySettings, companyForm]);
 
+  useEffect(() => {
+    if (inventorySettings) {
+      inventoryForm.reset({
+        stock_minimo_global: inventorySettings.stock_minimo_global || 10,
+        alertas_activas: inventorySettings.alertas_activas ?? true,
+        formato_sku: inventorySettings.formato_sku || "AUTO-####",
+      });
+    }
+  }, [inventorySettings, inventoryForm]);
+
+  // === Handlers ===
   const handleSaveProfile = profileForm.handleSubmit((data: UserProfileFormData) => {
-    showSuccessToast("Perfil actualizado", "Los cambios se han guardado correctamente.");
+    updateProfile.mutate(
+      { nombre: data.nombre, telefono: data.telefono },
+      {
+        onSuccess: () => showSuccessToast("Perfil actualizado", "Los cambios se han guardado correctamente."),
+        onError: () => showErrorToast("Error", "No se pudo guardar el perfil."),
+      }
+    );
   });
 
-  const handleSaveCompany = () => {
-    showSuccessToast("Configuración de empresa actualizada", "Los cambios se han guardado correctamente.");
+  const handleTogglePreference = (key: string, value: boolean) => {
+    updatePrefs.mutate(
+      { [key]: value },
+      {
+        onSuccess: () => showSuccessToast("Preferencia actualizada"),
+        onError: () => showErrorToast("Error", "No se pudo guardar la preferencia."),
+      }
+    );
   };
 
-  const handleSaveInventory = () => {
-    showSuccessToast("Configuración de inventario actualizada", "Los cambios se han guardado correctamente.");
-  };
+  const handleSaveCompany = companyForm.handleSubmit((data) => {
+    updateCompany.mutate(data, {
+      onSuccess: () => showSuccessToast("Configuración de empresa actualizada"),
+      onError: () => showErrorToast("Error", "No se pudo guardar la configuración."),
+    });
+  });
 
-  const handleSaveNotifications = () => {
-    showSuccessToast("Preferencias de notificaciones actualizadas", "Los cambios se han guardado correctamente.");
-  };
+  const handleSaveInventory = inventoryForm.handleSubmit((data) => {
+    updateInventory.mutate(data, {
+      onSuccess: () => showSuccessToast("Configuración de inventario actualizada"),
+      onError: () => showErrorToast("Error", "No se pudo guardar la configuración."),
+    });
+  });
+
+  // Skeleton para loading
+  const SettingsSkeleton = () => (
+    <div className="space-y-4">
+      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-10 w-3/4" />
+    </div>
+  );
 
   return (
     <main role="main" aria-label="Contenido principal">
@@ -77,19 +147,23 @@ export default function ConfiguracionPage() {
       </div>
 
       <Tabs defaultValue="perfil" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className={`grid w-full ${canManageSettings ? 'grid-cols-5' : 'grid-cols-3'}`}>
           <TabsTrigger value="perfil" className="gap-2">
             <User className="h-4 w-4" />
             Perfil
           </TabsTrigger>
-          <TabsTrigger value="empresa" className="gap-2">
-            <Building2 className="h-4 w-4" />
-            Empresa
-          </TabsTrigger>
-          <TabsTrigger value="inventario" className="gap-2">
-            <Package className="h-4 w-4" />
-            Inventario
-          </TabsTrigger>
+          {canManageSettings && (
+            <>
+              <TabsTrigger value="empresa" className="gap-2">
+                <Building2 className="h-4 w-4" />
+                Empresa
+              </TabsTrigger>
+              <TabsTrigger value="inventario" className="gap-2">
+                <Package className="h-4 w-4" />
+                Inventario
+              </TabsTrigger>
+            </>
+          )}
           <TabsTrigger value="permisos" className="gap-2">
             <Shield className="h-4 w-4" />
             Roles
@@ -127,6 +201,7 @@ export default function ConfiguracionPage() {
                     id="email"
                     type="email"
                     {...profileForm.register('email')}
+                    disabled
                   />
                   {profileForm.formState.errors.email && (
                     <p className="text-sm text-destructive">{profileForm.formState.errors.email.message}</p>
@@ -157,7 +232,14 @@ export default function ConfiguracionPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={handleSaveProfile} className="btn-hover">Guardar cambios</Button>
+              <Button 
+                onClick={handleSaveProfile} 
+                className="btn-hover"
+                disabled={updateProfile.isPending}
+              >
+                {updateProfile.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                Guardar cambios
+              </Button>
             </CardContent>
           </Card>
 
@@ -169,158 +251,191 @@ export default function ConfiguracionPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Alertas de stock bajo</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Recibir notificaciones cuando el inventario esté bajo
-                  </p>
-                </div>
-                <Switch
-                  checked={notifications.stockBajo}
-                  onCheckedChange={(checked) => setNotifications({ ...notifications, stockBajo: checked })}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Nuevas ventas</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Notificar sobre cada venta realizada
-                  </p>
-                </div>
-                <Switch
-                  checked={notifications.nuevasVentas}
-                  onCheckedChange={(checked) => setNotifications({ ...notifications, nuevasVentas: checked })}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Nuevos proveedores</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Alertas cuando se registren nuevos proveedores
-                  </p>
-                </div>
-                <Switch
-                  checked={notifications.nuevosProveedores}
-                  onCheckedChange={(checked) => setNotifications({ ...notifications, nuevosProveedores: checked })}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Reportes diarios</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Resumen diario de actividad por email
-                  </p>
-                </div>
-                <Switch
-                  checked={notifications.reportesDiarios}
-                  onCheckedChange={(checked) => setNotifications({ ...notifications, reportesDiarios: checked })}
-                />
-              </div>
-              <Button onClick={handleSaveNotifications} className="btn-hover">Guardar preferencias</Button>
+              {loadingPrefs ? (
+                <SettingsSkeleton />
+              ) : (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Alertas de stock bajo</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Recibir notificaciones cuando el inventario esté bajo
+                      </p>
+                    </div>
+                    <Switch
+                      checked={preferences?.alert_stock_bajo ?? true}
+                      onCheckedChange={(checked) => handleTogglePreference('alert_stock_bajo', checked)}
+                      disabled={updatePrefs.isPending}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Nuevas ventas</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Notificar sobre cada venta realizada
+                      </p>
+                    </div>
+                    <Switch
+                      checked={preferences?.alert_nuevas_ventas ?? true}
+                      onCheckedChange={(checked) => handleTogglePreference('alert_nuevas_ventas', checked)}
+                      disabled={updatePrefs.isPending}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Nuevos proveedores</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Alertas cuando se registren nuevos proveedores
+                      </p>
+                    </div>
+                    <Switch
+                      checked={preferences?.alert_nuevos_proveedores ?? false}
+                      onCheckedChange={(checked) => handleTogglePreference('alert_nuevos_proveedores', checked)}
+                      disabled={updatePrefs.isPending}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Reportes diarios</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Resumen diario de actividad por email
+                      </p>
+                    </div>
+                    <Switch
+                      checked={preferences?.alert_reportes_diarios ?? true}
+                      onCheckedChange={(checked) => handleTogglePreference('alert_reportes_diarios', checked)}
+                      disabled={updatePrefs.isPending}
+                    />
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Pestaña: Configuración de Empresa */}
-        <TabsContent value="empresa" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Datos de la Empresa</CardTitle>
-              <CardDescription>
-                Información general y fiscal de tu negocio
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="nombreEmpresa">Nombre de la empresa</Label>
-                <Input
-                  id="nombreEmpresa"
-                  value={companySettings.nombreEmpresa}
-                  onChange={(e) => setCompanySettings({ ...companySettings, nombreEmpresa: e.target.value })}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="rfc">RFC</Label>
-                  <Input
-                    id="rfc"
-                    value={companySettings.rfc}
-                    onChange={(e) => setCompanySettings({ ...companySettings, rfc: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="telefonoEmpresa">Teléfono</Label>
-                  <Input
-                    id="telefonoEmpresa"
-                    value={companySettings.telefono}
-                    onChange={(e) => setCompanySettings({ ...companySettings, telefono: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="direccion">Dirección fiscal</Label>
-                <Textarea
-                  id="direccion"
-                  value={companySettings.direccion}
-                  onChange={(e) => setCompanySettings({ ...companySettings, direccion: e.target.value })}
-                  rows={3}
-                />
-              </div>
-              <Button onClick={handleSaveCompany} className="btn-hover">Guardar cambios</Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {/* Pestaña: Configuración de Empresa (solo admin/gerente) */}
+        {canManageSettings && (
+          <TabsContent value="empresa" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Datos de la Empresa</CardTitle>
+                <CardDescription>
+                  Información general y fiscal de tu negocio
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {loadingCompany ? (
+                  <SettingsSkeleton />
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="nombreEmpresa">Nombre de la empresa</Label>
+                      <Input
+                        id="nombreEmpresa"
+                        {...companyForm.register('nombre_empresa')}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="rfc">RFC</Label>
+                        <Input
+                          id="rfc"
+                          {...companyForm.register('rfc')}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="telefonoEmpresa">Teléfono</Label>
+                        <Input
+                          id="telefonoEmpresa"
+                          {...companyForm.register('telefono')}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="direccion">Dirección fiscal</Label>
+                      <Textarea
+                        id="direccion"
+                        {...companyForm.register('direccion')}
+                        rows={3}
+                      />
+                    </div>
+                    <Button 
+                      onClick={handleSaveCompany} 
+                      className="btn-hover"
+                      disabled={updateCompany.isPending}
+                    >
+                      {updateCompany.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                      Guardar cambios
+                    </Button>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
-        {/* Pestaña: Configuración de Inventario */}
-        <TabsContent value="inventario" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Parámetros de Inventario</CardTitle>
-              <CardDescription>
-                Configura alertas y formatos para la gestión de productos
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="stockMinimo">Stock mínimo global (unidades)</Label>
-                <Input
-                  id="stockMinimo"
-                  type="number"
-                  value={inventorySettings.stockMinimo}
-                  onChange={(e) => setInventorySettings({ ...inventorySettings, stockMinimo: e.target.value })}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Umbral predeterminado para alertas de inventario bajo
-                </p>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Alertas automáticas</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Activar notificaciones cuando el stock esté por debajo del mínimo
-                  </p>
-                </div>
-                <Switch
-                  checked={inventorySettings.alertasActivas}
-                  onCheckedChange={(checked) => setInventorySettings({ ...inventorySettings, alertasActivas: checked })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="formatoSKU">Formato de SKU</Label>
-                <Input
-                  id="formatoSKU"
-                  value={inventorySettings.formatoSKU}
-                  onChange={(e) => setInventorySettings({ ...inventorySettings, formatoSKU: e.target.value })}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Ejemplo: AUTO-#### genera códigos como AUTO-0001
-                </p>
-              </div>
-              <Button onClick={handleSaveInventory} className="btn-hover">Guardar configuración</Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {/* Pestaña: Configuración de Inventario (solo admin/gerente) */}
+        {canManageSettings && (
+          <TabsContent value="inventario" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Parámetros de Inventario</CardTitle>
+                <CardDescription>
+                  Configura alertas y formatos para la gestión de productos
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {loadingInventory ? (
+                  <SettingsSkeleton />
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="stockMinimo">Stock mínimo global (unidades)</Label>
+                      <Input
+                        id="stockMinimo"
+                        type="number"
+                        {...inventoryForm.register('stock_minimo_global', { valueAsNumber: true })}
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Umbral predeterminado para alertas de inventario bajo
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Alertas automáticas</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Activar notificaciones cuando el stock esté por debajo del mínimo
+                        </p>
+                      </div>
+                      <Switch
+                        checked={inventoryForm.watch('alertas_activas')}
+                        onCheckedChange={(checked) => inventoryForm.setValue('alertas_activas', checked)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="formatoSKU">Formato de SKU</Label>
+                      <Input
+                        id="formatoSKU"
+                        {...inventoryForm.register('formato_sku')}
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Ejemplo: AUTO-#### genera códigos como AUTO-0001
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={handleSaveInventory} 
+                      className="btn-hover"
+                      disabled={updateInventory.isPending}
+                    >
+                      {updateInventory.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                      Guardar configuración
+                    </Button>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
         {/* Pestaña: Roles y Permisos */}
         <TabsContent value="permisos" className="space-y-4">
@@ -445,7 +560,7 @@ export default function ConfiguracionPage() {
                 </div>
                 <div className="space-y-1">
                   <Label className="text-sm text-muted-foreground">Base de datos</Label>
-                  <p className="font-medium">Local Storage</p>
+                  <p className="font-medium">PostgreSQL</p>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-sm text-muted-foreground">Usuarios activos</Label>
