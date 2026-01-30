@@ -18,7 +18,7 @@ import { useDashboardSales } from "@/hooks/useDashboardSales";
 import { useDashboardPaymentMethods } from "@/hooks/useDashboardPaymentMethods";
 import { dashboardKpiService } from "@/services/dashboardKpiService";
 import { format, subDays } from "date-fns";
-import { formatCurrency } from "@/utils/formatters";
+import { formatCurrency, formatDateFromISO } from "@/utils/formatters";
 
 interface ContextType {
   currentWarehouse: string;
@@ -335,11 +335,7 @@ export default function DashboardPage() {
                       <div>
                         <p className="font-medium">Venta #{venta.venta_id}</p>
                         <p className="text-sm text-muted-foreground">
-                          {getWarehouseName(venta.sucursal_id)} • {
-                            venta.usu_fecha 
-                              ? new Date(venta.usu_fecha).toLocaleDateString('es-MX') 
-                              : '---'
-                          } {venta.usu_hora || ''}
+                          {getWarehouseName(venta.sucursal_id)} • {formatDateFromISO(venta.usu_fecha)} {venta.usu_hora || ''}
                         </p>
                       </div>
                     </div>

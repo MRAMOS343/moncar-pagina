@@ -79,6 +79,44 @@ export function formatValue(
 }
 
 /**
+ * Formatea una fecha ISO evitando problemas de timezone.
+ * Extrae componentes directamente del string sin crear objeto Date con UTC.
+ * 
+ * @param isoDate - Fecha en formato ISO (ej: "2026-01-30T00:00:00.000Z")
+ * @param format - Formato de salida: 'short' (30/01), 'medium' (30/01/2026), 'full' (30 de enero de 2026)
+ * @returns Fecha formateada en español
+ */
+export function formatDateFromISO(
+  isoDate: string | null | undefined, 
+  format: 'short' | 'medium' | 'full' = 'medium'
+): string {
+  if (!isoDate) return '---';
+  
+  // Extraer YYYY-MM-DD directamente del string (antes de la T)
+  const datePart = isoDate.split('T')[0];
+  const [year, month, day] = datePart.split('-');
+  
+  if (!year || !month || !day) return '---';
+  
+  switch (format) {
+    case 'short':
+      return `${day}/${month}`;
+    case 'medium':
+      return `${day}/${month}/${year}`;
+    case 'full':
+      // Crear Date con hora local del mediodía para evitar shift
+      const date = new Date(Number(year), Number(month) - 1, Number(day), 12, 0, 0);
+      return date.toLocaleDateString('es-MX', { 
+        day: 'numeric', 
+        month: 'long', 
+        year: 'numeric' 
+      });
+    default:
+      return `${day}/${month}/${year}`;
+  }
+}
+
+/**
  * Formatea una cantidad con máximo 1 decimal
  * Si es entero, no muestra decimales
  */
