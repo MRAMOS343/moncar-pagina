@@ -97,6 +97,10 @@ export function SaleDetailModal({ ventaId, open, onOpenChange }: SaleDetailModal
                 <span className="text-muted-foreground">Caja:</span>{" "}
                 <span className="font-medium">{data.venta.caja_id}</span>
               </div>
+              <div>
+                <span className="text-muted-foreground">Cliente:</span>{" "}
+                <span className="font-medium">{data.venta.datos_origen || 'Público general'}</span>
+              </div>
             </div>
 
             {/* Info cancelación (solo en detalle) */}
