@@ -1,180 +1,128 @@
 
-# Plan: Implementar Cache Optimizado para Productos
+# Plan: Usar `usu_fecha` y `usu_hora` en Toda la Información de Ventas
 
 ## Resumen
 
-Configurar un sistema de cache más agresivo para los productos, reduciendo drásticamente las llamadas a la API. Los 700+ productos solo se cargarán una vez y se mantendrán en cache por 10-15 minutos, con opciones de actualización manual.
+Estandarizar el uso de `usu_fecha` y `usu_hora` (fecha/hora de captura real) en lugar de `fecha_emision` en todas las páginas y componentes que muestran información de ventas.
 
-## Problema Actual
+## Análisis de Uso Actual
 
-- El `QueryClient` no tiene configuración global de cache
-- El `staleTime` de productos es solo 2 minutos
-- Cada vez que navegas a `/inventario`, si pasaron 2 minutos, se vuelve a llamar la API
-- No hay `gcTime` configurado, por lo que los datos se eliminan después de 5 minutos de inactividad
-
-## Solución Propuesta
-
-### Cambios Visuales
-
-```text
-┌───────────────────────────────────────────────────────────────┐
-│                     Inventario de Productos                   │
-│  [🔄 Actualizar]  ← Botón para forzar refresh cuando necesites│
-│                                                               │
-│  📦 Última actualización: hace 3 minutos                      │
-│  ✅ Datos en cache (sin llamada a API)                        │
-└───────────────────────────────────────────────────────────────┘
-```
+| Ubicación | Campo Actual | Cambio Necesario |
+|-----------|--------------|------------------|
+| `tableColumns.tsx` (tabla ventas) | `usu_fecha` | Ya está correcto |
+| `VentasPage.tsx` (gráfico tendencia) | `fecha_emision` | Cambiar a `usu_fecha` |
+| `VentasPage.tsx` (mobile card) | `usu_fecha` + `usu_hora` | Ya está correcto |
+| `DashboardPage.tsx` (ventas recientes) | `fecha_emision` | Cambiar a `usu_fecha` + `usu_hora` |
+| `dashboardKpiService.ts` (tendencia) | `fecha_emision` | Cambiar a `usu_fecha` |
+| `dashboardKpiService.ts` (recent sales sort) | `fecha_emision` | Cambiar a `usu_fecha` |
+| `SaleDetailModal.tsx` | `fecha_emision` | Cambiar a `usu_fecha` + `usu_hora` |
+| `types/sales.ts` | `string` | Cambiar a `string \| null` |
 
 ## Archivos a Modificar
 
-| Archivo | Cambio |
-|---------|--------|
-| `src/App.tsx` | Configurar `QueryClient` con defaults globales de cache |
-| `src/constants/queryConfig.ts` | Agregar configuración específica para `PRODUCTS` |
-| `src/hooks/useProducts.ts` | Usar configuración centralizada con cache más agresivo |
-| `src/pages/InventarioPage.tsx` | Agregar indicador visual y botón de refrescar |
+| Archivo | Descripción del Cambio |
+|---------|------------------------|
+| `src/types/sales.ts` | Actualizar tipos: `usu_fecha: string \| null`, `usu_hora: string \| null` |
+| `src/services/dashboardKpiService.ts` | Usar `usu_fecha` en `calculateTrend` y `getRecentSales` |
+| `src/pages/VentasPage.tsx` | Usar `usu_fecha` en generación de gráfico de tendencia |
+| `src/pages/DashboardPage.tsx` | Usar `usu_fecha` + `usu_hora` en ventas recientes |
+| `src/components/modals/SaleDetailModal.tsx` | Usar `usu_fecha` + `usu_hora` en header |
 
 ## Detalles Técnicos
 
-### 1. Configurar QueryClient con defaults globales
-
-**Archivo:** `src/App.tsx`
+### 1. Actualizar tipos en `src/types/sales.ts`
 
 ```typescript
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutos por defecto
-      gcTime: 10 * 60 * 1000,   // Mantener en cache 10 minutos
-      refetchOnWindowFocus: false, // Evitar refetch al cambiar de pestaña
-      retry: 1, // Solo 1 reintento en errores
-    },
-  },
-});
-```
-
-### 2. Agregar configuración de PRODUCTS al archivo centralizado
-
-**Archivo:** `src/constants/queryConfig.ts`
-
-```typescript
-export const QUERY_CONFIG = {
-  // ... configuraciones existentes ...
-
-  // Catálogo de productos: cache agresivo (10 minutos)
-  PRODUCTS: {
-    staleTime: 10 * 60 * 1000, // 10 minutos frescos
-    gcTime: 15 * 60 * 1000,    // Mantener en cache 15 minutos
-    refetchOnMount: false,     // No refetch al montar si está fresh
-  },
-} as const;
-```
-
-### 3. Actualizar useProducts para usar la configuración centralizada
-
-**Archivo:** `src/hooks/useProducts.ts`
-
-```typescript
-import { QUERY_CONFIG } from '@/constants/queryConfig';
-
-export function useProducts(params: UseProductsParams = {}) {
-  const { token } = useAuth();
-
-  const query = useInfiniteQuery({
-    queryKey: ["products", stableParams],
-    queryFn: ({ pageParam }) => fetchProducts(token!, { 
-      ...stableParams, 
-      cursor: pageParam,
-    }),
-    enabled: !!token && (params.enabled !== false),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
-    ...QUERY_CONFIG.PRODUCTS, // ← Usar configuración centralizada
-  });
-
-  // ... resto del código
+// Líneas 32-33 - Cambiar de string a string | null
+export interface SaleListItem {
+  // ... otros campos ...
+  usu_fecha: string | null;  // Era: string
+  usu_hora: string | null;   // Era: string
 }
 ```
 
-### 4. Agregar botón de refrescar e indicador en InventarioPage
+### 2. Actualizar `src/services/dashboardKpiService.ts`
 
-**Archivo:** `src/pages/InventarioPage.tsx`
-
-Agregar al hook useProducts la capacidad de refetch:
-
+**En `calculateTrend` (línea 69):**
 ```typescript
-const { 
-  products: apiProducts, 
-  isLoading, 
-  isFetchingNextPage, 
-  hasNextPage, 
-  fetchNextPage,
-  refetch,        // ← Agregar
-  dataUpdatedAt,  // ← Agregar para mostrar última actualización
-  isFetching,     // ← Para indicador de carga
-} = useProducts({ 
-  q: debouncedSearchQuery,
-  limit: 100,
-});
+// Antes:
+const fechaVenta = venta.fecha_emision.split('T')[0];
+
+// Después:
+const fechaVenta = venta.usu_fecha?.split('T')[0];
+if (!fechaVenta) return false;
 ```
 
-Agregar botón de refrescar junto a los otros botones de acción:
-
+**En `getRecentSales` (línea 124):**
 ```typescript
-<Button 
-  variant="outline" 
-  size="sm"
-  onClick={() => refetch()}
-  disabled={isFetching}
->
-  <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
-  Actualizar
-</Button>
+// Antes:
+.sort((a, b) => new Date(b.fecha_emision).getTime() - new Date(a.fecha_emision).getTime())
 
-{/* Indicador de última actualización */}
-{dataUpdatedAt && (
-  <span className="text-xs text-muted-foreground">
-    Actualizado: {new Date(dataUpdatedAt).toLocaleTimeString('es-MX')}
-  </span>
-)}
+// Después:
+.sort((a, b) => {
+  const dateA = a.usu_fecha ? new Date(a.usu_fecha).getTime() : 0;
+  const dateB = b.usu_fecha ? new Date(b.usu_fecha).getTime() : 0;
+  return dateB - dateA;
+})
 ```
 
-## Beneficios del Cache
+### 3. Actualizar `src/pages/VentasPage.tsx`
 
-| Escenario | Antes | Después |
-|-----------|-------|---------|
-| Navegar entre páginas | API call cada 2 min | Sin API call por 10 min |
-| Cambiar de pestaña del navegador | API call (refetch on focus) | Sin API call |
-| Volver a Inventario después de 5 min | API call (datos eliminados) | Datos en cache por 15 min |
-| Usuario necesita datos frescos | Esperar recarga automática | Botón "Actualizar" |
+**En generación de gráfico (línea 164):**
+```typescript
+// Antes:
+const day = format(new Date(sale.fecha_emision), 'yyyy-MM-dd');
 
-## Flujo del Cache
-
-```text
-Usuario abre Inventario
-        ↓
-¿Hay datos en cache y staleTime < 10min?
-        ↓
-   ┌────┴────┐
-   SÍ        NO
-   ↓          ↓
-Mostrar    Llamar API
-cache      700+ productos
-   ↓          ↓
-   └────┬────┘
-        ↓
-Usuario ve productos instantáneamente
-        ↓
-¿Necesita datos frescos?
-        ↓
-Click "Actualizar" → API call forzado
+// Después:
+if (!sale.usu_fecha) return; // Skip sales without date
+const day = sale.usu_fecha.split('T')[0];
 ```
 
-## Consideraciones
+### 4. Actualizar `src/pages/DashboardPage.tsx`
 
-- Los datos se mantienen "frescos" por 10 minutos (sin mostrar loading)
-- Los datos se mantienen en memoria por 15 minutos (incluso si el usuario navega a otra página)
-- El botón "Actualizar" permite refrescar manualmente cuando sea necesario
-- `refetchOnWindowFocus: false` evita llamadas innecesarias al cambiar de pestaña
-- Las mutaciones (actualizar producto) seguirán invalidando el cache automáticamente
+**En ventas recientes (línea 338):**
+```typescript
+// Antes:
+{getWarehouseName(venta.sucursal_id)} • {new Date(venta.fecha_emision).toLocaleDateString('es-MX')}
+
+// Después:
+{getWarehouseName(venta.sucursal_id)} • {
+  venta.usu_fecha 
+    ? new Date(venta.usu_fecha).toLocaleDateString('es-MX') 
+    : '---'
+} {venta.usu_hora || ''}
+```
+
+### 5. Actualizar `src/components/modals/SaleDetailModal.tsx`
+
+**En header de fecha (línea 85-88):**
+```typescript
+// Antes:
+<span className="font-medium">
+  {safeFormatDate(data.venta.fecha_emision)}
+</span>
+
+// Después - Combinar usu_fecha + usu_hora:
+<span className="font-medium">
+  {data.venta.usu_fecha 
+    ? `${new Date(data.venta.usu_fecha).toLocaleDateString('es-MX')} ${data.venta.usu_hora || ''}`
+    : '---'}
+</span>
+```
+
+## Resultado Visual
+
+Antes vs Después:
+
+| Componente | Antes | Después |
+|------------|-------|---------|
+| Tabla Ventas | 30-01-26 | 30-01-26 (ya usaba usu_fecha) |
+| Gráfico Tendencia | Basado en fecha_emision | Basado en usu_fecha |
+| Modal Detalle | 30/01/2026 | 30/01/2026 13:18:50 |
+| Ventas Recientes (Dashboard) | 30/01/2026 | 30/01/2026 13:18:50 |
+
+## Beneficios
+
+1. **Consistencia**: Todos los lugares muestran la misma fecha/hora de captura
+2. **Precisión**: `usu_fecha` + `usu_hora` reflejan cuándo se registró la venta en el sistema
+3. **Robustez**: Manejo de valores `null` para evitar errores
