@@ -168,10 +168,13 @@ export default function VentasPage() {
 
     return Object.entries(salesByDay)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, value]) => ({
-        date: format(new Date(date), 'dd/MM', { locale: es }),
-        value
-      }));
+      .map(([date, value]) => {
+        const [, month, day] = date.split('-');
+        return {
+          date: `${day}/${month}`,
+          value
+        };
+      });
   }, [salesData]);
 
   // Handlers

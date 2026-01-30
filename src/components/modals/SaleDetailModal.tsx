@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toNumber, formatCurrency } from "@/utils/formatters";
+import { toNumber, formatCurrency, formatDateFromISO } from "@/utils/formatters";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { AlertCircle } from "lucide-react";
@@ -85,7 +85,7 @@ export function SaleDetailModal({ ventaId, open, onOpenChange }: SaleDetailModal
                 <span className="text-muted-foreground">Fecha:</span>{" "}
                 <span className="font-medium">
                   {data.venta.usu_fecha 
-                    ? `${new Date(data.venta.usu_fecha).toLocaleDateString('es-MX')} ${data.venta.usu_hora || ''}`
+                    ? `${formatDateFromISO(data.venta.usu_fecha)} ${data.venta.usu_hora || ''}`
                     : '---'}
                 </span>
               </div>
