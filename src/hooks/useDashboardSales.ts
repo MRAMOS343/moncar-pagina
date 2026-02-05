@@ -4,7 +4,7 @@ import { fetchSales } from "@/services/salesService";
 import type { SaleListItem, SalesCursor } from "@/types/sales";
 
 interface DashboardSalesParams {
-  from: string;
+  from?: string; // Opcional - undefined = histórico completo
   sucursal_id?: string;
 }
 
@@ -41,7 +41,7 @@ export function useDashboardSales(params: DashboardSalesParams) {
       // Fetch paginado hasta agotar páginas o alcanzar límites
       do {
         const response = await fetchSales(token!, {
-          from: params.from,
+          from: params.from ?? '2020-01-01', // Histórico completo si no se especifica
           sucursal_id: params.sucursal_id,
           include_cancelled: true,
           limit: PAGE_SIZE,

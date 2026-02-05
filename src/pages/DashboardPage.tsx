@@ -5,6 +5,7 @@ import { KPICard } from "@/components/ui/kpi-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LazyLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from "@/components/charts/LazyLineChart";
 import { LazyPieChart, Pie, Cell } from "@/components/charts/LazyPieChart";
 import { TrendingUp, ShoppingCart, Package, Store, AlertTriangle, Plus, Clock, CreditCard, RefreshCw } from "lucide-react";
@@ -33,6 +34,34 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [productModalOpen, setProductModalOpen] = useState(false);
+  const [dateRange, setDateRange] = useState<string>('30d');
+
+  // Cálculo dinámico de la fecha "from" basado en el período seleccionado
+  const fromDate = useMemo(() => {
+    if (dateRange === 'all') return undefined; // Sin límite - histórico completo
+    const now = new Date();
+    switch (dateRange) {
+      case '1d': return format(now, 'yyyy-MM-dd');
+      case '7d': return format(subDays(now, 7), 'yyyy-MM-dd');
+      case '30d': return format(subDays(now, 30), 'yyyy-MM-dd');
+      case '90d': return format(subDays(now, 90), 'yyyy-MM-dd');
+      case '365d': return format(subDays(now, 365), 'yyyy-MM-dd');
+      default: return format(subDays(now, 30), 'yyyy-MM-dd');
+    }
+  }, [dateRange]);
+
+  // Etiqueta del período para mostrar en la UI
+  const periodLabel = useMemo(() => {
+    switch (dateRange) {
+      case '1d': return 'hoy';
+      case '7d': return 'últimos 7 días';
+      case '30d': return 'últimos 30 días';
+      case '90d': return 'últimos 90 días';
+      case '365d': return 'último año';
+      case 'all': return 'histórico completo';
+      default: return 'últimos 30 días';
+    }
+  }, [dateRange]);
 
   // Invalidar cache de ventas cuando cambia la sucursal
   useEffect(() => {
@@ -42,9 +71,9 @@ export default function DashboardPage() {
     });
   }, [currentWarehouse, queryClient]);
 
-  // Obtener ventas reales de la API (últimos 30 días)
+  // Obtener ventas reales de la API con período dinámico
   const { data: salesResult, isLoading, isFetching, refetch } = useDashboardSales({
-    from: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
+    from: fromDate,
     sucursal_id: currentWarehouse === 'all' ? undefined : currentWarehouse,
   });
 
@@ -127,14 +156,27 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground">
-            Resumen general del sistema - {
+            Resumen de {periodLabel} - {
               currentWarehouse === 'all' 
                 ? 'Todas las Sucursales' 
                 : warehouses.find(w => w.id === currentWarehouse)?.nombre || 'Sucursal no encontrada'
             }
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <Select value={dateRange} onValueChange={setDateRange}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1d">Hoy</SelectItem>
+              <SelectItem value="7d">Últimos 7 días</SelectItem>
+              <SelectItem value="30d">Últimos 30 días</SelectItem>
+              <SelectItem value="90d">Últimos 90 días</SelectItem>
+              <SelectItem value="365d">Último año</SelectItem>
+              <SelectItem value="all">Histórico completo</SelectItem>
+            </SelectContent>
+          </Select>
           <Button 
             variant="outline" 
             onClick={() => refetch()} 
