@@ -1,4 +1,4 @@
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchSales } from "@/services/salesService";
 import type { SaleListItem, SalesCursor } from "@/types/sales";
@@ -30,7 +30,8 @@ export function useDashboardSales(params: DashboardSalesParams) {
   const { token } = useAuth();
 
   return useQuery({
-    queryKey: ["dashboard-sales", params.from, params.sucursal_id],
+    // Incluir sucursal_id explícitamente en la key para invalidación correcta
+    queryKey: ["dashboard-sales", params.from, params.sucursal_id ?? "all"],
     queryFn: async (): Promise<DashboardSalesResult> => {
       const allItems: SaleListItem[] = [];
       let cursor: SalesCursor | undefined = undefined;
@@ -72,9 +73,8 @@ export function useDashboardSales(params: DashboardSalesParams) {
       };
     },
     enabled: !!token,
-    staleTime: 5 * 60 * 1000, // 5 minutos - datos se consideran frescos
-    gcTime: 10 * 60 * 1000, // 10 minutos en cache
-    placeholderData: keepPreviousData, // Muestra datos anteriores mientras recarga
+    staleTime: 0, // Siempre considerados "stale" - refetch al cambiar params
+    gcTime: 5 * 60 * 1000, // Mantener en cache 5 minutos
     refetchOnMount: 'always', // Siempre refetch al montar para datos frescos
     refetchOnWindowFocus: true, // Refetch cuando el usuario vuelve a la pestaña
   });
