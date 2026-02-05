@@ -1,120 +1,140 @@
 
 
-# Plan: Corregir Actualización de KPIs en Dashboard
+# Plan: Agregar Selector de Período al Dashboard
 
-## Problema Identificado
+## Resumen
 
-Los KPIs del Dashboard (Ventas Totales, Transacciones, etc.) no se actualizan correctamente debido a problemas con el cache de React Query y la invalidación de queries.
+Agregar un selector de período al Dashboard, similar al de la página de Ventas, permitiendo ver datos de Hoy, 7 días, 30 días, 90 días o histórico completo.
 
-## Causas Raíz
+## Cambios a Realizar
 
-| Causa | Impacto |
-|-------|---------|
-| `staleTime: 5 min` muy alto | Los datos se consideran "frescos" por 5 minutos aunque cambien los filtros |
-| `keepPreviousData` | Muestra datos antiguos mientras carga, pero si la carga falla, se quedan los viejos |
-| QueryKey no incluye todos los parámetros | Cambios en filtros pueden no disparar refetch |
+### Archivo: `src/pages/DashboardPage.tsx`
 
-## Solución Propuesta
+| Cambio | Descripción |
+|--------|-------------|
+| Nuevo estado | `const [dateRange, setDateRange] = useState('30d')` |
+| Nuevo selector | Select con opciones: Hoy, 7D, 30D, 90D, Histórico |
+| Cálculo dinámico de `from` | Usar `subDays` basado en la selección |
+| Actualizar títulos | Mostrar el período seleccionado en descripciones |
 
-### 1. Reducir staleTime para KPIs en tiempo real
+## Opciones de Período
+
+| Valor | Etiqueta | Días hacia atrás |
+|-------|----------|------------------|
+| `1d` | Hoy | 0 |
+| `7d` | Últimos 7 días | 7 |
+| `30d` | Últimos 30 días | 30 |
+| `90d` | Últimos 90 días | 90 |
+| `365d` | Último año | 365 |
+| `all` | Histórico completo | Sin límite (omitir `from`) |
+
+## Código a Agregar
+
+### 1. Nuevo estado y cálculo de fecha
 
 ```typescript
-// useDashboardSales.ts - Cambiar configuración
-staleTime: 0,                    // Era: 5 * 60 * 1000
-placeholderData: undefined,      // Era: keepPreviousData
-refetchOnMount: 'always',        // Mantener
+const [dateRange, setDateRange] = useState<string>('30d');
+
+const fromDate = useMemo(() => {
+  if (dateRange === 'all') return undefined; // Sin límite
+  const now = new Date();
+  switch (dateRange) {
+    case '1d': return format(now, 'yyyy-MM-dd');
+    case '7d': return format(subDays(now, 7), 'yyyy-MM-dd');
+    case '30d': return format(subDays(now, 30), 'yyyy-MM-dd');
+    case '90d': return format(subDays(now, 90), 'yyyy-MM-dd');
+    case '365d': return format(subDays(now, 365), 'yyyy-MM-dd');
+    default: return format(subDays(now, 30), 'yyyy-MM-dd');
+  }
+}, [dateRange]);
+
+const periodLabel = useMemo(() => {
+  switch (dateRange) {
+    case '1d': return 'Hoy';
+    case '7d': return 'últimos 7 días';
+    case '30d': return 'últimos 30 días';
+    case '90d': return 'últimos 90 días';
+    case '365d': return 'último año';
+    case 'all': return 'histórico completo';
+    default: return 'últimos 30 días';
+  }
+}, [dateRange]);
 ```
 
-### 2. Forzar refetch cuando cambia la sucursal
-
-Agregar un `useEffect` en DashboardPage para invalidar la query cuando cambie `currentWarehouse`:
+### 2. Actualizar llamada a useDashboardSales
 
 ```typescript
-const queryClient = useQueryClient();
-
-useEffect(() => {
-  queryClient.invalidateQueries({ queryKey: ["dashboard-sales"] });
-}, [currentWarehouse, queryClient]);
+const { data: salesResult, isLoading, isFetching, refetch } = useDashboardSales({
+  from: fromDate, // Ahora es dinámico (puede ser undefined para "all")
+  sucursal_id: currentWarehouse === 'all' ? undefined : currentWarehouse,
+});
 ```
 
-### 3. Agregar timestamp a queryKey para forzar refresh
+### 3. UI del selector (junto al botón Actualizar)
 
 ```typescript
-// Opción más robusta: incluir "versión" en la queryKey
-queryKey: ["dashboard-sales", params.from, params.sucursal_id, Date.now()],
+<div className="flex gap-2 items-center">
+  <Select value={dateRange} onValueChange={setDateRange}>
+    <SelectTrigger className="w-[180px]">
+      <SelectValue />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="1d">Hoy</SelectItem>
+      <SelectItem value="7d">Últimos 7 días</SelectItem>
+      <SelectItem value="30d">Últimos 30 días</SelectItem>
+      <SelectItem value="90d">Últimos 90 días</SelectItem>
+      <SelectItem value="365d">Último año</SelectItem>
+      <SelectItem value="all">Histórico completo</SelectItem>
+    </SelectContent>
+  </Select>
+  
+  <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
+    <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+    Actualizar
+  </Button>
+  {/* ... otros botones ... */}
+</div>
 ```
 
-## Archivos a Modificar
+### 4. Actualizar hook useDashboardSales
 
-| Archivo | Cambio |
-|---------|--------|
-| `src/hooks/useDashboardSales.ts` | Reducir staleTime a 0, quitar keepPreviousData |
-| `src/pages/DashboardPage.tsx` | Agregar invalidación de query al cambiar sucursal |
-
-## Cambios Específicos
-
-### `src/hooks/useDashboardSales.ts`
+Modificar para soportar `from: undefined` (histórico completo):
 
 ```typescript
-// Líneas 74-79 - Antes:
-staleTime: 5 * 60 * 1000,
-gcTime: 10 * 60 * 1000,
-placeholderData: keepPreviousData,
-refetchOnMount: 'always',
-refetchOnWindowFocus: true,
+// En useDashboardSales.ts
+interface DashboardSalesParams {
+  from?: string; // Ahora opcional
+  sucursal_id?: string;
+}
 
-// Después:
-staleTime: 0,                     // Siempre considerados "stale"
-gcTime: 5 * 60 * 1000,           // Mantener en cache menos tiempo
-placeholderData: undefined,       // No mostrar datos antiguos
-refetchOnMount: 'always',
-refetchOnWindowFocus: true,
-refetchInterval: false,           // No polling automático
+// En queryKey
+queryKey: ["dashboard-sales", params.from ?? "all", params.sucursal_id ?? "all"],
+
+// En fetchSales call
+from: params.from, // undefined = sin filtro de fecha
 ```
 
-### `src/pages/DashboardPage.tsx`
+## Flujo Visual
 
-Agregar al inicio del componente:
-
-```typescript
-import { useQueryClient } from "@tanstack/react-query";
-
-// Dentro del componente:
-const queryClient = useQueryClient();
-
-// Invalidar cache cuando cambia la sucursal
-useEffect(() => {
-  queryClient.invalidateQueries({ 
-    queryKey: ["dashboard-sales"],
-    exact: false 
-  });
-}, [currentWarehouse, queryClient]);
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  Dashboard                                                   │
+│  Resumen general del sistema - Sucursal Norte               │
+│                                                              │
+│  ┌─────────────────┐  ┌──────────┐ ┌──────────┐ ┌─────────┐ │
+│  │ Últimos 30 días ▼│  │Actualizar│ │Nueva Vta │ │ +Prod   │ │
+│  └─────────────────┘  └──────────┘ └──────────┘ └─────────┘ │
+│                                                              │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐        │
+│  │ $337,515 │ │    928   │ │  $363.70 │ │    12    │        │
+│  │  Ventas  │ │Transacc. │ │  Ticket  │ │Canceladas│        │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘        │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ## Resultado Esperado
 
-| Acción | Antes | Después |
-|--------|-------|---------|
-| Cambiar sucursal | Muestra datos antiguos por 5 min | Refetch inmediato |
-| Entrar a Dashboard | Usa cache si existe | Siempre obtiene datos frescos |
-| Click "Actualizar" | Funciona | Sigue funcionando |
-
-## Alternativa si el problema persiste
-
-Si después de estos cambios sigue mostrando datos incorrectos, el problema podría estar en:
-
-1. **El selector de sucursal** no está actualizando `currentWarehouse` correctamente
-2. **La API está devolviendo datos cacheados** del lado del servidor
-3. **El token de autenticación** tiene permisos limitados a cierta sucursal
-
-Para diagnosticar esto, agregamos un log temporal:
-
-```typescript
-console.log('[Dashboard] Params:', { 
-  currentWarehouse, 
-  from: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
-  itemsCount: salesData.length,
-  totalKPI: kpisGlobales[0]?.value 
-});
-```
+- Al seleccionar "Últimos 90 días", los KPIs mostrarán ~$337,515 y ~928 transacciones
+- Al seleccionar "Histórico completo", se cargarán todos los datos disponibles (con advertencia si son muchos)
+- El título de la gráfica de tendencia se actualizará dinámicamente según el período
 
