@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useOutletContext, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { KPICard } from "@/components/ui/kpi-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,16 @@ interface ContextType {
 export default function DashboardPage() {
   const { currentWarehouse, currentUser, warehouses } = useOutletContext<ContextType>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [productModalOpen, setProductModalOpen] = useState(false);
+
+  // Invalidar cache de ventas cuando cambia la sucursal
+  useEffect(() => {
+    queryClient.invalidateQueries({ 
+      queryKey: ["dashboard-sales"],
+      exact: false 
+    });
+  }, [currentWarehouse, queryClient]);
 
   // Obtener ventas reales de la API (últimos 30 días)
   const { data: salesResult, isLoading, isFetching, refetch } = useDashboardSales({
