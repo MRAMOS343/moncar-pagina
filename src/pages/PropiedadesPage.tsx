@@ -12,6 +12,8 @@ import { ContractFormModal } from '@/components/propiedades/ContractFormModal';
 import { PaymentTable } from '@/components/propiedades/PaymentTable';
 import { PaymentFormModal } from '@/components/propiedades/PaymentFormModal';
 import { MaintenanceFormModal } from '@/components/propiedades/MaintenanceFormModal';
+import { DocumentTable } from '@/components/propiedades/DocumentTable';
+import { DocumentFormModal } from '@/components/propiedades/DocumentFormModal';
 import { PropertyFilters } from '@/components/propiedades/PropertyFilters';
 import { usePropiedades } from '@/hooks/usePropiedades';
 import type { Propiedad, Contrato, Pago, SolicitudMantenimiento } from '@/types/propiedades';
