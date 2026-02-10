@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Package, ShoppingCart, TrendingUp, ShoppingBag, Settings, User as UserIcon, LogOut, LayoutDashboard, Users, Truck, LifeBuoy } from "lucide-react";
+import { Package, ShoppingCart, TrendingUp, ShoppingBag, Settings, User as UserIcon, LogOut, LayoutDashboard, Users, Truck, LifeBuoy, Building2 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
