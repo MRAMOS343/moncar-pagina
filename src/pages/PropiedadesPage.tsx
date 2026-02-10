@@ -97,6 +97,7 @@ export default function PropiedadesPage() {
           <TabsTrigger value="contratos">Contratos</TabsTrigger>
           <TabsTrigger value="pagos">Pagos</TabsTrigger>
           <TabsTrigger value="mantenimiento">Mantenimiento</TabsTrigger>
+          <TabsTrigger value="documentos">Documentos</TabsTrigger>
         </TabsList>
 
         {/* ── TAB: PROPIEDADES ── */}
