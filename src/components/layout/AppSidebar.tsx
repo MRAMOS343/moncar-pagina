@@ -110,6 +110,19 @@ export function AppSidebar({
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>)}
+              {currentUser?.role === 'admin' && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild tooltip={collapsed ? "Propiedades" : undefined}>
+                    <NavLink to="/dashboard/propiedades" className={`${getNavClass("/dashboard/propiedades")} touch-target min-h-[44px] ${collapsed ? "justify-center" : ""}`}>
+                      <Building2 className={collapsed ? "w-6 h-6" : "w-5 h-5 min-w-[1.25rem]"} />
+                      {!collapsed && <div className="flex flex-col items-start gap-0.5 min-w-0">
+                        <span className="font-medium truncate w-full">Propiedades</span>
+                        <span className="text-xs leading-tight line-clamp-1">Inmuebles en renta</span>
+                      </div>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

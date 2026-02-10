@@ -131,6 +131,16 @@ const router = createBrowserRouter([
               </Suspense>
             ),
           },
+          {
+            path: "propiedades",
+            element: (
+              <AdminRoute>
+                <Suspense fallback={<PageLoader />}>
+                  <PropiedadesPage />
+                </Suspense>
+              </AdminRoute>
+            ),
+          },
         ],
       },
       {
