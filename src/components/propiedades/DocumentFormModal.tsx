@@ -61,7 +61,7 @@ export function DocumentFormModal({ open, onClose, onSave, propiedades, defaultP
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label>Propiedad</Label>
-            <Select value={propiedadId} onValueChange={setPropiedadId}>
+            <Select value={propiedadId} onValueChange={setPropiedadId} disabled={!!defaultPropiedadId}>
               <SelectTrigger><SelectValue placeholder="Seleccionar propiedad" /></SelectTrigger>
               <SelectContent>
                 {propiedades.map(p => (
