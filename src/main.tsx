@@ -18,6 +18,7 @@ const EquiposPage = lazy(() => import("./pages/EquiposPage"));
 const ProveedoresPage = lazy(() => import("./pages/ProveedoresPage"));
 const ConfiguracionPage = lazy(() => import("./pages/ConfiguracionPage"));
 const SoportePage = lazy(() => import("./pages/SoportePage"));
+const PropiedadesPage = lazy(() => import("./pages/PropiedadesPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading fallback component
