@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Building2, Plus, FileText, DollarSign, Wrench, AlertTriangle, FolderOpen } from 'lucide-react';
+import { Building2, Plus, FileText, DollarSign, Wrench, AlertTriangle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,11 +12,10 @@ import { ContractFormModal } from '@/components/propiedades/ContractFormModal';
 import { PaymentTable } from '@/components/propiedades/PaymentTable';
 import { PaymentFormModal } from '@/components/propiedades/PaymentFormModal';
 import { MaintenanceFormModal } from '@/components/propiedades/MaintenanceFormModal';
-import { DocumentTable } from '@/components/propiedades/DocumentTable';
 import { DocumentFormModal } from '@/components/propiedades/DocumentFormModal';
 import { PropertyFilters } from '@/components/propiedades/PropertyFilters';
 import { usePropiedades } from '@/hooks/usePropiedades';
-import type { Propiedad, Contrato, Pago, SolicitudMantenimiento, DocumentoPropiedad } from '@/types/propiedades';
+import type { Propiedad, Contrato, Pago, SolicitudMantenimiento, TipoDocumento } from '@/types/propiedades';
 
 const prioridadBadge: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   baja: 'outline', media: 'secondary', alta: 'default', urgente: 'destructive',
@@ -51,6 +50,8 @@ export default function PropiedadesPage() {
   const [maintFormOpen, setMaintFormOpen] = useState(false);
   const [editingMaint, setEditingMaint] = useState<SolicitudMantenimiento | null>(null);
   const [docFormOpen, setDocFormOpen] = useState(false);
+  const [docDefaultTipo, setDocDefaultTipo] = useState<TipoDocumento | undefined>();
+  const [docDefaultPropId, setDocDefaultPropId] = useState<string | undefined>();
 
   const filteredProps = useMemo(() => {
     return propiedades.filter(p => {
@@ -82,6 +83,17 @@ export default function PropiedadesPage() {
     }));
   }, [contratos, propiedades]);
 
+  const handleAddDocFromDetail = (tipo: TipoDocumento) => {
+    setDocDefaultTipo(tipo);
+    setDocDefaultPropId(detailProp?.id);
+    setDocFormOpen(true);
+  };
+
+  const detailDocs = useMemo(() => {
+    if (!detailProp) return [];
+    return documentos.filter(d => d.propiedadId === detailProp.id);
+  }, [documentos, detailProp]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -97,7 +109,6 @@ export default function PropiedadesPage() {
           <TabsTrigger value="contratos">Contratos</TabsTrigger>
           <TabsTrigger value="pagos">Pagos</TabsTrigger>
           <TabsTrigger value="mantenimiento">Mantenimiento</TabsTrigger>
-          <TabsTrigger value="documentos">Documentos</TabsTrigger>
         </TabsList>
 
         {/* ── TAB: PROPIEDADES ── */}
@@ -229,16 +240,6 @@ export default function PropiedadesPage() {
             </Table>
           </div>
         </TabsContent>
-
-        {/* ── TAB: DOCUMENTOS ── */}
-        <TabsContent value="documentos" className="space-y-4">
-          <div className="flex justify-end">
-            <Button onClick={() => setDocFormOpen(true)}>
-              <Plus className="w-4 h-4 mr-1" />Subir Documento
-            </Button>
-          </div>
-          <DocumentTable documentos={documentos} propiedades={propiedades} onDelete={deleteDocumento} />
-        </TabsContent>
       </Tabs>
 
       {/* Modals */}
@@ -254,6 +255,9 @@ export default function PropiedadesPage() {
         propiedad={detailProp}
         onEdit={p => { setDetailProp(null); setEditingProp(p); setPropFormOpen(true); }}
         onDelete={deletePropiedad}
+        documentos={detailDocs}
+        onAddDocumento={handleAddDocFromDetail}
+        onDeleteDocumento={deleteDocumento}
       />
       <ContractFormModal
         open={contractFormOpen}
@@ -278,9 +282,11 @@ export default function PropiedadesPage() {
       />
       <DocumentFormModal
         open={docFormOpen}
-        onClose={() => setDocFormOpen(false)}
+        onClose={() => { setDocFormOpen(false); setDocDefaultTipo(undefined); setDocDefaultPropId(undefined); }}
         onSave={addDocumento}
         propiedades={propiedades}
+        defaultPropiedadId={docDefaultPropId}
+        defaultTipo={docDefaultTipo}
       />
     </div>
   );
