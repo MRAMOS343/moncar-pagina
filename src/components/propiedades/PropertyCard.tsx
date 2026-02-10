@@ -1,4 +1,4 @@
-import { Building2, Home, Store, Warehouse, MapPin, Trees, Briefcase, BedDouble, Bath, Car } from 'lucide-react';
+import { Building2, Home, Store, Warehouse, MapPin, Trees, Briefcase } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { Propiedad } from '@/types/propiedades';
@@ -53,17 +53,6 @@ export function PropertyCard({ propiedad, onClick }: PropertyCardProps) {
           <span className="text-lg font-bold text-foreground">
             ${propiedad.costoMensual.toLocaleString()}<span className="text-xs font-normal text-muted-foreground">/mes</span>
           </span>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {propiedad.habitaciones > 0 && (
-              <span className="flex items-center gap-0.5"><BedDouble className="w-3.5 h-3.5" />{propiedad.habitaciones}</span>
-            )}
-            {propiedad.banos > 0 && (
-              <span className="flex items-center gap-0.5"><Bath className="w-3.5 h-3.5" />{propiedad.banos}</span>
-            )}
-            {propiedad.estacionamientos > 0 && (
-              <span className="flex items-center gap-0.5"><Car className="w-3.5 h-3.5" />{propiedad.estacionamientos}</span>
-            )}
-          </div>
         </div>
       </CardContent>
     </Card>

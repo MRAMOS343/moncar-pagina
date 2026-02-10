@@ -1,12 +1,13 @@
 import { useState, useCallback } from 'react';
-import type { Propiedad, Contrato, Pago, SolicitudMantenimiento } from '@/types/propiedades';
-import { mockPropiedades, mockContratos, mockPagos, mockMantenimiento } from '@/data/mockPropiedades';
+import type { Propiedad, Contrato, Pago, SolicitudMantenimiento, DocumentoPropiedad } from '@/types/propiedades';
+import { mockPropiedades, mockContratos, mockPagos, mockMantenimiento, mockDocumentos } from '@/data/mockPropiedades';
 
 export function usePropiedades() {
   const [propiedades, setPropiedades] = useState<Propiedad[]>(mockPropiedades);
   const [contratos, setContratos] = useState<Contrato[]>(mockContratos);
   const [pagos, setPagos] = useState<Pago[]>(mockPagos);
   const [mantenimiento, setMantenimiento] = useState<SolicitudMantenimiento[]>(mockMantenimiento);
+  const [documentos, setDocumentos] = useState<DocumentoPropiedad[]>(mockDocumentos);
 
   // ── Propiedades CRUD ──
   const addPropiedad = useCallback((data: Omit<Propiedad, 'id' | 'createdAt'>) => {
@@ -58,11 +59,23 @@ export function usePropiedades() {
     setMantenimiento(prev => prev.map(m => m.id === id ? { ...m, ...data } : m));
   }, []);
 
+  // ── Documentos CRUD ──
+  const addDocumento = useCallback((data: Omit<DocumentoPropiedad, 'id'>) => {
+    const nuevo: DocumentoPropiedad = { ...data, id: `doc-${Date.now()}` };
+    setDocumentos(prev => [...prev, nuevo]);
+    return nuevo;
+  }, []);
+
+  const deleteDocumento = useCallback((id: string) => {
+    setDocumentos(prev => prev.filter(d => d.id !== id));
+  }, []);
+
   return {
-    propiedades, contratos, pagos, mantenimiento,
+    propiedades, contratos, pagos, mantenimiento, documentos,
     addPropiedad, updatePropiedad, deletePropiedad,
     addContrato, updateContrato,
     addPago, updatePago,
     addMantenimiento, updateMantenimiento,
+    addDocumento, deleteDocumento,
   };
 }

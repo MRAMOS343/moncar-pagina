@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Building2, Plus, FileText, DollarSign, Wrench, AlertTriangle } from 'lucide-react';
+import { Building2, Plus, FileText, DollarSign, Wrench, AlertTriangle, FolderOpen } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,9 +12,11 @@ import { ContractFormModal } from '@/components/propiedades/ContractFormModal';
 import { PaymentTable } from '@/components/propiedades/PaymentTable';
 import { PaymentFormModal } from '@/components/propiedades/PaymentFormModal';
 import { MaintenanceFormModal } from '@/components/propiedades/MaintenanceFormModal';
+import { DocumentTable } from '@/components/propiedades/DocumentTable';
+import { DocumentFormModal } from '@/components/propiedades/DocumentFormModal';
 import { PropertyFilters } from '@/components/propiedades/PropertyFilters';
 import { usePropiedades } from '@/hooks/usePropiedades';
-import type { Propiedad, Contrato, Pago, SolicitudMantenimiento } from '@/types/propiedades';
+import type { Propiedad, Contrato, Pago, SolicitudMantenimiento, DocumentoPropiedad } from '@/types/propiedades';
 
 const prioridadBadge: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   baja: 'outline', media: 'secondary', alta: 'default', urgente: 'destructive',
@@ -25,11 +27,12 @@ const estadoMantLabels: Record<string, string> = {
 
 export default function PropiedadesPage() {
   const {
-    propiedades, contratos, pagos, mantenimiento,
+    propiedades, contratos, pagos, mantenimiento, documentos,
     addPropiedad, updatePropiedad, deletePropiedad,
     addContrato, updateContrato,
     addPago, updatePago,
     addMantenimiento, updateMantenimiento,
+    addDocumento, deleteDocumento,
   } = usePropiedades();
 
   // Filters
@@ -47,6 +50,7 @@ export default function PropiedadesPage() {
   const [editingPayment, setEditingPayment] = useState<Pago | null>(null);
   const [maintFormOpen, setMaintFormOpen] = useState(false);
   const [editingMaint, setEditingMaint] = useState<SolicitudMantenimiento | null>(null);
+  const [docFormOpen, setDocFormOpen] = useState(false);
 
   const filteredProps = useMemo(() => {
     return propiedades.filter(p => {
@@ -93,6 +97,7 @@ export default function PropiedadesPage() {
           <TabsTrigger value="contratos">Contratos</TabsTrigger>
           <TabsTrigger value="pagos">Pagos</TabsTrigger>
           <TabsTrigger value="mantenimiento">Mantenimiento</TabsTrigger>
+          <TabsTrigger value="documentos">Documentos</TabsTrigger>
         </TabsList>
 
         {/* ── TAB: PROPIEDADES ── */}
@@ -224,6 +229,16 @@ export default function PropiedadesPage() {
             </Table>
           </div>
         </TabsContent>
+
+        {/* ── TAB: DOCUMENTOS ── */}
+        <TabsContent value="documentos" className="space-y-4">
+          <div className="flex justify-end">
+            <Button onClick={() => setDocFormOpen(true)}>
+              <Plus className="w-4 h-4 mr-1" />Subir Documento
+            </Button>
+          </div>
+          <DocumentTable documentos={documentos} propiedades={propiedades} onDelete={deleteDocumento} />
+        </TabsContent>
       </Tabs>
 
       {/* Modals */}
@@ -260,6 +275,12 @@ export default function PropiedadesPage() {
         onSave={data => editingMaint ? updateMantenimiento(editingMaint.id, data) : addMantenimiento(data)}
         propiedades={propiedades}
         solicitud={editingMaint}
+      />
+      <DocumentFormModal
+        open={docFormOpen}
+        onClose={() => setDocFormOpen(false)}
+        onSave={addDocumento}
+        propiedades={propiedades}
       />
     </div>
   );

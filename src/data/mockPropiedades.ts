@@ -1,4 +1,4 @@
-import type { Propiedad, Contrato, Pago, SolicitudMantenimiento } from '@/types/propiedades';
+import type { Propiedad, Contrato, Pago, SolicitudMantenimiento, DocumentoPropiedad } from '@/types/propiedades';
 
 export const mockPropiedades: Propiedad[] = [
   {
@@ -179,4 +179,11 @@ export const mockMantenimiento: SolicitudMantenimiento[] = [
     fechaSolicitud: '2025-02-08',
     fechaResolucion: null,
   },
+];
+
+export const mockDocumentos: DocumentoPropiedad[] = [
+  { id: 'doc-1', propiedadId: 'prop-1', nombre: 'CFE Enero 2026', tipo: 'recibo_luz', archivo: null, fechaSubida: '2026-01-15', notas: '' },
+  { id: 'doc-2', propiedadId: 'prop-1', nombre: 'SIMAS Enero 2026', tipo: 'recibo_agua', archivo: null, fechaSubida: '2026-01-18', notas: '' },
+  { id: 'doc-3', propiedadId: 'prop-2', nombre: 'Predial 2026', tipo: 'predial', archivo: null, fechaSubida: '2026-01-20', notas: 'Pago anual' },
+  { id: 'doc-4', propiedadId: 'prop-4', nombre: 'INE Propietario', tipo: 'identificacion', archivo: null, fechaSubida: '2025-11-05', notas: '' },
 ];

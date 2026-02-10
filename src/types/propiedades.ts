@@ -3,6 +3,17 @@ export type EstadoPropiedad = 'disponible' | 'rentada' | 'mantenimiento';
 export type EstadoPago = 'pendiente' | 'pagado' | 'atrasado' | 'parcial';
 export type PrioridadMantenimiento = 'baja' | 'media' | 'alta' | 'urgente';
 export type EstadoMantenimiento = 'pendiente' | 'en_progreso' | 'completado';
+export type TipoDocumento = 'recibo_luz' | 'recibo_agua' | 'predial' | 'contrato_firmado' | 'identificacion' | 'comprobante_domicilio' | 'otro';
+
+export interface DocumentoPropiedad {
+  id: string;
+  propiedadId: string;
+  nombre: string;
+  tipo: TipoDocumento;
+  archivo: string | null;
+  fechaSubida: string;
+  notas: string;
+}
 
 export interface Propiedad {
   id: string;
