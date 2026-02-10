@@ -27,11 +27,12 @@ const estadoMantLabels: Record<string, string> = {
 
 export default function PropiedadesPage() {
   const {
-    propiedades, contratos, pagos, mantenimiento,
+    propiedades, contratos, pagos, mantenimiento, documentos,
     addPropiedad, updatePropiedad, deletePropiedad,
     addContrato, updateContrato,
     addPago, updatePago,
     addMantenimiento, updateMantenimiento,
+    addDocumento, deleteDocumento,
   } = usePropiedades();
 
   // Filters
