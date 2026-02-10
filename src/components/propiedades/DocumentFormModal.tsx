@@ -72,7 +72,7 @@ export function DocumentFormModal({ open, onClose, onSave, propiedades, defaultP
           </div>
           <div className="space-y-1.5">
             <Label>Tipo de documento</Label>
-            <Select value={tipo} onValueChange={v => setTipo(v as TipoDocumento)}>
+            <Select value={tipo} onValueChange={v => setTipo(v as TipoDocumento)} disabled={!!defaultTipo}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {Object.entries(tipoDocLabels).map(([k, v]) => (
