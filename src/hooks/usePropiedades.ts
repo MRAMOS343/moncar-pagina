@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import type { Propiedad, Contrato, Pago, SolicitudMantenimiento } from '@/types/propiedades';
-import { mockPropiedades, mockContratos, mockPagos, mockMantenimiento } from '@/data/mockPropiedades';
+import type { Propiedad, Contrato, Pago, SolicitudMantenimiento, DocumentoPropiedad } from '@/types/propiedades';
+import { mockPropiedades, mockContratos, mockPagos, mockMantenimiento, mockDocumentos } from '@/data/mockPropiedades';
 
 export function usePropiedades() {
   const [propiedades, setPropiedades] = useState<Propiedad[]>(mockPropiedades);
