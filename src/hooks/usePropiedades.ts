@@ -59,11 +59,23 @@ export function usePropiedades() {
     setMantenimiento(prev => prev.map(m => m.id === id ? { ...m, ...data } : m));
   }, []);
 
+  // ── Documentos CRUD ──
+  const addDocumento = useCallback((data: Omit<DocumentoPropiedad, 'id'>) => {
+    const nuevo: DocumentoPropiedad = { ...data, id: `doc-${Date.now()}` };
+    setDocumentos(prev => [...prev, nuevo]);
+    return nuevo;
+  }, []);
+
+  const deleteDocumento = useCallback((id: string) => {
+    setDocumentos(prev => prev.filter(d => d.id !== id));
+  }, []);
+
   return {
-    propiedades, contratos, pagos, mantenimiento,
+    propiedades, contratos, pagos, mantenimiento, documentos,
     addPropiedad, updatePropiedad, deletePropiedad,
     addContrato, updateContrato,
     addPago, updatePago,
     addMantenimiento, updateMantenimiento,
+    addDocumento, deleteDocumento,
   };
 }

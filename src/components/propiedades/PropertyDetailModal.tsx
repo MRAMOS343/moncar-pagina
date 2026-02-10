@@ -51,11 +51,9 @@ export function PropertyDetailModal({ open, onClose, propiedad, onEdit, onDelete
             <span>{propiedad.direccion}</span>
           </div>
           <Separator />
-          <div className="grid grid-cols-4 gap-3 text-center text-sm">
-            <div><Ruler className="w-4 h-4 mx-auto mb-1 text-muted-foreground" /><span className="font-medium">{propiedad.metrosCuadrados}</span><p className="text-xs text-muted-foreground">m²</p></div>
-            <div><BedDouble className="w-4 h-4 mx-auto mb-1 text-muted-foreground" /><span className="font-medium">{propiedad.habitaciones}</span><p className="text-xs text-muted-foreground">Hab.</p></div>
-            <div><Bath className="w-4 h-4 mx-auto mb-1 text-muted-foreground" /><span className="font-medium">{propiedad.banos}</span><p className="text-xs text-muted-foreground">Baños</p></div>
-            <div><Car className="w-4 h-4 mx-auto mb-1 text-muted-foreground" /><span className="font-medium">{propiedad.estacionamientos}</span><p className="text-xs text-muted-foreground">Est.</p></div>
+          <div className="flex items-center gap-2 text-sm">
+            <Ruler className="w-4 h-4 text-muted-foreground" />
+            <span className="font-medium">{propiedad.metrosCuadrados} m²</span>
           </div>
           {propiedad.descripcion && (
             <>
