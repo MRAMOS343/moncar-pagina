@@ -17,7 +17,8 @@ const routeLabels: Record<string, string> = {
   '/dashboard/equipos': 'Equipos',
   '/dashboard/proveedores': 'Proveedores',
   '/dashboard/configuracion': 'Configuración',
-  '/dashboard/soporte': 'Soporte'
+  '/dashboard/soporte': 'Soporte',
+  '/dashboard/propiedades': 'Propiedades en Renta',
 };
 
 export function DashboardLayout() {

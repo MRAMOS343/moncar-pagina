@@ -3,7 +3,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import App from "./App.tsx";
 import "./index.css";
-import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { ProtectedRoute, AdminRoute } from "./components/auth/ProtectedRoute";
 
 // Lazy load pages for better initial bundle size
 const Index = lazy(() => import("./pages/Index"));
@@ -18,6 +18,7 @@ const EquiposPage = lazy(() => import("./pages/EquiposPage"));
 const ProveedoresPage = lazy(() => import("./pages/ProveedoresPage"));
 const ConfiguracionPage = lazy(() => import("./pages/ConfiguracionPage"));
 const SoportePage = lazy(() => import("./pages/SoportePage"));
+const PropiedadesPage = lazy(() => import("./pages/PropiedadesPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading fallback component
@@ -128,6 +129,16 @@ const router = createBrowserRouter([
               <Suspense fallback={<PageLoader />}>
                 <SoportePage />
               </Suspense>
+            ),
+          },
+          {
+            path: "propiedades",
+            element: (
+              <AdminRoute>
+                <Suspense fallback={<PageLoader />}>
+                  <PropiedadesPage />
+                </Suspense>
+              </AdminRoute>
             ),
           },
         ],
