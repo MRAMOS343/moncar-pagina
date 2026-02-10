@@ -229,6 +229,16 @@ export default function PropiedadesPage() {
             </Table>
           </div>
         </TabsContent>
+
+        {/* ── TAB: DOCUMENTOS ── */}
+        <TabsContent value="documentos" className="space-y-4">
+          <div className="flex justify-end">
+            <Button onClick={() => setDocFormOpen(true)}>
+              <Plus className="w-4 h-4 mr-1" />Subir Documento
+            </Button>
+          </div>
+          <DocumentTable documentos={documentos} propiedades={propiedades} onDelete={deleteDocumento} />
+        </TabsContent>
       </Tabs>
 
       {/* Modals */}
