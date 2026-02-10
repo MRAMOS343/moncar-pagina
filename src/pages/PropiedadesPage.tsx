@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Building2, Plus, FileText, DollarSign, Wrench, AlertTriangle } from 'lucide-react';
+import { Building2, Plus, FileText, DollarSign, Wrench, AlertTriangle, FolderOpen } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
