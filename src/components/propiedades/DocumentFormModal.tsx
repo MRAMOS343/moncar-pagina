@@ -26,15 +26,20 @@ interface Props {
   defaultTipo?: TipoDocumento;
 }
 
-export function DocumentFormModal({ open, onClose, onSave, propiedades }: Props) {
+export function DocumentFormModal({ open, onClose, onSave, propiedades, defaultPropiedadId, defaultTipo }: Props) {
   const [propiedadId, setPropiedadId] = useState('');
   const [nombre, setNombre] = useState('');
   const [tipo, setTipo] = useState<TipoDocumento>('otro');
   const [notas, setNotas] = useState('');
 
   useEffect(() => {
-    if (open) { setPropiedadId(''); setNombre(''); setTipo('otro'); setNotas(''); }
-  }, [open]);
+    if (open) {
+      setPropiedadId(defaultPropiedadId || '');
+      setNombre('');
+      setTipo(defaultTipo || 'otro');
+      setNotas('');
+    }
+  }, [open, defaultPropiedadId, defaultTipo]);
 
   const handleSubmit = () => {
     if (!propiedadId || !nombre) return;
