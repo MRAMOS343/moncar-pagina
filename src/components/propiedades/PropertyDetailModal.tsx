@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Building2, Home, Store, Warehouse, Trees, Briefcase, MapPin, BedDouble, Bath, Car, Ruler, Pencil, Trash2 } from 'lucide-react';
+import { Building2, Home, Store, Warehouse, Trees, Briefcase, MapPin, Ruler, Pencil, Trash2 } from 'lucide-react';
 import type { Propiedad } from '@/types/propiedades';
 
 const tipoIcons: Record<string, React.ElementType> = {
