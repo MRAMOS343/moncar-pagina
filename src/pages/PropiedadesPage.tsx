@@ -276,6 +276,12 @@ export default function PropiedadesPage() {
         propiedades={propiedades}
         solicitud={editingMaint}
       />
+      <DocumentFormModal
+        open={docFormOpen}
+        onClose={() => setDocFormOpen(false)}
+        onSave={addDocumento}
+        propiedades={propiedades}
+      />
     </div>
   );
 }
