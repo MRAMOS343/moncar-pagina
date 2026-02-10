@@ -1,4 +1,4 @@
-import type { Propiedad, Contrato, Pago, SolicitudMantenimiento } from '@/types/propiedades';
+import type { Propiedad, Contrato, Pago, SolicitudMantenimiento, DocumentoPropiedad } from '@/types/propiedades';
 
 export const mockPropiedades: Propiedad[] = [
   {
