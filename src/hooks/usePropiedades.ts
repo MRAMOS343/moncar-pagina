@@ -7,6 +7,7 @@ export function usePropiedades() {
   const [contratos, setContratos] = useState<Contrato[]>(mockContratos);
   const [pagos, setPagos] = useState<Pago[]>(mockPagos);
   const [mantenimiento, setMantenimiento] = useState<SolicitudMantenimiento[]>(mockMantenimiento);
+  const [documentos, setDocumentos] = useState<DocumentoPropiedad[]>(mockDocumentos);
 
   // ── Propiedades CRUD ──
   const addPropiedad = useCallback((data: Omit<Propiedad, 'id' | 'createdAt'>) => {
