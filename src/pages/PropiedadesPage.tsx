@@ -16,7 +16,7 @@ import { DocumentTable } from '@/components/propiedades/DocumentTable';
 import { DocumentFormModal } from '@/components/propiedades/DocumentFormModal';
 import { PropertyFilters } from '@/components/propiedades/PropertyFilters';
 import { usePropiedades } from '@/hooks/usePropiedades';
-import type { Propiedad, Contrato, Pago, SolicitudMantenimiento } from '@/types/propiedades';
+import type { Propiedad, Contrato, Pago, SolicitudMantenimiento, DocumentoPropiedad } from '@/types/propiedades';
 
 const prioridadBadge: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   baja: 'outline', media: 'secondary', alta: 'default', urgente: 'destructive',
