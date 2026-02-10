@@ -22,17 +22,24 @@ interface Props {
   onClose: () => void;
   onSave: (data: Omit<DocumentoPropiedad, 'id'>) => void;
   propiedades: Propiedad[];
+  defaultPropiedadId?: string;
+  defaultTipo?: TipoDocumento;
 }
 
-export function DocumentFormModal({ open, onClose, onSave, propiedades }: Props) {
+export function DocumentFormModal({ open, onClose, onSave, propiedades, defaultPropiedadId, defaultTipo }: Props) {
   const [propiedadId, setPropiedadId] = useState('');
   const [nombre, setNombre] = useState('');
   const [tipo, setTipo] = useState<TipoDocumento>('otro');
   const [notas, setNotas] = useState('');
 
   useEffect(() => {
-    if (open) { setPropiedadId(''); setNombre(''); setTipo('otro'); setNotas(''); }
-  }, [open]);
+    if (open) {
+      setPropiedadId(defaultPropiedadId || '');
+      setNombre('');
+      setTipo(defaultTipo || 'otro');
+      setNotas('');
+    }
+  }, [open, defaultPropiedadId, defaultTipo]);
 
   const handleSubmit = () => {
     if (!propiedadId || !nombre) return;
@@ -54,7 +61,7 @@ export function DocumentFormModal({ open, onClose, onSave, propiedades }: Props)
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label>Propiedad</Label>
-            <Select value={propiedadId} onValueChange={setPropiedadId}>
+            <Select value={propiedadId} onValueChange={setPropiedadId} disabled={!!defaultPropiedadId}>
               <SelectTrigger><SelectValue placeholder="Seleccionar propiedad" /></SelectTrigger>
               <SelectContent>
                 {propiedades.map(p => (
@@ -65,7 +72,7 @@ export function DocumentFormModal({ open, onClose, onSave, propiedades }: Props)
           </div>
           <div className="space-y-1.5">
             <Label>Tipo de documento</Label>
-            <Select value={tipo} onValueChange={v => setTipo(v as TipoDocumento)}>
+            <Select value={tipo} onValueChange={v => setTipo(v as TipoDocumento)} disabled={!!defaultTipo}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {Object.entries(tipoDocLabels).map(([k, v]) => (
