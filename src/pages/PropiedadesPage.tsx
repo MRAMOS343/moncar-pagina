@@ -50,6 +50,7 @@ export default function PropiedadesPage() {
   const [editingPayment, setEditingPayment] = useState<Pago | null>(null);
   const [maintFormOpen, setMaintFormOpen] = useState(false);
   const [editingMaint, setEditingMaint] = useState<SolicitudMantenimiento | null>(null);
+  const [docFormOpen, setDocFormOpen] = useState(false);
 
   const filteredProps = useMemo(() => {
     return propiedades.filter(p => {
