@@ -3,7 +3,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import App from "./App.tsx";
 import "./index.css";
-import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { ProtectedRoute, AdminRoute } from "./components/auth/ProtectedRoute";
 
 // Lazy load pages for better initial bundle size
 const Index = lazy(() => import("./pages/Index"));
