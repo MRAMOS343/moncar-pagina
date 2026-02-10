@@ -146,7 +146,7 @@ export default function PropiedadesPage() {
                     <TableCell className="text-sm">{c.fechaInicio}</TableCell>
                     <TableCell className="text-sm flex items-center gap-1">
                       {c.fechaFin}
-                      {c.expiringSoon && <AlertTriangle className="w-4 h-4 text-yellow-500" />}
+                      {c.expiringSoon && <AlertTriangle className="w-4 h-4 text-warning" />}
                     </TableCell>
                     <TableCell>
                       <Badge variant={c.activo ? 'default' : 'outline'} className="text-xs">{c.activo ? 'Activo' : 'Inactivo'}</Badge>
