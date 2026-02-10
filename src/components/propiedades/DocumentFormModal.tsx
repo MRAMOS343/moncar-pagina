@@ -22,6 +22,8 @@ interface Props {
   onClose: () => void;
   onSave: (data: Omit<DocumentoPropiedad, 'id'>) => void;
   propiedades: Propiedad[];
+  defaultPropiedadId?: string;
+  defaultTipo?: TipoDocumento;
 }
 
 export function DocumentFormModal({ open, onClose, onSave, propiedades }: Props) {
