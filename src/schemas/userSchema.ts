@@ -8,7 +8,7 @@ export const userSchema = z.object({
   id: z.string().min(1, "ID de usuario es requerido"),
   nombre: z.string().min(1, "Nombre es requerido"),
   email: z.string().email("Email inválido"),
-  role: z.enum(['admin', 'gerente', 'cajero'], {
+  role: z.enum(['admin', 'gerente', 'cajero', 'gestor_propiedades', 'gestor_vehiculos', 'developer'], {
     errorMap: () => ({ message: "Rol inválido" })
   }),
   warehouseId: z.string().optional(),

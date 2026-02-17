@@ -53,7 +53,7 @@ export interface User {
   id: string;
   nombre: string;
   email: string;
-  role: 'admin' | 'gerente' | 'cajero';
+  role: 'admin' | 'gerente' | 'cajero' | 'gestor_propiedades' | 'gestor_vehiculos' | 'developer';
   warehouseId?: string;
 }
 

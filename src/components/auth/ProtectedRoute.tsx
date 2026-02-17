@@ -40,7 +40,7 @@ export function AdminRoute({ children }: ProtectedRouteProps) {
   }
 
   if (currentUser?.role !== 'admin') {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/selector" replace />;
   }
 
   return <>{children}</>;

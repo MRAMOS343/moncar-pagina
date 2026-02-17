@@ -14,7 +14,7 @@ export default function LoginPage() {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/selector" replace />;
   }
 
   return <LoginForm onLogin={login} />;
