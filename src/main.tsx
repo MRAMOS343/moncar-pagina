@@ -3,12 +3,17 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import App from "./App.tsx";
 import "./index.css";
-import { ProtectedRoute, AdminRoute } from "./components/auth/ProtectedRoute";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { ModuleRoute } from "./components/auth/ModuleRoute";
 
-// Lazy load pages for better initial bundle size
+// Lazy load pages
 const Index = lazy(() => import("./pages/Index"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
-const DashboardLayout = lazy(() => import("./pages/DashboardLayout").then(m => ({ default: m.DashboardLayout })));
+const ModuleSelectorPage = lazy(() => import("./pages/ModuleSelectorPage"));
+const RefaccionariasLayout = lazy(() => import("./pages/RefaccionariasLayout").then(m => ({ default: m.RefaccionariasLayout })));
+const PropiedadesLayout = lazy(() => import("./pages/PropiedadesLayout").then(m => ({ default: m.PropiedadesLayout })));
+const VehiculosLayout = lazy(() => import("./pages/VehiculosLayout").then(m => ({ default: m.VehiculosLayout })));
+
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const InventarioPage = lazy(() => import("./pages/InventarioPage"));
 const VentasPage = lazy(() => import("./pages/VentasPage"));
@@ -19,13 +24,17 @@ const ProveedoresPage = lazy(() => import("./pages/ProveedoresPage"));
 const ConfiguracionPage = lazy(() => import("./pages/ConfiguracionPage"));
 const SoportePage = lazy(() => import("./pages/SoportePage"));
 const PropiedadesPage = lazy(() => import("./pages/PropiedadesPage"));
+const VehiculosPage = lazy(() => import("./pages/VehiculosPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-// Loading fallback component
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
   </div>
+);
+
+const S = ({ children }: { children: React.ReactNode }) => (
+  <Suspense fallback={<PageLoader />}>{children}</Suspense>
 );
 
 const router = createBrowserRouter([
@@ -33,124 +42,58 @@ const router = createBrowserRouter([
     path: "/",
     element: <App />,
     children: [
+      { index: true, element: <S><Index /></S> },
+      { path: "login", element: <S><LoginPage /></S> },
       {
-        index: true,
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <Index />
-          </Suspense>
-        ),
-      },
-      {
-        path: "login",
-        element: (
-          <Suspense fallback={<PageLoader />}>
-            <LoginPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: "dashboard",
+        path: "selector",
         element: (
           <ProtectedRoute>
-            <Suspense fallback={<PageLoader />}>
-              <DashboardLayout />
-            </Suspense>
+            <S><ModuleSelectorPage /></S>
           </ProtectedRoute>
         ),
+      },
+      {
+        path: "refaccionarias",
+        element: (
+          <ModuleRoute module="refaccionarias">
+            <S><RefaccionariasLayout /></S>
+          </ModuleRoute>
+        ),
         children: [
-          {
-            index: true,
-            element: (
-              <Suspense fallback={<PageLoader />}>
-                <DashboardPage />
-              </Suspense>
-            ),
-          },
-          {
-            path: "inventario",
-            element: (
-              <Suspense fallback={<PageLoader />}>
-                <InventarioPage />
-              </Suspense>
-            ),
-          },
-          {
-            path: "ventas",
-            element: (
-              <Suspense fallback={<PageLoader />}>
-                <VentasPage />
-              </Suspense>
-            ),
-          },
-          {
-            path: "compras",
-            element: (
-              <Suspense fallback={<PageLoader />}>
-                <ComprasPage />
-              </Suspense>
-            ),
-          },
-          {
-            path: "prediccion",
-            element: (
-              <Suspense fallback={<PageLoader />}>
-                <PrediccionPage />
-              </Suspense>
-            ),
-          },
-          {
-            path: "equipos",
-            element: (
-              <Suspense fallback={<PageLoader />}>
-                <EquiposPage />
-              </Suspense>
-            ),
-          },
-          {
-            path: "proveedores",
-            element: (
-              <Suspense fallback={<PageLoader />}>
-                <ProveedoresPage />
-              </Suspense>
-            ),
-          },
-          {
-            path: "configuracion",
-            element: (
-              <Suspense fallback={<PageLoader />}>
-                <ConfiguracionPage />
-              </Suspense>
-            ),
-          },
-          {
-            path: "soporte",
-            element: (
-              <Suspense fallback={<PageLoader />}>
-                <SoportePage />
-              </Suspense>
-            ),
-          },
-          {
-            path: "propiedades",
-            element: (
-              <AdminRoute>
-                <Suspense fallback={<PageLoader />}>
-                  <PropiedadesPage />
-                </Suspense>
-              </AdminRoute>
-            ),
-          },
+          { index: true, element: <S><DashboardPage /></S> },
+          { path: "inventario", element: <S><InventarioPage /></S> },
+          { path: "ventas", element: <S><VentasPage /></S> },
+          { path: "compras", element: <S><ComprasPage /></S> },
+          { path: "prediccion", element: <S><PrediccionPage /></S> },
+          { path: "equipos", element: <S><EquiposPage /></S> },
+          { path: "proveedores", element: <S><ProveedoresPage /></S> },
+          { path: "configuracion", element: <S><ConfiguracionPage /></S> },
+          { path: "soporte", element: <S><SoportePage /></S> },
         ],
       },
       {
-        path: "*",
+        path: "propiedades",
         element: (
-          <Suspense fallback={<PageLoader />}>
-            <NotFound />
-          </Suspense>
+          <ModuleRoute module="propiedades">
+            <S><PropiedadesLayout /></S>
+          </ModuleRoute>
         ),
+        children: [
+          { index: true, element: <S><PropiedadesPage /></S> },
+        ],
       },
+      {
+        path: "vehiculos",
+        element: (
+          <ModuleRoute module="vehiculos">
+            <S><VehiculosLayout /></S>
+          </ModuleRoute>
+        ),
+        children: [
+          { index: true, element: <S><VehiculosPage /></S> },
+        ],
+      },
+      { path: "*", element: <S><NotFound /></S> },
     ],
   },
 ]);

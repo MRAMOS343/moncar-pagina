@@ -34,7 +34,10 @@ export const METODOS_PAGO = [
 export const ROLES_USUARIO = [
   'admin', 
   'gerente', 
-  'cajero'
+  'cajero',
+  'gestor_propiedades',
+  'gestor_vehiculos',
+  'developer'
 ] as const;
 
 export const TICKET_CATEGORIAS = [

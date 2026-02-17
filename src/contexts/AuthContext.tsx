@@ -10,7 +10,7 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
-  updateUserRole: (role: 'admin' | 'gerente' | 'cajero') => void;
+  updateUserRole: (role: User['role']) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logger.info("Logout");
   };
 
-  const updateUserRole = (role: 'admin' | 'gerente' | 'cajero') => {
+  const updateUserRole = (role: User['role']) => {
     if (currentUser) {
       const updatedUser = { ...currentUser, role };
       setCurrentUser(updatedUser);
