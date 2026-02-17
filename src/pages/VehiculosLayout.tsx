@@ -53,7 +53,8 @@ export function VehiculosLayout() {
             onWarehouseChange={() => {}}
             currentUser={currentUser}
             onRoleChange={() => {}}
-            onSearch={() => {}}
+            showSearch={false}
+            showWarehouseSelector={false}
             isDarkMode={isDarkMode}
             onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
           />

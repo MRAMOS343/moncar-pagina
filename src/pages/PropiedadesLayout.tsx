@@ -67,7 +67,8 @@ export function PropiedadesLayout() {
             onWarehouseChange={() => {}}
             currentUser={currentUser}
             onRoleChange={() => {}}
-            onSearch={() => {}}
+            showSearch={false}
+            showWarehouseSelector={false}
             isDarkMode={isDarkMode}
             onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
           />

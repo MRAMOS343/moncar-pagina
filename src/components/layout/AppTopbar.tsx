@@ -36,7 +36,9 @@ interface AppTopbarProps {
   onWarehouseChange: (warehouseId: string) => void;
   currentUser: User | null;
   onRoleChange: (role: 'admin' | 'gerente' | 'cajero') => void;
-  onSearch: (query: string) => void;
+  onSearch?: (query: string) => void;
+  showSearch?: boolean;
+  showWarehouseSelector?: boolean;
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
 }
@@ -50,6 +52,8 @@ export function AppTopbar({
   currentUser,
   onRoleChange,
   onSearch,
+  showSearch = true,
+  showWarehouseSelector = true,
   isDarkMode,
   onToggleDarkMode,
 }: AppTopbarProps) {
@@ -113,44 +117,46 @@ export function AppTopbar({
           </Breadcrumb>
         </div>
 
-        {/* Search */}
-        <div className="relative flex-shrink-0 w-80 max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Buscar productos, SKU... (Ctrl+/)"
-            className="pl-10"
-            onChange={(e) => onSearch(e.target.value)}
-            onKeyDown={(e) => {
-              if ((e.ctrlKey || e.metaKey) && e.key === '/') {
-                e.preventDefault();
-                e.currentTarget.focus();
-              }
-            }}
-          />
-        </div>
+        {showSearch && (
+          <div className="relative flex-shrink-0 w-80 max-w-sm">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Buscar productos, SKU... (Ctrl+/)"
+              className="pl-10"
+              onChange={(e) => onSearch?.(e.target.value)}
+              onKeyDown={(e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+                  e.preventDefault();
+                  e.currentTarget.focus();
+                }
+              }}
+            />
+          </div>
+        )}
 
-        {/* Warehouse Selector */}
-        <Select value={currentWarehouse} onValueChange={onWarehouseChange} disabled={warehousesLoading}>
-          <SelectTrigger className="w-40">
-            <span className={warehousesLoading ? "flex-1 truncate text-muted-foreground" : "flex-1 truncate"}>
-              {warehousesLoading
-                ? "Cargando..."
-                : currentWarehouse === "all"
-                  ? "Todas las Sucursales"
-                  : (warehouses.find((w) => w.id === currentWarehouse)?.nombre?.trim() ??
-                    warehouses.find((w) => w.id === currentWarehouse)?.nombre ??
-                    "Sucursal")}
-            </span>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas las Sucursales</SelectItem>
-            {warehouses.map((warehouse) => (
-              <SelectItem key={warehouse.id} value={warehouse.id}>
-                {(warehouse.nombre?.trim() ?? warehouse.nombre) as any}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {showWarehouseSelector && (
+          <Select value={currentWarehouse} onValueChange={onWarehouseChange} disabled={warehousesLoading}>
+            <SelectTrigger className="w-40">
+              <span className={warehousesLoading ? "flex-1 truncate text-muted-foreground" : "flex-1 truncate"}>
+                {warehousesLoading
+                  ? "Cargando..."
+                  : currentWarehouse === "all"
+                    ? "Todas las Sucursales"
+                    : (warehouses.find((w) => w.id === currentWarehouse)?.nombre?.trim() ??
+                      warehouses.find((w) => w.id === currentWarehouse)?.nombre ??
+                      "Sucursal")}
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas las Sucursales</SelectItem>
+              {warehouses.map((warehouse) => (
+                <SelectItem key={warehouse.id} value={warehouse.id}>
+                  {(warehouse.nombre?.trim() ?? warehouse.nombre) as any}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
 
         {/* Role Simulator */}
         <div className="flex items-center gap-2">
