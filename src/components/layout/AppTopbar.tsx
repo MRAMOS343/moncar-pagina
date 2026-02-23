@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+
 import { Search, Moon, Sun, Bell } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -158,26 +159,28 @@ export function AppTopbar({
           </Select>
         )}
 
-        {/* Role Simulator */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Rol:</span>
-          <Select 
-            value={currentUser?.role || 'cajero'} 
-            onValueChange={onRoleChange}
-          >
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="admin">Admin</SelectItem>
-              <SelectItem value="gerente">Gerente</SelectItem>
-              <SelectItem value="cajero">Cajero</SelectItem>
-            </SelectContent>
-          </Select>
-          <Badge variant={getRoleBadgeVariant(currentUser?.role || 'cajero')}>
-            {currentUser?.role || 'cajero'}
-          </Badge>
-        </div>
+        {/* Role Simulator — only in DEV and Refaccionarias */}
+        {import.meta.env.DEV && location.pathname.startsWith('/refaccionarias') && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Rol:</span>
+            <Select 
+              value={currentUser?.role || 'cajero'} 
+              onValueChange={onRoleChange}
+            >
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="gerente">Gerente</SelectItem>
+                <SelectItem value="cajero">Cajero</SelectItem>
+              </SelectContent>
+            </Select>
+            <Badge variant={getRoleBadgeVariant(currentUser?.role || 'cajero')}>
+              {currentUser?.role || 'cajero'}
+            </Badge>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex items-center gap-2">
