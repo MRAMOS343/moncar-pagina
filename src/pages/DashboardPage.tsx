@@ -127,7 +127,7 @@ export default function DashboardPage() {
   }, [salesData]);
 
   const handleNewSale = () => {
-    navigate('/dashboard/ventas');
+    navigate('/refaccionarias/ventas');
   };
 
   const handleAddProduct = () => {
