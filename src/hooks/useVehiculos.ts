@@ -21,6 +21,9 @@ export function useVehiculos() {
 
   const deleteVehiculo = useCallback((id: string) => {
     setVehiculos(prev => prev.filter(v => v.id !== id));
+    setDocumentos(prev => prev.filter(d => d.vehiculoId !== id));
+    setMantenimientos(prev => prev.filter(m => m.vehiculoId !== id));
+    setGastos(prev => prev.filter(g => g.vehiculoId !== id));
   }, []);
 
   // ── Documentos CRUD ──

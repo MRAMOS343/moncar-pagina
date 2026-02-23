@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Truck, Plus, Wrench, Fuel, Search } from 'lucide-react';
+import { Truck, Plus, Wrench, Fuel, Search, Trash2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { VehicleCard } from '@/components/vehiculos/VehicleCard';
 import { VehicleFormModal } from '@/components/vehiculos/VehicleFormModal';
 import { VehicleDetailModal } from '@/components/vehiculos/VehicleDetailModal';
@@ -222,9 +223,25 @@ export default function VehiculosPage() {
                       <TableCell className="text-sm max-w-[200px] truncate">{g.descripcion}</TableCell>
                       <TableCell className="text-right text-sm font-medium">${g.monto.toLocaleString()}</TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon" onClick={() => deleteGasto(g.id)}>
-                          <Fuel className="w-4 h-4 text-destructive" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Eliminar este gasto?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta acción no se puede deshacer. Se eliminará el registro de ${g.monto.toLocaleString()} ({tipoGastoLabels[g.tipo]}).
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deleteGasto(g.id)}>Eliminar</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </TableCell>
                     </TableRow>
                   );
@@ -235,44 +252,54 @@ export default function VehiculosPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Modals */}
-      <VehicleFormModal
-        open={vehFormOpen}
-        onClose={() => { setVehFormOpen(false); setEditingVeh(null); }}
-        onSave={data => editingVeh ? updateVehiculo(editingVeh.id, data) : addVehiculo(data)}
-        vehiculo={editingVeh}
-      />
-      <VehicleDetailModal
-        open={!!detailVeh}
-        onClose={() => setDetailVeh(null)}
-        vehiculo={detailVeh}
-        onEdit={v => { setDetailVeh(null); setEditingVeh(v); setVehFormOpen(true); }}
-        onDelete={deleteVehiculo}
-        documentos={detailDocs}
-        onAddDocumento={handleAddDocFromDetail}
-        onDeleteDocumento={deleteDocumento}
-      />
-      <MaintenanceVehFormModal
-        open={maintFormOpen}
-        onClose={() => { setMaintFormOpen(false); setEditingMaint(null); }}
-        onSave={data => editingMaint ? updateMantenimiento(editingMaint.id, data) : addMantenimiento(data)}
-        vehiculos={vehiculos}
-        mantenimiento={editingMaint}
-      />
-      <ExpenseVehFormModal
-        open={expenseFormOpen}
-        onClose={() => setExpenseFormOpen(false)}
-        onSave={addGasto}
-        vehiculos={vehiculos}
-      />
-      <DocVehFormModal
-        open={docFormOpen}
-        onClose={() => { setDocFormOpen(false); setDocDefaultTipo(undefined); setDocDefaultVehId(undefined); }}
-        onSave={addDocumento}
-        vehiculos={vehiculos}
-        defaultVehiculoId={docDefaultVehId}
-        defaultTipo={docDefaultTipo}
-      />
+      {/* Modals — conditional rendering forces remount & state reset */}
+      {vehFormOpen && (
+        <VehicleFormModal
+          open={vehFormOpen}
+          onClose={() => { setVehFormOpen(false); setEditingVeh(null); }}
+          onSave={data => editingVeh ? updateVehiculo(editingVeh.id, data) : addVehiculo(data)}
+          vehiculo={editingVeh}
+        />
+      )}
+      {!!detailVeh && (
+        <VehicleDetailModal
+          open={!!detailVeh}
+          onClose={() => setDetailVeh(null)}
+          vehiculo={detailVeh}
+          onEdit={v => { setDetailVeh(null); setEditingVeh(v); setVehFormOpen(true); }}
+          onDelete={deleteVehiculo}
+          documentos={detailDocs}
+          onAddDocumento={handleAddDocFromDetail}
+          onDeleteDocumento={deleteDocumento}
+        />
+      )}
+      {maintFormOpen && (
+        <MaintenanceVehFormModal
+          open={maintFormOpen}
+          onClose={() => { setMaintFormOpen(false); setEditingMaint(null); }}
+          onSave={data => editingMaint ? updateMantenimiento(editingMaint.id, data) : addMantenimiento(data)}
+          vehiculos={vehiculos}
+          mantenimiento={editingMaint}
+        />
+      )}
+      {expenseFormOpen && (
+        <ExpenseVehFormModal
+          open={expenseFormOpen}
+          onClose={() => setExpenseFormOpen(false)}
+          onSave={addGasto}
+          vehiculos={vehiculos}
+        />
+      )}
+      {docFormOpen && (
+        <DocVehFormModal
+          open={docFormOpen}
+          onClose={() => { setDocFormOpen(false); setDocDefaultTipo(undefined); setDocDefaultVehId(undefined); }}
+          onSave={addDocumento}
+          vehiculos={vehiculos}
+          defaultVehiculoId={docDefaultVehId}
+          defaultTipo={docDefaultTipo}
+        />
+      )}
     </div>
   );
 }
