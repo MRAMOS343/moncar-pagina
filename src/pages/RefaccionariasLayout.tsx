@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { DataProvider } from '@/contexts/DataContext';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar, type SidebarNavItem } from '../components/layout/AppSidebar';
@@ -93,35 +94,37 @@ export function RefaccionariasLayout() {
   if (!currentUser) return null;
 
   return (
-    <SidebarProvider defaultOpen={true}>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar
-          currentUser={currentUser}
-          onLogout={handleLogout}
-          moduleTitle="Grupo Monzalvo"
-          moduleSubtitle="Refaccionarias"
-          navItems={navItems}
-          onChangeModule={() => navigate('/selector')}
-        />
-        <SidebarInset className="flex-1 flex flex-col min-w-0">
-          <AppTopbar
-            breadcrumbs={generateBreadcrumbs()}
-            warehouses={warehouses}
-            warehousesLoading={warehousesLoading}
-            currentWarehouse={currentWarehouse}
-            onWarehouseChange={handleWarehouseChange}
+    <DataProvider>
+      <SidebarProvider defaultOpen={true}>
+        <div className="min-h-screen flex w-full bg-background">
+          <AppSidebar
             currentUser={currentUser}
-            onRoleChange={handleRoleChange}
-            onSearch={handleSearch}
-            isDarkMode={isDarkMode}
-            onToggleDarkMode={handleToggleDarkMode}
+            onLogout={handleLogout}
+            moduleTitle="Grupo Monzalvo"
+            moduleSubtitle="Refaccionarias"
+            navItems={navItems}
+            onChangeModule={() => navigate('/selector')}
           />
-          <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-auto">
-            <Outlet context={{ currentWarehouse, searchQuery, currentUser, warehouses }} />
-          </main>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+          <SidebarInset className="flex-1 flex flex-col min-w-0">
+            <AppTopbar
+              breadcrumbs={generateBreadcrumbs()}
+              warehouses={warehouses}
+              warehousesLoading={warehousesLoading}
+              currentWarehouse={currentWarehouse}
+              onWarehouseChange={handleWarehouseChange}
+              currentUser={currentUser}
+              onRoleChange={handleRoleChange}
+              onSearch={handleSearch}
+              isDarkMode={isDarkMode}
+              onToggleDarkMode={handleToggleDarkMode}
+            />
+            <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-auto">
+              <Outlet context={{ currentWarehouse, searchQuery, currentUser, warehouses }} />
+            </main>
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
+    </DataProvider>
   );
 }
 

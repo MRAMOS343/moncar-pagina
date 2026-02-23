@@ -72,18 +72,20 @@ export function AppSidebar({
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild tooltip={collapsed ? item.title : undefined}>
-                    <NavLink
-                      to={item.url}
-                      className={`${getNavClass(item.url)} touch-target min-h-[44px] ${collapsed ? "justify-center" : ""}`}
-                    >
-                      <item.icon className={collapsed ? "w-6 h-6" : "w-5 h-5 min-w-[1.25rem]"} />
-                      {!collapsed && (
-                        <div className="flex flex-col items-start gap-0.5 min-w-0">
-                          <span className="font-medium truncate w-full">{item.title}</span>
-                          <span className="text-xs leading-tight line-clamp-1">{item.description}</span>
-                        </div>
-                      )}
-                    </NavLink>
+                    <span className="contents">
+                      <NavLink
+                        to={item.url}
+                        className={`${getNavClass(item.url)} touch-target min-h-[44px] ${collapsed ? "justify-center" : ""}`}
+                      >
+                        <item.icon className={collapsed ? "w-6 h-6" : "w-5 h-5 min-w-[1.25rem]"} />
+                        {!collapsed && (
+                          <div className="flex flex-col items-start gap-0.5 min-w-0">
+                            <span className="font-medium truncate w-full">{item.title}</span>
+                            <span className="text-xs leading-tight line-clamp-1">{item.description}</span>
+                          </div>
+                        )}
+                      </NavLink>
+                    </span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
