@@ -1,201 +1,288 @@
 
 
-# Plan: Pantalla de seleccion de modulo y acceso por rol
+# Plan Maestro: Funcionalidades Pendientes por Prioridad
 
-## Resumen
-
-Despues de iniciar sesion, el usuario vera una pantalla intermedia donde elige a cual seccion del portal quiere entrar (Refaccionarias, Propiedades, Vehiculos). El acceso a cada seccion estara controlado por roles fijos. Para cambiar de seccion, el usuario regresa al selector.
+A continuacion se presenta cada area pendiente, la mejor forma de desarrollarla, y como puedo ayudarte desde Lovable (sin Supabase).
 
 ---
 
-## Nueva estructura de navegacion
+## 1. Ruta rota en DashboardPage (Bug - Correccion inmediata)
+
+**Problema**: `DashboardPage.tsx` linea 130 navega a `/dashboard/ventas` en lugar de `/refaccionarias/ventas`.
+
+**Solucion**: Cambiar la ruta a `/refaccionarias/ventas`.
+
+**Puedo hacerlo yo**: Si, directamente. Es un cambio de una linea.
+
+---
+
+## 2. Modulo de Vehiculos (Prioridad Alta)
+
+**Estado actual**: Pagina placeholder sin funcionalidad.
+
+**Mejor enfoque**:
 
 ```text
-Login --> Selector de Modulo --> Modulo elegido (con su propio sidebar)
-                ^                       |
-                |_______________________|
-                    (boton "Cambiar modulo")
+Backend (tu)                          Frontend (yo)
+-----------                          ----------------
+1. Tabla "vehiculos" en Postgres     1. Tipos TypeScript
+   (placa, marca, modelo, anio,      2. Services (apiClient)
+    color, km, estado, seguro_vig,   3. Hooks (useVehiculos, useMutations)
+    verificacion_vig)                4. UI: Grid/Tabla con tabs
+                                     5. Modales: crear, editar, detalle
+2. Tabla "vehiculo_documentos"       6. Documentos con vigencia
+   (tipo, vigencia, archivo_url)        (alerta visual si vencido)
+                                     
+3. Tabla "vehiculo_mantenimiento"    7. Tab de mantenimiento
+   (fecha, tipo, km, costo, notas)      con historial y proximo servicio
+                                     
+4. Tabla "vehiculo_gastos"           8. Tab de gastos con totales
+   (fecha, tipo, monto, evidencia)      mensuales y graficos
+                                     
+5. Endpoints REST:                   
+   GET/POST /vehiculos               
+   GET/PATCH/DELETE /vehiculos/:id   
+   GET/POST /vehiculos/:id/docs      
+   GET/POST /vehiculos/:id/mant      
+   GET/POST /vehiculos/:id/gastos    
 ```
+
+**Patron a seguir**: El modulo de Propiedades (`usePropiedades`, `PropiedadesPage`) ya tiene exactamente esta estructura con tabs, modales CRUD y filtros. Lo replico con los mismos patrones.
+
+**Puedo hacer yo**:
+- Toda la UI: pagina con tabs (Flotilla, Mantenimiento, Gastos)
+- Tipos, services, hooks conectados a tu API
+- Modales de crear/editar vehiculo, subir documentos, registrar gastos
+- Alertas de documentos por vencer
+- Exportacion de datos
+
+**Tu necesitas hacer**:
+- Las tablas en Postgres y los endpoints REST
 
 ---
 
-## Roles y acceso
+## 3. Creacion de Ventas (Prioridad Alta)
 
-| Rol | Refaccionarias | Propiedades | Vehiculos |
-|-----|---------------|-------------|-----------|
-| admin | Si | Si | Si |
-| gerente | Si | No | No |
-| cajero | Si | No | No |
-| gestor_propiedades | No | Si | No |
-| gestor_vehiculos | No | Si (lectura) | Si |
-| developer | Si | Si | Si |
+**Estado actual**: Boton "Nueva Venta" solo muestra un toast de "proximamente".
 
-**Nota**: Se agregan dos roles nuevos al tipo `User` y al enum de roles. El backend debera reflejar estos roles en su tabla `user_roles`.
-
----
-
-## Cambios en detalle
-
-### 1. Actualizar tipo User (`src/types/index.ts`)
-
-Expandir el tipo de `role` para incluir los nuevos roles:
-```
-role: 'admin' | 'gerente' | 'cajero' | 'gestor_propiedades' | 'gestor_vehiculos' | 'developer'
-```
-
-Actualizar tambien `src/schemas/userSchema.ts` y `src/constants/index.ts` con los nuevos valores.
-
-### 2. Nueva pagina: `src/pages/ModuleSelectorPage.tsx`
-
-Pantalla con 3 tarjetas grandes mostrando los modulos disponibles para el usuario:
+**Mejor enfoque**:
 
 ```text
-+------------------------------------------------------------------+
-|                     Grupo Monzalvo                                |
-|              Selecciona un modulo de trabajo                      |
-|                                                                    |
-|  +------------------+  +------------------+  +------------------+ |
-|  |   Refaccionarias |  |   Propiedades    |  |    Vehiculos     | |
-|  |                  |  |                  |  |                  | |
-|  |  Inventario,     |  |  Inmuebles en    |  |  Flotilla de     | |
-|  |  ventas y        |  |  renta, pagos    |  |  transporte,     | |
-|  |  prediccion      |  |  y documentos    |  |  servicios       | |
-|  |                  |  |                  |  |                  | |
-|  |    [Entrar]      |  |    [Entrar]      |  |    [Entrar]      | |
-|  +------------------+  +------------------+  +------------------+ |
-|                                                                    |
-|                                          [Cerrar Sesion]          |
-+------------------------------------------------------------------+
+Flujo de la venta:
+  1. Seleccionar sucursal (si aplica)
+  2. Buscar y agregar productos al carrito
+  3. Ajustar cantidades y descuentos por linea
+  4. Seleccionar metodo de pago
+  5. Confirmar y enviar al backend
+  6. Recibir folio y mostrar resumen
 ```
 
-- Las tarjetas de modulos a los que el usuario no tiene acceso se ocultan o se muestran deshabilitadas con un candado
-- La pagina verifica el rol del usuario y solo muestra las tarjetas permitidas
-- Al hacer clic en "Entrar", redirige a la ruta base del modulo
+**Arquitectura recomendada**:
+- **Hook `useSaleForm`**: Ya existe parcialmente. Manejar estado del carrito, calculos de subtotal/IVA/total
+- **Componente `SaleModal`**: Ya existe la estructura basica. Necesita conectarse a la API
+- **Endpoint backend**: `POST /sales` que reciba `{ sucursal_id, items: [{sku, qty, precio_unitario, descuento}], metodo_pago }`
+- **Validaciones**: Stock disponible (backend), campos requeridos (frontend con Zod)
 
-### 3. Nuevas rutas por modulo
+**Puedo hacer yo**:
+- El modal completo de creacion de venta con busqueda de productos
+- Calculo en tiempo real de subtotal, IVA, total
+- Validacion con Zod
+- Conexion al endpoint POST /sales
+- Actualizacion automatica de la tabla de ventas despues de crear
 
-La estructura de rutas cambiara para separar cada modulo:
+**Tu necesitas hacer**:
+- El endpoint `POST /sales` en Express
+- Validacion de stock en el backend
+- Generacion de folio
 
-| Ruta | Modulo | Layout |
-|------|--------|--------|
-| `/selector` | Selector de modulo | Sin sidebar |
-| `/refaccionarias/*` | Refaccionarias | Sidebar de refaccionarias |
-| `/propiedades/*` | Propiedades | Sidebar de propiedades |
-| `/vehiculos/*` | Vehiculos | Sidebar de vehiculos |
+---
 
-Cada modulo tendra su propio layout con sidebar contextual. Esto reemplaza la estructura actual de `/dashboard/*`.
+## 4. Prediccion de Ventas con datos reales (Prioridad Media)
 
-### 4. Layouts por modulo
+**Estado actual**: Genera datos con `Math.random()`. No se conecta a ningun servicio.
 
-**`src/pages/RefaccionariasLayout.tsx`** (basado en el actual `DashboardLayout.tsx`)
-- Sidebar con: Dashboard, Inventario, Ventas, Prediccion, Compra Sugerida, Proveedores, Equipos, Soporte, Configuracion
-- Boton "Cambiar modulo" en el footer del sidebar que regresa a `/selector`
-- Mantiene la logica de warehouse existente
-
-**`src/pages/PropiedadesLayout.tsx`** (nuevo)
-- Sidebar con: Resumen, Inmuebles, Contratos, Pagos, Mantenimiento
-- Boton "Cambiar modulo" en el footer
-- Sin logica de warehouse
-
-**`src/pages/VehiculosLayout.tsx`** (nuevo, preparado para el modulo de vehiculos)
-- Sidebar con: Resumen, Flotilla, Mantenimiento, Gastos
-- Boton "Cambiar modulo" en el footer
-
-### 5. Logica de permisos: `src/utils/moduleAccess.ts` (nuevo)
-
-```typescript
-type ModuleId = 'refaccionarias' | 'propiedades' | 'vehiculos';
-
-const MODULE_ACCESS: Record<string, ModuleId[]> = {
-  admin: ['refaccionarias', 'propiedades', 'vehiculos'],
-  developer: ['refaccionarias', 'propiedades', 'vehiculos'],
-  gerente: ['refaccionarias'],
-  cajero: ['refaccionarias'],
-  gestor_propiedades: ['propiedades'],
-  gestor_vehiculos: ['vehiculos'],
-};
-
-function getUserModules(role: string): ModuleId[] { ... }
-function canAccessModule(role: string, module: ModuleId): boolean { ... }
-```
-
-### 6. Componente de proteccion: `src/components/auth/ModuleRoute.tsx` (nuevo)
-
-Similar a `AdminRoute` pero parametrizado por modulo:
-```typescript
-<ModuleRoute module="propiedades">
-  <PropiedadesLayout />
-</ModuleRoute>
-```
-
-Redirige a `/selector` si el usuario no tiene acceso al modulo.
-
-### 7. Actualizar `src/main.tsx`
-
-Reemplazar la estructura actual:
+**Mejor enfoque (sin ML complejo)**:
 
 ```text
-/                   -> Redirect a /selector o /login
-/login              -> LoginPage
-/selector           -> ModuleSelectorPage (protegido)
-/refaccionarias     -> RefaccionariasLayout
-  /                 -> DashboardPage
-  /inventario       -> InventarioPage
-  /ventas           -> VentasPage
-  /prediccion       -> PrediccionPage
-  /compras          -> ComprasPage
-  /equipos          -> EquiposPage
-  /proveedores      -> ProveedoresPage
-  /configuracion    -> ConfiguracionPage
-  /soporte          -> SoportePage
-/propiedades        -> PropiedadesLayout
-  /                 -> PropiedadesPage (actual)
-/vehiculos          -> VehiculosLayout
-  /                 -> VehiculosPage (por crear)
+Opcion A: Forecast simple en el backend
+  - Media movil ponderada de las ultimas N semanas
+  - Calculo de estacionalidad basica (mes a mes)
+  - Intervalo de confianza basado en desviacion estandar
+  
+Opcion B: Servicio externo de forecast
+  - Amazon Forecast, Google Cloud AI, o Prophet (Python)
+  - Mas preciso pero mas complejo de implementar
 ```
 
-### 8. Actualizar flujo post-login
+**Recomendacion**: Opcion A para empezar. Un endpoint `GET /forecast?sku=XXX&warehouse=YYY&weeks=8` que devuelva historico + pronostico calculado con media movil. Es suficiente para una empresa mediana.
 
-Modificar `LoginPage.tsx` y `Index.tsx` para redirigir a `/selector` en lugar de `/dashboard`.
+**Puedo hacer yo**:
+- Conectar la pagina de Prediccion al endpoint real
+- Mostrar datos historicos reales en lugar de sinteticos
+- Mantener la misma UI de graficos con historico vs pronostico
+- Quitar el alert de "datos sinteticos" cuando se conecte
 
-### 9. Actualizar `AuthContext.tsx`
-
-- Actualizar el tipo de `updateUserRole` para aceptar los nuevos roles
-- Ajustar logout para redirigir a `/login`
-
----
-
-## Archivos nuevos
-
-| Archivo | Descripcion |
-|---------|-------------|
-| `src/pages/ModuleSelectorPage.tsx` | Pantalla de seleccion de modulo |
-| `src/pages/RefaccionariasLayout.tsx` | Layout/sidebar para modulo de refaccionarias |
-| `src/pages/PropiedadesLayout.tsx` | Layout/sidebar para modulo de propiedades |
-| `src/pages/VehiculosLayout.tsx` | Layout/sidebar para modulo de vehiculos (placeholder) |
-| `src/utils/moduleAccess.ts` | Logica de permisos por modulo |
-| `src/components/auth/ModuleRoute.tsx` | Componente protector por modulo |
-
-## Archivos a modificar
-
-| Archivo | Cambio |
-|---------|--------|
-| `src/main.tsx` | Reestructurar rutas completamente |
-| `src/pages/LoginPage.tsx` | Redirigir a `/selector` |
-| `src/pages/Index.tsx` | Redirigir a `/selector` |
-| `src/types/index.ts` | Agregar nuevos roles al tipo User |
-| `src/schemas/userSchema.ts` | Agregar nuevos roles al schema |
-| `src/constants/index.ts` | Agregar nuevos roles a ROLES_USUARIO |
-| `src/contexts/AuthContext.tsx` | Actualizar tipo de updateUserRole |
-| `src/pages/DashboardLayout.tsx` | Refactorizar como RefaccionariasLayout (renombrar y ajustar sidebar) |
-| `src/components/layout/AppSidebar.tsx` | Refactorizar para recibir items de navegacion como props en lugar de tenerlos hardcoded |
+**Tu necesitas hacer**:
+- Endpoint `GET /forecast` con logica de media movil ponderada
+- Query SQL que agrupe ventas historicas por semana/producto/sucursal
 
 ---
 
-## Detalles Tecnicos
+## 5. Compra Sugerida con datos reales (Prioridad Media)
 
-- El `DashboardLayout` actual se convierte en `RefaccionariasLayout` con ajustes minimos; la logica de warehouse, dark mode y breadcrumbs se preserva intacta
-- `AppSidebar` se vuelve generico: recibe un array de items de navegacion y un titulo de modulo como props, permitiendo reutilizarlo en los 3 layouts
-- El modulo de Vehiculos quedara como placeholder con una pagina basica; se implementara completo despues con el plan ya aprobado anteriormente
-- Si un usuario solo tiene acceso a 1 modulo, el selector lo mostrara igual (por consistencia) pero podria auto-redirigir en el futuro
+**Estado actual**: Usa `Math.random()` para la demanda esperada (linea 49 de ComprasPage).
+
+**Mejor enfoque**:
+
+```text
+Backend endpoint: GET /purchase-suggestions?warehouse=XXX&lead_time=7&safety_pct=20
+  
+Respuesta:
+  - Lista de productos con stock actual, punto de reorden,
+    demanda promedio semanal (calculada de ventas reales),
+    cantidad sugerida, costo estimado
+```
+
+**Puedo hacer yo**:
+- Conectar ComprasPage al endpoint real
+- Quitar el alert de "datos simulados"
+- Mantener la configuracion de lead time/safety stock como parametros
+- Agregar la exportacion real a CSV/Excel
+
+**Tu necesitas hacer**:
+- Endpoint que calcule demanda real desde tabla de ventas
+- Query: `AVG(qty) por semana por producto` de los ultimos 90 dias
+
+---
+
+## 6. Exportacion a Excel (Prioridad Media)
+
+**Estado actual**: Solo CSV basico desde el frontend.
+
+**Mejor enfoque** (como ya discutimos):
+
+```text
+Backend: GET /reports/ventas?from=X&to=Y&sucursal=Z
+  - Genera .xlsx con ExcelJS
+  - Hoja 1: KPIs resumen
+  - Hoja 2: Detalle de ventas
+  - Hoja 3: Desglose por sucursal
+  - Headers: Content-Type application/vnd.openxmlformats...
+  - Frontend descarga el blob directamente
+```
+
+**Puedo hacer yo**:
+- Cambiar el boton "Exportar" para llamar al endpoint y descargar el archivo
+- Agregar indicador de carga durante la generacion
+- Aplicar el mismo patron a Inventario y Compras
+
+**Tu necesitas hacer**:
+- Instalar ExcelJS en el backend
+- Implementar el endpoint `/reports/ventas`
+- Formatear columnas (moneda, fechas, porcentajes)
+
+---
+
+## 7. Persistencia de Propiedades (Prioridad Media)
+
+**Estado actual**: `usePropiedades.ts` usa `useState` con datos mock. Todo se pierde al refrescar.
+
+**Mejor enfoque**:
+
+```text
+Backend:
+  Tablas: propiedades, contratos, pagos, mantenimiento, documentos_propiedad
+  Endpoints CRUD para cada entidad
+
+Frontend (yo):
+  1. Crear propiedadesService.ts (como salesService.ts)
+  2. Crear hooks con React Query (como useSales.ts)
+  3. Reemplazar useState por useQuery/useMutation
+  4. Mantener exactamente la misma UI
+```
+
+**Puedo hacer yo**:
+- Todo el refactor del frontend: services, hooks con React Query, cache invalidation
+- Misma UI, solo cambia la fuente de datos
+
+**Tu necesitas hacer**:
+- Tablas y endpoints REST en el backend
+
+---
+
+## 8. Persistencia de Proveedores (Prioridad Media)
+
+**Estado actual**: Usa `useState` con datos de `DataContext` (mock).
+
+**Mismo patron que Propiedades**:
+- Service + hooks React Query
+- CRUD completo contra API
+
+**Puedo hacer yo**: Service, hooks, conexion a API
+**Tu necesitas hacer**: Tabla `proveedores` y endpoints CRUD
+
+---
+
+## 9. Soporte/Tickets con backend (Prioridad Baja)
+
+**Estado actual**: Persiste en `localStorage` unicamente.
+
+**Mejor enfoque**:
+- Endpoint `GET/POST /tickets`, `PATCH /tickets/:id`
+- Endpoint `GET/POST /tickets/:id/comments`
+- React Query para sincronizacion
+
+**Puedo hacer yo**: Service, hooks, conexion. La UI ya esta completa.
+**Tu necesitas hacer**: Tablas y endpoints (ya tienes tabla de soporte en tu schema segun la memoria del proyecto).
+
+---
+
+## 10. Notificaciones dinamicas (Prioridad Baja)
+
+**Estado actual**: `NotificationsPanel` usa datos mock estaticos.
+
+**Mejor enfoque**:
+- Endpoint `GET /notifications` que genere alertas basadas en reglas del negocio (stock bajo, documentos por vencer, pagos pendientes)
+- O calcularlas en el frontend a partir de datos ya cargados (mas simple, sin endpoint extra)
+
+**Puedo hacer yo**: Conectar el panel a datos reales ya existentes en la app (inventario, ventas) o a un endpoint dedicado.
+
+---
+
+## 11. Simulador de rol (Prioridad Baja)
+
+**Estado actual**: Visible en todos los modulos y en produccion.
+
+**Solucion**: Ocultarlo fuera de modo desarrollo (`import.meta.env.DEV`) y solo mostrarlo en el modulo de Refaccionarias.
+
+**Puedo hacerlo yo**: Si, directamente. Es un cambio de condicion en el topbar.
+
+---
+
+## Resumen: Que puedo hacer yo vs que necesitas tu
+
+| Area | Yo (Lovable) | Tu (Backend) |
+|------|-------------|--------------|
+| Bug ruta Dashboard | 100% | - |
+| Vehiculos UI | 100% UI, types, services, hooks | Tablas + endpoints REST |
+| Creacion de Ventas | Modal, validacion, conexion API | Endpoint POST /sales |
+| Prediccion real | Conexion a API, graficos | Endpoint GET /forecast |
+| Compra Sugerida real | Conexion a API | Endpoint con calculo de demanda |
+| Excel export | Boton + descarga blob | ExcelJS endpoint |
+| Propiedades backend | Refactor a React Query | Tablas + endpoints CRUD |
+| Proveedores backend | Refactor a React Query | Tablas + endpoints CRUD |
+| Tickets backend | Refactor a React Query | Endpoints CRUD |
+| Notificaciones | 100% | Opcional: endpoint |
+| Simulador de rol | 100% | - |
+
+## Orden de implementacion sugerido
+
+1. Bug ruta Dashboard + Simulador de rol (inmediato, 5 min)
+2. Modulo de Vehiculos completo (UI)
+3. Creacion de Ventas (cuando tengas el endpoint)
+4. Propiedades -> React Query (cuando tengas endpoints)
+5. Proveedores -> React Query (cuando tengas endpoints)
+6. Prediccion y Compra Sugerida (cuando tengas endpoints de forecast)
+7. Exportacion Excel (cuando tengas endpoint de reportes)
+8. Tickets y Notificaciones
 
