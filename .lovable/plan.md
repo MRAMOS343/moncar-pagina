@@ -1,288 +1,116 @@
 
 
-# Plan Maestro: Funcionalidades Pendientes por Prioridad
+# Analisis de Bugs y Plan de Optimizacion
 
-A continuacion se presenta cada area pendiente, la mejor forma de desarrollarla, y como puedo ayudarte desde Lovable (sin Supabase).
+## Parte 1: Bugs Detectados
 
----
+### BUG 1 - Warning de ref en SidebarMenuButton (Consola)
+**Severidad**: Baja (no rompe funcionalidad, pero genera warnings en consola)
 
-## 1. Ruta rota en DashboardPage (Bug - Correccion inmediata)
+El warning "Function components cannot be given refs" ocurre porque `SidebarMenuButton` usa `asChild` con `Slot`, y cuando tiene `tooltip`, envuelve el boton en `<TooltipTrigger asChild>`. El componente hijo (`NavLink` de react-router) es un function component que no soporta refs via `forwardRef`.
 
-**Problema**: `DashboardPage.tsx` linea 130 navega a `/dashboard/ventas` en lugar de `/refaccionarias/ventas`.
-
-**Solucion**: Cambiar la ruta a `/refaccionarias/ventas`.
-
-**Puedo hacerlo yo**: Si, directamente. Es un cambio de una linea.
+**Solucion**: Envolver el `NavLink` dentro de `AppSidebar.tsx` con un `<span>` o convertir la referencia para que `TooltipTrigger` no intente pasar un ref directamente al `NavLink`.
 
 ---
 
-## 2. Modulo de Vehiculos (Prioridad Alta)
+### BUG 2 - Modales de Vehiculos no resetean estado al reabrir
+**Severidad**: Media
 
-**Estado actual**: Pagina placeholder sin funcionalidad.
+En `VehicleFormModal`, `MaintenanceVehFormModal`, `ExpenseVehFormModal` y `DocVehFormModal`, el `useState` se inicializa una sola vez con los valores del prop. Si el usuario abre el modal, lo cierra, y lo reabre (o cambia entre editar/crear), el formulario mantiene los datos anteriores porque React no reinicializa `useState` cuando los props cambian.
 
-**Mejor enfoque**:
+**Ejemplo concreto**: Si editas un vehiculo y luego haces clic en "Nuevo Vehiculo", el formulario mostrara los datos del vehiculo anterior.
 
-```text
-Backend (tu)                          Frontend (yo)
------------                          ----------------
-1. Tabla "vehiculos" en Postgres     1. Tipos TypeScript
-   (placa, marca, modelo, anio,      2. Services (apiClient)
-    color, km, estado, seguro_vig,   3. Hooks (useVehiculos, useMutations)
-    verificacion_vig)                4. UI: Grid/Tabla con tabs
-                                     5. Modales: crear, editar, detalle
-2. Tabla "vehiculo_documentos"       6. Documentos con vigencia
-   (tipo, vigencia, archivo_url)        (alerta visual si vencido)
-                                     
-3. Tabla "vehiculo_mantenimiento"    7. Tab de mantenimiento
-   (fecha, tipo, km, costo, notas)      con historial y proximo servicio
-                                     
-4. Tabla "vehiculo_gastos"           8. Tab de gastos con totales
-   (fecha, tipo, monto, evidencia)      mensuales y graficos
-                                     
-5. Endpoints REST:                   
-   GET/POST /vehiculos               
-   GET/PATCH/DELETE /vehiculos/:id   
-   GET/POST /vehiculos/:id/docs      
-   GET/POST /vehiculos/:id/mant      
-   GET/POST /vehiculos/:id/gastos    
+**Solucion**: Agregar un `useEffect` que sincronice el estado del formulario cuando cambia el prop `vehiculo`/`mantenimiento`, o usar el patron `key={vehiculo?.id ?? 'new'}` en el componente para forzar un remount.
+
+---
+
+### BUG 3 - Eliminacion de gastos sin confirmacion
+**Severidad**: Media
+
+En `VehiculosPage.tsx`, el boton de eliminar gasto llama directamente a `deleteGasto(g.id)` sin ningun dialogo de confirmacion. Un clic accidental elimina el registro sin posibilidad de deshacer.
+
+**Solucion**: Agregar un `AlertDialog` de confirmacion antes de ejecutar la eliminacion, igual que se hace en otros modulos.
+
+---
+
+### BUG 4 - Eliminacion de vehiculo sin limpieza de datos relacionados
+**Severidad**: Media
+
+En `useVehiculos.ts`, `deleteVehiculo` solo elimina el vehiculo del array, pero no elimina los documentos, mantenimientos ni gastos asociados. Esto deja datos huerfanos en memoria.
+
+**Solucion**: Al eliminar un vehiculo, tambien filtrar documentos, mantenimientos y gastos que tengan ese `vehiculoId`.
+
+---
+
+### BUG 5 - DocVehFormModal no respeta defaults al reabrir desde detalle
+**Severidad**: Baja
+
+En `VehiculosPage.tsx`, `handleAddDocFromDetail` establece `docDefaultTipo` y `docDefaultVehId`, pero el `useState` dentro de `DocVehFormModal` solo lee estos valores en el montaje inicial. Si el modal ya fue montado previamente, los defaults no se aplican.
+
+**Solucion**: Misma solucion que Bug 2 — usar `key` o `useEffect`.
+
+---
+
+### BUG 6 - `handleSaveProduct` en DashboardPage usa `setTimeout` simulado
+**Severidad**: Baja (ya documentado en plan maestro)
+
+Linea 138 de `DashboardPage.tsx` simula un guardado con `setTimeout(500ms)` sin llamar a ningun endpoint real.
+
+---
+
+## Parte 2: Optimizaciones de Carga
+
+### OPT 1 - Lazy loading ya implementado correctamente
+Las paginas ya usan `React.lazy()` en `main.tsx`. No se necesitan cambios aqui.
+
+### OPT 2 - DataContext carga datos mock innecesariamente en modulos que no los usan
+**Impacto**: Bajo-Medio
+
+`DataContext` importa y carga `mockProducts`, `mockSales`, `mockInventory`, etc. en **todos** los modulos (Vehiculos, Propiedades), aunque solo se usan en Refaccionarias. Esto agrega peso al bundle y memoria innecesaria.
+
+**Solucion**: Mover `DataProvider` para que solo envuelva el modulo de Refaccionarias en lugar de estar en `App.tsx` envolviendo toda la aplicacion. Esto reduce el scope de los datos mock y prepara la arquitectura para cuando se eliminen.
+
+### OPT 3 - Modales de Vehiculos se renderizan siempre en el DOM
+**Impacto**: Bajo
+
+Los 5 modales del modulo de Vehiculos (`VehicleFormModal`, `VehicleDetailModal`, `MaintenanceVehFormModal`, `ExpenseVehFormModal`, `DocVehFormModal`) se renderizan en `VehiculosPage` permanentemente, aunque esten cerrados. Radix Dialog ya maneja esto internamente con `open`, pero los componentes hijos (formularios con `useState`) se inicializan innecesariamente.
+
+**Solucion**: Renderizar condicionalmente con `{vehFormOpen && <VehicleFormModal ... />}` en lugar de depender solo del prop `open`. Esto tambien resuelve el Bug 2 automaticamente.
+
+### OPT 4 - Bundle de iconos Lucide
+**Impacto**: Bajo
+
+Se importan iconos individuales correctamente (`import { Truck } from 'lucide-react'`), lo cual ya es tree-shakeable. No se necesitan cambios.
+
+---
+
+## Resumen de cambios propuestos
+
+| # | Tipo | Cambio | Archivos |
+|---|------|--------|----------|
+| 1 | Bug | Envolver NavLink en span para evitar warning de ref | `AppSidebar.tsx` |
+| 2 | Bug | Renderizar modales condicionalmente (resuelve reset de estado) | `VehiculosPage.tsx` |
+| 3 | Bug | Agregar confirmacion antes de eliminar gastos | `VehiculosPage.tsx` |
+| 4 | Bug | Limpiar datos huerfanos al eliminar vehiculo | `useVehiculos.ts` |
+| 5 | Opt | Mover DataProvider al scope de Refaccionarias | `App.tsx`, `RefaccionariasLayout.tsx` |
+
+## Detalle tecnico de implementacion
+
+**Bug 1 - Ref warning**: En `AppSidebar.tsx` linea 75, cambiar el `NavLink` hijo de `SidebarMenuButton asChild` para envolverlo en un `<span>` que absorba el ref, o alternativamente no pasar tooltip cuando el sidebar esta expandido.
+
+**Bug 2+3+5 - Modales**: En `VehiculosPage.tsx`, cambiar de:
 ```
-
-**Patron a seguir**: El modulo de Propiedades (`usePropiedades`, `PropiedadesPage`) ya tiene exactamente esta estructura con tabs, modales CRUD y filtros. Lo replico con los mismos patrones.
-
-**Puedo hacer yo**:
-- Toda la UI: pagina con tabs (Flotilla, Mantenimiento, Gastos)
-- Tipos, services, hooks conectados a tu API
-- Modales de crear/editar vehiculo, subir documentos, registrar gastos
-- Alertas de documentos por vencer
-- Exportacion de datos
-
-**Tu necesitas hacer**:
-- Las tablas en Postgres y los endpoints REST
-
----
-
-## 3. Creacion de Ventas (Prioridad Alta)
-
-**Estado actual**: Boton "Nueva Venta" solo muestra un toast de "proximamente".
-
-**Mejor enfoque**:
-
-```text
-Flujo de la venta:
-  1. Seleccionar sucursal (si aplica)
-  2. Buscar y agregar productos al carrito
-  3. Ajustar cantidades y descuentos por linea
-  4. Seleccionar metodo de pago
-  5. Confirmar y enviar al backend
-  6. Recibir folio y mostrar resumen
+<VehicleFormModal open={vehFormOpen} ... />
 ```
-
-**Arquitectura recomendada**:
-- **Hook `useSaleForm`**: Ya existe parcialmente. Manejar estado del carrito, calculos de subtotal/IVA/total
-- **Componente `SaleModal`**: Ya existe la estructura basica. Necesita conectarse a la API
-- **Endpoint backend**: `POST /sales` que reciba `{ sucursal_id, items: [{sku, qty, precio_unitario, descuento}], metodo_pago }`
-- **Validaciones**: Stock disponible (backend), campos requeridos (frontend con Zod)
-
-**Puedo hacer yo**:
-- El modal completo de creacion de venta con busqueda de productos
-- Calculo en tiempo real de subtotal, IVA, total
-- Validacion con Zod
-- Conexion al endpoint POST /sales
-- Actualizacion automatica de la tabla de ventas despues de crear
-
-**Tu necesitas hacer**:
-- El endpoint `POST /sales` en Express
-- Validacion de stock en el backend
-- Generacion de folio
-
----
-
-## 4. Prediccion de Ventas con datos reales (Prioridad Media)
-
-**Estado actual**: Genera datos con `Math.random()`. No se conecta a ningun servicio.
-
-**Mejor enfoque (sin ML complejo)**:
-
-```text
-Opcion A: Forecast simple en el backend
-  - Media movil ponderada de las ultimas N semanas
-  - Calculo de estacionalidad basica (mes a mes)
-  - Intervalo de confianza basado en desviacion estandar
-  
-Opcion B: Servicio externo de forecast
-  - Amazon Forecast, Google Cloud AI, o Prophet (Python)
-  - Mas preciso pero mas complejo de implementar
+a:
 ```
-
-**Recomendacion**: Opcion A para empezar. Un endpoint `GET /forecast?sku=XXX&warehouse=YYY&weeks=8` que devuelva historico + pronostico calculado con media movil. Es suficiente para una empresa mediana.
-
-**Puedo hacer yo**:
-- Conectar la pagina de Prediccion al endpoint real
-- Mostrar datos historicos reales en lugar de sinteticos
-- Mantener la misma UI de graficos con historico vs pronostico
-- Quitar el alert de "datos sinteticos" cuando se conecte
-
-**Tu necesitas hacer**:
-- Endpoint `GET /forecast` con logica de media movil ponderada
-- Query SQL que agrupe ventas historicas por semana/producto/sucursal
-
----
-
-## 5. Compra Sugerida con datos reales (Prioridad Media)
-
-**Estado actual**: Usa `Math.random()` para la demanda esperada (linea 49 de ComprasPage).
-
-**Mejor enfoque**:
-
-```text
-Backend endpoint: GET /purchase-suggestions?warehouse=XXX&lead_time=7&safety_pct=20
-  
-Respuesta:
-  - Lista de productos con stock actual, punto de reorden,
-    demanda promedio semanal (calculada de ventas reales),
-    cantidad sugerida, costo estimado
+{vehFormOpen && <VehicleFormModal open={vehFormOpen} ... />}
 ```
+Esto fuerza un remount cada vez que se abre, reseteando el estado interno. Aplicar el mismo patron a los 5 modales.
 
-**Puedo hacer yo**:
-- Conectar ComprasPage al endpoint real
-- Quitar el alert de "datos simulados"
-- Mantener la configuracion de lead time/safety stock como parametros
-- Agregar la exportacion real a CSV/Excel
+**Bug 3 - Confirmacion**: Agregar un `AlertDialog` que pregunte "Estas seguro de eliminar este gasto?" antes de llamar a `deleteGasto`.
 
-**Tu necesitas hacer**:
-- Endpoint que calcule demanda real desde tabla de ventas
-- Query: `AVG(qty) por semana por producto` de los ultimos 90 dias
+**Bug 4 - Datos huerfanos**: En `useVehiculos.ts`, modificar `deleteVehiculo` para tambien filtrar documentos, mantenimientos y gastos del vehiculo eliminado.
 
----
-
-## 6. Exportacion a Excel (Prioridad Media)
-
-**Estado actual**: Solo CSV basico desde el frontend.
-
-**Mejor enfoque** (como ya discutimos):
-
-```text
-Backend: GET /reports/ventas?from=X&to=Y&sucursal=Z
-  - Genera .xlsx con ExcelJS
-  - Hoja 1: KPIs resumen
-  - Hoja 2: Detalle de ventas
-  - Hoja 3: Desglose por sucursal
-  - Headers: Content-Type application/vnd.openxmlformats...
-  - Frontend descarga el blob directamente
-```
-
-**Puedo hacer yo**:
-- Cambiar el boton "Exportar" para llamar al endpoint y descargar el archivo
-- Agregar indicador de carga durante la generacion
-- Aplicar el mismo patron a Inventario y Compras
-
-**Tu necesitas hacer**:
-- Instalar ExcelJS en el backend
-- Implementar el endpoint `/reports/ventas`
-- Formatear columnas (moneda, fechas, porcentajes)
-
----
-
-## 7. Persistencia de Propiedades (Prioridad Media)
-
-**Estado actual**: `usePropiedades.ts` usa `useState` con datos mock. Todo se pierde al refrescar.
-
-**Mejor enfoque**:
-
-```text
-Backend:
-  Tablas: propiedades, contratos, pagos, mantenimiento, documentos_propiedad
-  Endpoints CRUD para cada entidad
-
-Frontend (yo):
-  1. Crear propiedadesService.ts (como salesService.ts)
-  2. Crear hooks con React Query (como useSales.ts)
-  3. Reemplazar useState por useQuery/useMutation
-  4. Mantener exactamente la misma UI
-```
-
-**Puedo hacer yo**:
-- Todo el refactor del frontend: services, hooks con React Query, cache invalidation
-- Misma UI, solo cambia la fuente de datos
-
-**Tu necesitas hacer**:
-- Tablas y endpoints REST en el backend
-
----
-
-## 8. Persistencia de Proveedores (Prioridad Media)
-
-**Estado actual**: Usa `useState` con datos de `DataContext` (mock).
-
-**Mismo patron que Propiedades**:
-- Service + hooks React Query
-- CRUD completo contra API
-
-**Puedo hacer yo**: Service, hooks, conexion a API
-**Tu necesitas hacer**: Tabla `proveedores` y endpoints CRUD
-
----
-
-## 9. Soporte/Tickets con backend (Prioridad Baja)
-
-**Estado actual**: Persiste en `localStorage` unicamente.
-
-**Mejor enfoque**:
-- Endpoint `GET/POST /tickets`, `PATCH /tickets/:id`
-- Endpoint `GET/POST /tickets/:id/comments`
-- React Query para sincronizacion
-
-**Puedo hacer yo**: Service, hooks, conexion. La UI ya esta completa.
-**Tu necesitas hacer**: Tablas y endpoints (ya tienes tabla de soporte en tu schema segun la memoria del proyecto).
-
----
-
-## 10. Notificaciones dinamicas (Prioridad Baja)
-
-**Estado actual**: `NotificationsPanel` usa datos mock estaticos.
-
-**Mejor enfoque**:
-- Endpoint `GET /notifications` que genere alertas basadas en reglas del negocio (stock bajo, documentos por vencer, pagos pendientes)
-- O calcularlas en el frontend a partir de datos ya cargados (mas simple, sin endpoint extra)
-
-**Puedo hacer yo**: Conectar el panel a datos reales ya existentes en la app (inventario, ventas) o a un endpoint dedicado.
-
----
-
-## 11. Simulador de rol (Prioridad Baja)
-
-**Estado actual**: Visible en todos los modulos y en produccion.
-
-**Solucion**: Ocultarlo fuera de modo desarrollo (`import.meta.env.DEV`) y solo mostrarlo en el modulo de Refaccionarias.
-
-**Puedo hacerlo yo**: Si, directamente. Es un cambio de condicion en el topbar.
-
----
-
-## Resumen: Que puedo hacer yo vs que necesitas tu
-
-| Area | Yo (Lovable) | Tu (Backend) |
-|------|-------------|--------------|
-| Bug ruta Dashboard | 100% | - |
-| Vehiculos UI | 100% UI, types, services, hooks | Tablas + endpoints REST |
-| Creacion de Ventas | Modal, validacion, conexion API | Endpoint POST /sales |
-| Prediccion real | Conexion a API, graficos | Endpoint GET /forecast |
-| Compra Sugerida real | Conexion a API | Endpoint con calculo de demanda |
-| Excel export | Boton + descarga blob | ExcelJS endpoint |
-| Propiedades backend | Refactor a React Query | Tablas + endpoints CRUD |
-| Proveedores backend | Refactor a React Query | Tablas + endpoints CRUD |
-| Tickets backend | Refactor a React Query | Endpoints CRUD |
-| Notificaciones | 100% | Opcional: endpoint |
-| Simulador de rol | 100% | - |
-
-## Orden de implementacion sugerido
-
-1. Bug ruta Dashboard + Simulador de rol (inmediato, 5 min)
-2. Modulo de Vehiculos completo (UI)
-3. Creacion de Ventas (cuando tengas el endpoint)
-4. Propiedades -> React Query (cuando tengas endpoints)
-5. Proveedores -> React Query (cuando tengas endpoints)
-6. Prediccion y Compra Sugerida (cuando tengas endpoints de forecast)
-7. Exportacion Excel (cuando tengas endpoint de reportes)
-8. Tickets y Notificaciones
+**Opt 5 - DataProvider scope**: Mover `<DataProvider>` de `App.tsx` a `RefaccionariasLayout.tsx`, ya que es el unico modulo que consume esos datos mock.
 
