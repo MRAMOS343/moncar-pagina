@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Bus, Plus, Bell, Download, Trash, AlertTriangle, FileText } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Bus, Plus, Bell, Download, Trash, AlertTriangle, FileText, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
-import type { Unidad, DocumentoUnidad, AlertaDocumento, TipoDocUnidad } from '@/types/vehiculos';
+import type { Unidad, TipoDocUnidad } from '@/types/vehiculos';
 import { TIPO_DOC_LABELS } from '@/types/vehiculos';
+import { useDocumentos, useDeleteDocumento, getDownloadUrl } from '@/hooks/useVehiculosAPI';
 
 function isExpired(v: string | null) { return v ? new Date(v).getTime() < Date.now() : false; }
 function isExpiringSoon(v: string | null, dias = 30) {
@@ -33,25 +35,44 @@ interface Props {
   open: boolean;
   onClose: () => void;
   unidad: Unidad | null;
-  documentos: DocumentoUnidad[];
-  alertas: AlertaDocumento[];
   onAddDoc: (unidadId: string, tipo?: TipoDocUnidad) => void;
-  onDeleteDoc: (id: string) => void;
   onConfigAlertas: (unidadId: string) => void;
+  onEditUnidad?: (unidad: Unidad) => void;
 }
 
-export function VehicleDetailModal({ open, onClose, unidad, documentos, alertas, onAddDoc, onDeleteDoc, onConfigAlertas }: Props) {
-  if (!unidad) return null;
-  const badge = estadoBadge[unidad.estado];
+export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAlertas, onEditUnidad }: Props) {
+  const unidadId = unidad?.id ?? null;
+  const { data: documentos = [], isLoading: docsLoading } = useDocumentos(unidadId);
+  const deleteDoc = useDeleteDocumento();
 
   const alertCounts = useMemo(() => {
     let expired = 0, expiring = 0;
     for (const d of documentos) {
-      if (isExpired(d.vigencia)) expired++;
-      else if (isExpiringSoon(d.vigencia)) expiring++;
+      if (isExpired(d.vigenciaHasta)) expired++;
+      else if (isExpiringSoon(d.vigenciaHasta)) expiring++;
     }
     return { expired, expiring };
   }, [documentos]);
+
+  if (!unidad) return null;
+  const badge = estadoBadge[unidad.estado];
+
+  const handleDownload = async (archivoId: string | null) => {
+    if (!archivoId) { toast.info('Sin archivo asociado'); return; }
+    try {
+      const url = await getDownloadUrl(archivoId);
+      window.open(url, '_blank');
+    } catch {
+      toast.error('Error al obtener enlace de descarga');
+    }
+  };
+
+  const handleDeleteDoc = (docId: string) => {
+    deleteDoc.mutate(docId, {
+      onSuccess: () => toast.success('Documento eliminado'),
+      onError: () => toast.error('Error al eliminar documento'),
+    });
+  };
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
@@ -60,11 +81,15 @@ export function VehicleDetailModal({ open, onClose, unidad, documentos, alertas,
           <DialogTitle className="flex items-center gap-2">
             <Bus className="w-5 h-5 text-primary" />
             Unidad {unidad.numero} — {unidad.marca} {unidad.modelo} ({unidad.anio})
+            {onEditUnidad && (
+              <Button variant="ghost" size="icon" className="h-7 w-7 ml-auto" onClick={() => onEditUnidad(unidad)}>
+                <Pencil className="w-3.5 h-3.5" />
+              </Button>
+            )}
           </DialogTitle>
         </DialogHeader>
         <ScrollArea className="max-h-[calc(85vh-80px)]">
           <div className="px-6 pb-6 space-y-4">
-            {/* Status & plate */}
             <div className="flex items-center gap-2">
               <Badge variant={badge.variant}>{badge.label}</Badge>
               <span className="text-sm font-medium text-muted-foreground">{unidad.placa}</span>
@@ -80,18 +105,14 @@ export function VehicleDetailModal({ open, onClose, unidad, documentos, alertas,
               )}
             </div>
 
-            {/* Info */}
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div><span className="text-muted-foreground">Color:</span> <span className="font-medium">{unidad.color}</span></div>
               <div><span className="text-muted-foreground">Kilometraje:</span> <span className="font-medium">{unidad.km.toLocaleString()} km</span></div>
             </div>
-            {unidad.descripcion && (
-              <p className="text-sm text-muted-foreground">{unidad.descripcion}</p>
-            )}
+            {unidad.descripcion && <p className="text-sm text-muted-foreground">{unidad.descripcion}</p>}
 
             <Separator />
 
-            {/* Actions */}
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold">Documentos</h3>
               <div className="flex gap-2">
@@ -104,8 +125,11 @@ export function VehicleDetailModal({ open, onClose, unidad, documentos, alertas,
               </div>
             </div>
 
-            {/* Documents table */}
-            {documentos.length === 0 ? (
+            {docsLoading ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map(i => <Skeleton key={i} className="h-10 w-full" />)}
+              </div>
+            ) : documentos.length === 0 ? (
               <div className="text-center py-8 text-sm text-muted-foreground">
                 <FileText className="w-8 h-8 mx-auto mb-2 text-muted-foreground/40" />
                 Sin documentos registrados
@@ -124,31 +148,31 @@ export function VehicleDetailModal({ open, onClose, unidad, documentos, alertas,
                   </TableHeader>
                   <TableBody>
                     {documentos.map(d => {
-                      const expired = isExpired(d.vigencia);
-                      const expiring = isExpiringSoon(d.vigencia);
+                      const expired = isExpired(d.vigenciaHasta);
+                      const expiring = isExpiringSoon(d.vigenciaHasta);
                       return (
                         <TableRow key={d.id} className={expired ? 'bg-destructive/5' : expiring ? 'bg-amber-500/5' : ''}>
-                          <TableCell className="text-sm font-medium">{d.nombre}</TableCell>
+                          <TableCell className="text-sm font-medium">{d.archivoNombre ?? d.nombre}</TableCell>
                           <TableCell>
                             <Badge variant="outline" className="text-[10px]">{TIPO_DOC_LABELS[d.tipo]}</Badge>
                           </TableCell>
                           <TableCell className="text-sm">
-                            {d.vigencia ? (
+                            {d.vigenciaHasta ? (
                               <span className={`flex items-center gap-1 ${expired ? 'text-destructive font-medium' : expiring ? 'text-amber-600 font-medium' : 'text-muted-foreground'}`}>
                                 {(expired || expiring) && <AlertTriangle className="w-3 h-3" />}
-                                {d.vigencia}
+                                {d.vigenciaHasta}
                               </span>
                             ) : (
                               <span className="text-muted-foreground">—</span>
                             )}
                           </TableCell>
-                          <TableCell className="text-sm text-right text-muted-foreground">{formatBytes(d.tamanoBytes)}</TableCell>
+                          <TableCell className="text-sm text-right text-muted-foreground">{formatBytes(d.archivoBytes)}</TableCell>
                           <TableCell>
                             <div className="flex gap-1 justify-end">
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toast.info('Descarga disponible al conectar backend')}>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDownload(d.archivoId)}>
                                 <Download className="w-3.5 h-3.5" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDeleteDoc(d.id)}>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteDoc(d.id)}>
                                 <Trash className="w-3.5 h-3.5 text-destructive" />
                               </Button>
                             </div>

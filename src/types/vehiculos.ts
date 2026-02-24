@@ -1,7 +1,5 @@
 export type EstadoVehiculo = 'activo' | 'taller' | 'baja';
 export type TipoDocUnidad = 'cromatica' | 'factura' | 'poliza_seguro' | 'tarjeta_circulacion' | 'titulo_concesion' | 'verificacion' | 'permiso' | 'otro';
-export type TipoMantenimientoVeh = 'preventivo' | 'correctivo';
-export type TipoGastoVeh = 'combustible' | 'casetas' | 'estacionamiento' | 'multa' | 'otro';
 
 /* ── Ruta ── */
 export interface Ruta {
@@ -9,14 +7,17 @@ export interface Ruta {
   nombre: string;
   descripcion: string;
   activa: boolean;
-  createdAt: string;
+  creadoEn: string;
+  actualizadoEn: string;
+  unidadesCount: number;
 }
 
-/* ── Unidad (antes Vehiculo) ── */
+/* ── Unidad ── */
 export interface Unidad {
   id: string;
   rutaId: string;
-  numero: string;       // "04", "07", etc.
+  rutaNombre?: string;
+  numero: string;
   placa: string;
   marca: string;
   modelo: string;
@@ -25,7 +26,8 @@ export interface Unidad {
   km: number;
   estado: EstadoVehiculo;
   descripcion: string;
-  createdAt: string;
+  creadoEn: string;
+  actualizadoEn: string;
 }
 
 /* ── Documento de Unidad ── */
@@ -34,11 +36,15 @@ export interface DocumentoUnidad {
   unidadId: string;
   nombre: string;
   tipo: TipoDocUnidad;
-  vigencia: string | null;
-  archivoUrl: string | null;
-  tamanoBytes: number | null;
-  fechaSubida: string;
   notas: string;
+  fechaDocumento: string | null;
+  vigenciaHasta: string | null;
+  archivoId: string | null;
+  creadoEn: string;
+  archivoNombre: string | null;
+  archivoMime: string | null;
+  archivoBytes: number | null;
+  archivoEstado: string | null;
 }
 
 /* ── Alerta de Documento ── */
@@ -48,30 +54,8 @@ export interface AlertaDocumento {
   tipoDocumento: TipoDocUnidad;
   diasAntes: number;
   activa: boolean;
-}
-
-/* ── Mantenimiento (sin cambios) ── */
-export interface MantenimientoVehiculo {
-  id: string;
-  unidadId: string;
-  fecha: string;
-  tipo: TipoMantenimientoVeh;
-  descripcion: string;
-  km: number;
-  costo: number;
-  proveedor: string;
-  notas: string;
-}
-
-/* ── Gasto (sin cambios en estructura, solo renombrado FK) ── */
-export interface GastoVehiculo {
-  id: string;
-  unidadId: string;
-  fecha: string;
-  tipo: TipoGastoVeh;
-  monto: number;
-  descripcion: string;
-  evidencia: string | null;
+  creadoEn: string;
+  actualizadoEn: string;
 }
 
 /* ── Labels helper ── */
@@ -86,7 +70,7 @@ export const TIPO_DOC_LABELS: Record<TipoDocUnidad, string> = {
   otro: 'Otro',
 };
 
-// Keep legacy aliases for backward compat during transition
+// Legacy aliases
 export type Vehiculo = Unidad;
 export type DocumentoVehiculo = DocumentoUnidad;
 export type TipoDocVehiculo = TipoDocUnidad;

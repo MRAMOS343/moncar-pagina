@@ -1,99 +1,127 @@
 import { useState, useMemo } from 'react';
-import { Truck, Search, AlertTriangle, FileText, ChevronDown } from 'lucide-react';
+import { Truck, Search, AlertTriangle, FileText, ChevronDown, Plus, RefreshCw } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Skeleton } from '@/components/ui/skeleton';
 import { RutaCollapsible } from '@/components/vehiculos/RutaCollapsible';
 import { VehicleDetailModal } from '@/components/vehiculos/VehicleDetailModal';
 import { DocVehFormModal } from '@/components/vehiculos/DocVehFormModal';
 import { AlertConfigModal } from '@/components/vehiculos/AlertConfigModal';
-import { useVehiculos } from '@/hooks/useVehiculos';
+import { RutaFormModal } from '@/components/vehiculos/RutaFormModal';
+import { UnidadFormModal } from '@/components/vehiculos/UnidadFormModal';
+import { useRutas, useDocsPorVencer, useCreateRuta, useUpdateRuta, useDeleteRuta, useCreateUnidad, useUpdateUnidad, useCreateDocumento } from '@/hooks/useVehiculosAPI';
 import { TIPO_DOC_LABELS } from '@/types/vehiculos';
-import type { Unidad, TipoDocUnidad } from '@/types/vehiculos';
+import type { Unidad, Ruta, TipoDocUnidad } from '@/types/vehiculos';
+import { toast } from 'sonner';
+import { ApiError } from '@/services/apiClient';
 
 type PlazoVencer = '7d' | '1m' | '2m';
 const plazoLabels: Record<PlazoVencer, string> = { '7d': '7 días', '1m': '1 mes', '2m': '2 meses' };
 const plazoDays: Record<PlazoVencer, number> = { '7d': 7, '1m': 30, '2m': 60 };
 
 export default function VehiculosPage() {
-  const {
-    rutas, unidades, documentos, alertas,
-    addDocumento, deleteDocumento, upsertAlerta,
-  } = useVehiculos();
+  const { data: rutas = [], isLoading: rutasLoading, isError, refetch } = useRutas();
+  const [plazoVencer, setPlazoVencer] = useState<PlazoVencer>('1m');
+  const { data: porVencerData } = useDocsPorVencer(plazoDays[plazoVencer]);
 
   const [search, setSearch] = useState('');
-  const [plazoVencer, setPlazoVencer] = useState<PlazoVencer>('1m');
 
   // Modals
-  const [docFormOpen, setDocFormOpen] = useState(false);
-  const [docDefaultTipo, setDocDefaultTipo] = useState<TipoDocUnidad | undefined>();
-  const [docDefaultUnidadId, setDocDefaultUnidadId] = useState<string | undefined>();
-  const [alertModalUnidadId, setAlertModalUnidadId] = useState<string | null>(null);
   const [selectedUnidad, setSelectedUnidad] = useState<Unidad | null>(null);
+  const [docFormUnidadId, setDocFormUnidadId] = useState<string | null>(null);
+  const [alertModalUnidadId, setAlertModalUnidadId] = useState<string | null>(null);
+  const [alertModalLabel, setAlertModalLabel] = useState('');
+
+  // Ruta CRUD
+  const [rutaFormOpen, setRutaFormOpen] = useState(false);
+  const [editingRuta, setEditingRuta] = useState<Ruta | null>(null);
+  const createRuta = useCreateRuta();
+  const updateRuta = useUpdateRuta();
+  const deleteRuta = useDeleteRuta();
+
+  // Unidad CRUD
+  const [unidadFormOpen, setUnidadFormOpen] = useState(false);
+  const [unidadFormRutaId, setUnidadFormRutaId] = useState<string | null>(null);
+  const [editingUnidad, setEditingUnidad] = useState<Unidad | null>(null);
+  const createUnidad = useCreateUnidad();
+  const updateUnidad = useUpdateUnidad();
+
+  // Doc CRUD
+  const createDocumento = useCreateDocumento();
 
   // KPIs
   const kpis = useMemo(() => {
-    const now = Date.now();
-    const plazoMs = plazoDays[plazoVencer] * 86400000;
-    let vencidos = 0, porVencer = 0;
-    for (const d of documentos) {
-      if (!d.vigencia) continue;
-      const diff = new Date(d.vigencia).getTime() - now;
-      if (diff < 0) vencidos++;
-      else if (diff <= plazoMs) porVencer++;
-    }
-    return { vencidos, porVencer };
-  }, [documentos, plazoVencer]);
-
-  // Docs por vencer agrupados por unidad
-  const docsPorVencer = useMemo(() => {
-    const now = Date.now();
-    const plazoMs = plazoDays[plazoVencer] * 86400000;
-    const groups: { unidad: Unidad; docs: { nombre: string; tipo: string; vigencia: string }[] }[] = [];
-
-    for (const u of unidades) {
-      const uDocs = documentos.filter(d =>
-        d.unidadId === u.id && d.vigencia &&
-        (() => { const diff = new Date(d.vigencia!).getTime() - now; return diff >= 0 && diff <= plazoMs; })()
-      );
-      if (uDocs.length > 0) {
-        groups.push({
-          unidad: u,
-          docs: uDocs.map(d => ({
-            nombre: d.nombre,
-            tipo: TIPO_DOC_LABELS[d.tipo],
-            vigencia: d.vigencia!,
-          })),
-        });
-      }
-    }
-    return groups;
-  }, [documentos, unidades, plazoVencer]);
+    if (!porVencerData) return { vencidos: 0, porVencer: 0 };
+    // The API returns docs about to expire; we count them
+    return { vencidos: 0, porVencer: porVencerData.items.length };
+  }, [porVencerData]);
 
   // Filtered rutas
   const filteredRutas = useMemo(() => {
     if (!search) return rutas;
     const q = search.toLowerCase();
-    return rutas.filter(r => {
-      if (r.nombre.toLowerCase().includes(q)) return true;
-      const rutaUnidades = unidades.filter(u => u.rutaId === r.id);
-      return rutaUnidades.some(u =>
-        u.numero.toLowerCase().includes(q) ||
-        u.placa.toLowerCase().includes(q) ||
-        u.marca.toLowerCase().includes(q)
-      );
-    });
-  }, [rutas, unidades, search]);
+    return rutas.filter(r => r.nombre.toLowerCase().includes(q));
+  }, [rutas, search]);
 
-  const handleAddDoc = (unidadId: string, tipo?: TipoDocUnidad) => {
-    setDocDefaultUnidadId(unidadId);
-    setDocDefaultTipo(tipo);
-    setDocFormOpen(true);
+  // Ruta handlers
+  const handleSaveRuta = (data: { nombre: string; descripcion?: string; activa?: boolean }) => {
+    if (editingRuta) {
+      updateRuta.mutate({ id: editingRuta.id, data }, {
+        onSuccess: () => { toast.success('Ruta actualizada'); setRutaFormOpen(false); setEditingRuta(null); },
+        onError: () => toast.error('Error al actualizar ruta'),
+      });
+    } else {
+      createRuta.mutate(data, {
+        onSuccess: () => { toast.success('Ruta creada'); setRutaFormOpen(false); },
+        onError: () => toast.error('Error al crear ruta'),
+      });
+    }
   };
 
-  const alertModalUnidad = alertModalUnidadId ? unidades.find(u => u.id === alertModalUnidadId) : null;
+  const handleDeleteRuta = (rutaId: string) => {
+    deleteRuta.mutate(rutaId, {
+      onSuccess: () => toast.success('Ruta eliminada'),
+      onError: (err) => {
+        if (err instanceof ApiError && err.status === 409) {
+          toast.error('No se puede eliminar: la ruta tiene unidades asignadas');
+        } else {
+          toast.error('Error al eliminar ruta');
+        }
+      },
+    });
+  };
+
+  // Unidad handlers
+  const handleSaveUnidad = (data: Parameters<typeof createUnidad.mutate>[0]['data']) => {
+    if (editingUnidad) {
+      updateUnidad.mutate({ id: editingUnidad.id, data }, {
+        onSuccess: () => { toast.success('Unidad actualizada'); setUnidadFormOpen(false); setEditingUnidad(null); },
+        onError: () => toast.error('Error al actualizar unidad'),
+      });
+    } else if (unidadFormRutaId) {
+      createUnidad.mutate({ rutaId: unidadFormRutaId, data }, {
+        onSuccess: () => { toast.success('Unidad creada'); setUnidadFormOpen(false); setUnidadFormRutaId(null); },
+        onError: () => toast.error('Error al crear unidad'),
+      });
+    }
+  };
+
+  // Doc handler
+  const handleAddDoc = (unidadId: string) => {
+    setDocFormUnidadId(unidadId);
+  };
+
+  const handleSaveDoc = (data: { tipo: string; nombre: string; notas?: string; fecha_documento?: string; vigencia_hasta?: string; archivo_id?: string }) => {
+    if (!docFormUnidadId) return;
+    createDocumento.mutate({ unidadId: docFormUnidadId, data }, {
+      onSuccess: () => { toast.success('Documento creado'); setDocFormUnidadId(null); },
+      onError: () => toast.error('Error al crear documento'),
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -102,6 +130,9 @@ export default function VehiculosPage() {
           <h1 className="text-2xl font-bold flex items-center gap-2"><Truck className="w-6 h-6 text-primary" />Flotilla de Vehículos</h1>
           <p className="text-sm text-muted-foreground">Rutas, unidades y documentación de transporte</p>
         </div>
+        <Button onClick={() => { setEditingRuta(null); setRutaFormOpen(true); }}>
+          <Plus className="w-4 h-4 mr-2" />Nueva Ruta
+        </Button>
       </div>
 
       {/* KPIs */}
@@ -132,23 +163,21 @@ export default function VehiculosPage() {
       </div>
 
       {/* Docs por vencer detail */}
-      {docsPorVencer.length > 0 && (
+      {porVencerData && porVencerData.items.length > 0 && (
         <Collapsible>
           <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium text-amber-600 hover:underline">
             <ChevronDown className="w-4 h-4" />
-            Ver {kpis.porVencer} documento(s) por vencer en {plazoLabels[plazoVencer]}
+            Ver {porVencerData.items.length} documento(s) por vencer en {plazoLabels[plazoVencer]}
           </CollapsibleTrigger>
           <CollapsibleContent className="mt-2 space-y-2">
-            {docsPorVencer.map(({ unidad, docs }) => (
-              <Card key={unidad.id}>
-                <CardContent className="p-3 space-y-1">
-                  <p className="text-sm font-semibold">Unidad {unidad.numero} — {unidad.placa}</p>
-                  {docs.map((d, i) => (
-                    <div key={i} className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{d.nombre} <Badge variant="outline" className="ml-1 text-[10px]">{d.tipo}</Badge></span>
-                      <span className="text-amber-600 font-medium">{d.vigencia}</span>
-                    </div>
-                  ))}
+            {porVencerData.items.map(d => (
+              <Card key={d.id}>
+                <CardContent className="p-3 flex items-center justify-between text-sm">
+                  <span className="font-medium">{d.nombre}</span>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-[10px]">{TIPO_DOC_LABELS[d.tipo]}</Badge>
+                    <span className="text-amber-600 font-medium text-xs">{d.vigenciaHasta}</span>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -156,15 +185,24 @@ export default function VehiculosPage() {
         </Collapsible>
       )}
 
-      {/* Buscador + Flotilla */}
+      {/* Search + Fleet */}
       <div className="flex gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Buscar ruta, unidad, placa..." className="pl-10" value={search} onChange={e => setSearch(e.target.value)} />
+          <Input placeholder="Buscar ruta..." className="pl-10" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
       </div>
 
-      {filteredRutas.length === 0 ? (
+      {rutasLoading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
+        </div>
+      ) : isError ? (
+        <div className="text-center py-12 space-y-3">
+          <p className="text-muted-foreground">Error al cargar rutas</p>
+          <Button variant="outline" onClick={() => refetch()}><RefreshCw className="w-4 h-4 mr-2" />Reintentar</Button>
+        </div>
+      ) : filteredRutas.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">No se encontraron rutas</div>
       ) : (
         <div className="space-y-3">
@@ -172,46 +210,67 @@ export default function VehiculosPage() {
             <RutaCollapsible
               key={r.id}
               ruta={r}
-              unidades={unidades.filter(u => u.rutaId === r.id)}
-              documentos={documentos.filter(d => unidades.some(u => u.rutaId === r.id && u.id === d.unidadId))}
-              alertas={alertas.filter(a => unidades.some(u => u.rutaId === r.id && u.id === a.unidadId))}
               onSelectUnidad={setSelectedUnidad}
+              onEditRuta={(ruta) => { setEditingRuta(ruta); setRutaFormOpen(true); }}
+              onDeleteRuta={handleDeleteRuta}
+              onAddUnidad={(rutaId) => { setUnidadFormRutaId(rutaId); setEditingUnidad(null); setUnidadFormOpen(true); }}
             />
           ))}
         </div>
       )}
 
       {/* Modals */}
-      {docFormOpen && (
+      <RutaFormModal
+        open={rutaFormOpen}
+        onClose={() => { setRutaFormOpen(false); setEditingRuta(null); }}
+        onSave={handleSaveRuta}
+        ruta={editingRuta}
+        loading={createRuta.isPending || updateRuta.isPending}
+      />
+
+      <UnidadFormModal
+        open={unidadFormOpen}
+        onClose={() => { setUnidadFormOpen(false); setEditingUnidad(null); setUnidadFormRutaId(null); }}
+        onSave={handleSaveUnidad}
+        unidad={editingUnidad}
+        loading={createUnidad.isPending || updateUnidad.isPending}
+      />
+
+      {docFormUnidadId && (
         <DocVehFormModal
-          open={docFormOpen}
-          onClose={() => { setDocFormOpen(false); setDocDefaultTipo(undefined); setDocDefaultUnidadId(undefined); }}
-          onSave={addDocumento}
-          unidades={unidades}
-          defaultUnidadId={docDefaultUnidadId}
-          defaultTipo={docDefaultTipo}
+          open={!!docFormUnidadId}
+          onClose={() => setDocFormUnidadId(null)}
+          onSave={handleSaveDoc}
+          loading={createDocumento.isPending}
         />
       )}
-      {alertModalUnidad && (
+
+      {alertModalUnidadId && (
         <AlertConfigModal
           open={!!alertModalUnidadId}
           onClose={() => setAlertModalUnidadId(null)}
-          unidadId={alertModalUnidad.id}
-          unidadLabel={alertModalUnidad.numero}
-          alertas={alertas.filter(a => a.unidadId === alertModalUnidad.id)}
-          onSave={upsertAlerta}
+          unidadId={alertModalUnidadId}
+          unidadLabel={alertModalLabel}
         />
       )}
+
       {selectedUnidad && (
         <VehicleDetailModal
           open={!!selectedUnidad}
           onClose={() => setSelectedUnidad(null)}
           unidad={selectedUnidad}
-          documentos={documentos.filter(d => d.unidadId === selectedUnidad.id)}
-          alertas={alertas.filter(a => a.unidadId === selectedUnidad.id)}
           onAddDoc={handleAddDoc}
-          onDeleteDoc={deleteDocumento}
-          onConfigAlertas={(unidadId) => { setSelectedUnidad(null); setAlertModalUnidadId(unidadId); }}
+          onConfigAlertas={(unidadId) => {
+            setAlertModalLabel(selectedUnidad.numero);
+            setSelectedUnidad(null);
+            setAlertModalUnidadId(unidadId);
+          }}
+          onEditUnidad={(u) => {
+            setSelectedUnidad(null);
+            setEditingUnidad(u);
+            setUnidadFormRutaId(u.rutaId);
+            setUnidadFormOpen(true);
+          }}
         />
       )}
     </div>
