@@ -1,116 +1,150 @@
 
 
-# Analisis de Bugs y Plan de Optimizacion
+# Rediseno del Modulo de Vehiculos: Rutas > Unidades > Documentos
 
-## Parte 1: Bugs Detectados
+## Vision General
 
-### BUG 1 - Warning de ref en SidebarMenuButton (Consola)
-**Severidad**: Baja (no rompe funcionalidad, pero genera warnings en consola)
+Transformar la pagina de Vehiculos de un grid de tarjetas a una **estructura jerarquica colapsable** que refleje como realmente se organizan los vehiculos en la operacion:
 
-El warning "Function components cannot be given refs" ocurre porque `SidebarMenuButton` usa `asChild` con `Slot`, y cuando tiene `tooltip`, envuelve el boton en `<TooltipTrigger asChild>`. El componente hijo (`NavLink` de react-router) es un function component que no soporta refs via `forwardRef`.
-
-**Solucion**: Envolver el `NavLink` dentro de `AppSidebar.tsx` con un `<span>` o convertir la referencia para que `TooltipTrigger` no intente pasar un ref directamente al `NavLink`.
-
----
-
-### BUG 2 - Modales de Vehiculos no resetean estado al reabrir
-**Severidad**: Media
-
-En `VehicleFormModal`, `MaintenanceVehFormModal`, `ExpenseVehFormModal` y `DocVehFormModal`, el `useState` se inicializa una sola vez con los valores del prop. Si el usuario abre el modal, lo cierra, y lo reabre (o cambia entre editar/crear), el formulario mantiene los datos anteriores porque React no reinicializa `useState` cuando los props cambian.
-
-**Ejemplo concreto**: Si editas un vehiculo y luego haces clic en "Nuevo Vehiculo", el formulario mostrara los datos del vehiculo anterior.
-
-**Solucion**: Agregar un `useEffect` que sincronice el estado del formulario cuando cambia el prop `vehiculo`/`mantenimiento`, o usar el patron `key={vehiculo?.id ?? 'new'}` en el componente para forzar un remount.
-
----
-
-### BUG 3 - Eliminacion de gastos sin confirmacion
-**Severidad**: Media
-
-En `VehiculosPage.tsx`, el boton de eliminar gasto llama directamente a `deleteGasto(g.id)` sin ningun dialogo de confirmacion. Un clic accidental elimina el registro sin posibilidad de deshacer.
-
-**Solucion**: Agregar un `AlertDialog` de confirmacion antes de ejecutar la eliminacion, igual que se hace en otros modulos.
-
----
-
-### BUG 4 - Eliminacion de vehiculo sin limpieza de datos relacionados
-**Severidad**: Media
-
-En `useVehiculos.ts`, `deleteVehiculo` solo elimina el vehiculo del array, pero no elimina los documentos, mantenimientos ni gastos asociados. Esto deja datos huerfanos en memoria.
-
-**Solucion**: Al eliminar un vehiculo, tambien filtrar documentos, mantenimientos y gastos que tengan ese `vehiculoId`.
-
----
-
-### BUG 5 - DocVehFormModal no respeta defaults al reabrir desde detalle
-**Severidad**: Baja
-
-En `VehiculosPage.tsx`, `handleAddDocFromDetail` establece `docDefaultTipo` y `docDefaultVehId`, pero el `useState` dentro de `DocVehFormModal` solo lee estos valores en el montaje inicial. Si el modal ya fue montado previamente, los defaults no se aplican.
-
-**Solucion**: Misma solucion que Bug 2 — usar `key` o `useEffect`.
-
----
-
-### BUG 6 - `handleSaveProduct` en DashboardPage usa `setTimeout` simulado
-**Severidad**: Baja (ya documentado en plan maestro)
-
-Linea 138 de `DashboardPage.tsx` simula un guardado con `setTimeout(500ms)` sin llamar a ningun endpoint real.
-
----
-
-## Parte 2: Optimizaciones de Carga
-
-### OPT 1 - Lazy loading ya implementado correctamente
-Las paginas ya usan `React.lazy()` en `main.tsx`. No se necesitan cambios aqui.
-
-### OPT 2 - DataContext carga datos mock innecesariamente en modulos que no los usan
-**Impacto**: Bajo-Medio
-
-`DataContext` importa y carga `mockProducts`, `mockSales`, `mockInventory`, etc. en **todos** los modulos (Vehiculos, Propiedades), aunque solo se usan en Refaccionarias. Esto agrega peso al bundle y memoria innecesaria.
-
-**Solucion**: Mover `DataProvider` para que solo envuelva el modulo de Refaccionarias en lugar de estar en `App.tsx` envolviendo toda la aplicacion. Esto reduce el scope de los datos mock y prepara la arquitectura para cuando se eliminen.
-
-### OPT 3 - Modales de Vehiculos se renderizan siempre en el DOM
-**Impacto**: Bajo
-
-Los 5 modales del modulo de Vehiculos (`VehicleFormModal`, `VehicleDetailModal`, `MaintenanceVehFormModal`, `ExpenseVehFormModal`, `DocVehFormModal`) se renderizan en `VehiculosPage` permanentemente, aunque esten cerrados. Radix Dialog ya maneja esto internamente con `open`, pero los componentes hijos (formularios con `useState`) se inicializan innecesariamente.
-
-**Solucion**: Renderizar condicionalmente con `{vehFormOpen && <VehicleFormModal ... />}` en lugar de depender solo del prop `open`. Esto tambien resuelve el Bug 2 automaticamente.
-
-### OPT 4 - Bundle de iconos Lucide
-**Impacto**: Bajo
-
-Se importan iconos individuales correctamente (`import { Truck } from 'lucide-react'`), lo cual ya es tree-shakeable. No se necesitan cambios.
-
----
-
-## Resumen de cambios propuestos
-
-| # | Tipo | Cambio | Archivos |
-|---|------|--------|----------|
-| 1 | Bug | Envolver NavLink en span para evitar warning de ref | `AppSidebar.tsx` |
-| 2 | Bug | Renderizar modales condicionalmente (resuelve reset de estado) | `VehiculosPage.tsx` |
-| 3 | Bug | Agregar confirmacion antes de eliminar gastos | `VehiculosPage.tsx` |
-| 4 | Bug | Limpiar datos huerfanos al eliminar vehiculo | `useVehiculos.ts` |
-| 5 | Opt | Mover DataProvider al scope de Refaccionarias | `App.tsx`, `RefaccionariasLayout.tsx` |
-
-## Detalle tecnico de implementacion
-
-**Bug 1 - Ref warning**: En `AppSidebar.tsx` linea 75, cambiar el `NavLink` hijo de `SidebarMenuButton asChild` para envolverlo en un `<span>` que absorba el ref, o alternativamente no pasar tooltip cuando el sidebar esta expandido.
-
-**Bug 2+3+5 - Modales**: En `VehiculosPage.tsx`, cambiar de:
+```text
+Ruta (ej: Paseos de Chavarria 2026)
+  └─ Unidad 04
+  │    ├─ Cromatica 04 Chavarria.pdf          09/02/26
+  │    ├─ Factura 04 Chavarria.pdf            09/02/26
+  │    ├─ Poliza de Seguro 04 Chavarria.pdf   13/02/26  ⚠ Vence pronto
+  │    ├─ Tarjeta de Circulacion 04           04/07/25
+  │    └─ Titulo de Concesion 04              17/02/26
+  └─ Unidad 07
+       ├─ Cromatica 07 Chavarria.pdf          ...
+       └─ ...
 ```
-<VehicleFormModal open={vehFormOpen} ... />
-```
-a:
-```
-{vehFormOpen && <VehicleFormModal open={vehFormOpen} ... />}
-```
-Esto fuerza un remount cada vez que se abre, reseteando el estado interno. Aplicar el mismo patron a los 5 modales.
 
-**Bug 3 - Confirmacion**: Agregar un `AlertDialog` que pregunte "Estas seguro de eliminar este gasto?" antes de llamar a `deleteGasto`.
+---
 
-**Bug 4 - Datos huerfanos**: En `useVehiculos.ts`, modificar `deleteVehiculo` para tambien filtrar documentos, mantenimientos y gastos del vehiculo eliminado.
+## Diseno de Tablas Postgres
 
-**Opt 5 - DataProvider scope**: Mover `<DataProvider>` de `App.tsx` a `RefaccionariasLayout.tsx`, ya que es el unico modulo que consume esos datos mock.
+### Tabla 1: `rutas`
+Agrupa las unidades por zona/ruta de operacion.
+
+| Columna | Tipo | Descripcion |
+|---------|------|-------------|
+| id | UUID PK | Identificador unico |
+| nombre | VARCHAR(150) NOT NULL | Nombre de la ruta (ej: "Paseos de Chavarria 2026") |
+| descripcion | TEXT | Notas opcionales |
+| activa | BOOLEAN DEFAULT true | Si la ruta esta vigente |
+| created_at | TIMESTAMPTZ DEFAULT now() | Fecha de creacion |
+
+### Tabla 2: `unidades`
+Cada vehiculo/unidad pertenece a una ruta.
+
+| Columna | Tipo | Descripcion |
+|---------|------|-------------|
+| id | UUID PK | Identificador unico |
+| ruta_id | UUID FK -> rutas(id) | Ruta a la que pertenece |
+| numero | VARCHAR(10) NOT NULL | Numero de unidad (ej: "04", "07") |
+| placa | VARCHAR(20) | Placa vehicular |
+| marca | VARCHAR(50) | Marca del vehiculo |
+| modelo | VARCHAR(50) | Modelo |
+| anio | SMALLINT | Ano |
+| color | VARCHAR(30) | Color |
+| km | INTEGER DEFAULT 0 | Kilometraje actual |
+| estado | VARCHAR(20) DEFAULT 'activo' | activo, taller, baja |
+| descripcion | TEXT | Notas |
+| created_at | TIMESTAMPTZ DEFAULT now() | Fecha de creacion |
+
+**Constraint**: UNIQUE(ruta_id, numero) — no puede haber dos unidades con el mismo numero en la misma ruta.
+
+### Tabla 3: `documentos_unidad`
+Documentos asociados a cada unidad, con vigencia para alertas.
+
+| Columna | Tipo | Descripcion |
+|---------|------|-------------|
+| id | UUID PK | Identificador unico |
+| unidad_id | UUID FK -> unidades(id) ON DELETE CASCADE | Unidad a la que pertenece |
+| nombre | VARCHAR(200) NOT NULL | Nombre del archivo (ej: "Poliza de Seguro 04 Chavarria.pdf") |
+| tipo | VARCHAR(30) NOT NULL | cromatica, factura, poliza_seguro, tarjeta_circulacion, titulo_concesion, verificacion, permiso, otro |
+| vigencia | DATE | Fecha de vencimiento (NULL si no aplica) |
+| archivo_url | TEXT | URL del archivo almacenado |
+| tamano_bytes | BIGINT | Tamano del archivo en bytes |
+| fecha_subida | TIMESTAMPTZ DEFAULT now() | Cuando se subio |
+| notas | TEXT | Notas adicionales |
+
+### Tabla 4: `alertas_documento`
+Configuracion de alertas por tipo de documento por unidad.
+
+| Columna | Tipo | Descripcion |
+|---------|------|-------------|
+| id | UUID PK | Identificador |
+| unidad_id | UUID FK -> unidades(id) ON DELETE CASCADE | Unidad |
+| tipo_documento | VARCHAR(30) NOT NULL | Tipo de documento a vigilar |
+| dias_antes | INTEGER DEFAULT 30 | Alertar N dias antes del vencimiento |
+| activa | BOOLEAN DEFAULT true | Si la alerta esta habilitada |
+
+**Constraint**: UNIQUE(unidad_id, tipo_documento) — una alerta por tipo por unidad.
+
+### Diagrama de relaciones
+
+```text
+rutas (1) ──< (N) unidades (1) ──< (N) documentos_unidad
+                              (1) ──< (N) alertas_documento
+```
+
+---
+
+## Cambios en el Frontend
+
+### 1. Nuevos tipos TypeScript (`src/types/vehiculos.ts`)
+
+Agregar las interfaces `Ruta` y `Unidad` (renombrando/extendiendo `Vehiculo`), y actualizar `DocumentoVehiculo` para incluir los nuevos tipos de documento (cromatica, titulo_concesion, poliza_seguro) y el campo `tamano`.
+
+Agregar tambien la interface `AlertaDocumento` para la configuracion de alertas.
+
+### 2. Mock data (`src/data/mockVehiculos.ts`)
+
+Crear datos mock que reflejen la estructura de la imagen:
+- 2 rutas: "Paseos de Chavarria 2026" (con ~6 unidades) y "Centro Historico 2026" (con ~3 unidades)
+- Cada unidad con 3-5 documentos (cromatica, factura, poliza, tarjeta circulacion, titulo concesion)
+- Algunas vigencias vencidas o proximas a vencer para mostrar alertas
+
+### 3. Hook actualizado (`src/hooks/useVehiculos.ts`)
+
+Agregar CRUD para rutas, y reestructurar para que las unidades se relacionen con rutas. Agregar gestion de alertas de documentos.
+
+### 4. Pagina principal rediseñada (`src/pages/VehiculosPage.tsx`)
+
+Reemplazar el grid de tarjetas con la estructura colapsable:
+
+- **Header**: Titulo "Flotilla de Vehiculos" + boton "Nueva Ruta" + buscador
+- **KPIs**: Total rutas, total unidades, documentos por vencer, documentos vencidos
+- **Lista colapsable de Rutas**: Cada ruta es un `Collapsible` con icono de carpeta
+  - Al expandir una ruta, muestra sus unidades como items colapsables
+  - Al expandir una unidad, muestra la tabla de documentos con columnas: Nombre, Tipo, Vigencia, Tamano, Acciones
+  - Indicadores visuales de alerta (rojo = vencido, amarillo = por vencer)
+- **Boton "Subir Documento"** dentro de cada unidad
+- **Boton "Configurar Alertas"** por unidad (abre un modal para definir dias de anticipacion por tipo)
+
+### 5. Componentes nuevos
+
+- **`RutaCollapsible.tsx`**: Componente para cada ruta colapsable, muestra nombre + badge con conteo de unidades + indicador si hay alertas
+- **`UnidadCollapsible.tsx`**: Componente para cada unidad dentro de una ruta, muestra numero + tabla de documentos + indicadores de vigencia
+- **`AlertConfigModal.tsx`**: Modal para configurar alertas de vencimiento por tipo de documento
+
+### 6. Se mantienen las tabs de Mantenimiento y Gastos
+
+Las tabs de Mantenimiento y Gastos existentes se conservan sin cambios, solo se actualiza la tab "Flotilla" con el nuevo diseno jerarquico.
+
+---
+
+## Resumen de archivos a modificar/crear
+
+| Archivo | Accion |
+|---------|--------|
+| `src/types/vehiculos.ts` | Agregar interfaces Ruta, AlertaDocumento, actualizar tipos de documento |
+| `src/data/mockVehiculos.ts` | Reescribir con estructura rutas > unidades > documentos |
+| `src/hooks/useVehiculos.ts` | Agregar CRUD de rutas y alertas |
+| `src/pages/VehiculosPage.tsx` | Redisenar tab Flotilla con collapsibles anidados |
+| `src/components/vehiculos/RutaCollapsible.tsx` | Nuevo: componente colapsable de ruta |
+| `src/components/vehiculos/UnidadCollapsible.tsx` | Nuevo: componente colapsable de unidad con tabla de docs |
+| `src/components/vehiculos/AlertConfigModal.tsx` | Nuevo: modal de configuracion de alertas |
+| `src/components/vehiculos/DocVehFormModal.tsx` | Actualizar para nuevos tipos de documento |
 
