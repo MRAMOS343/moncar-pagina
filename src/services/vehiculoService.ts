@@ -15,6 +15,13 @@ function mapRuta(r: Record<string, unknown>): Ruta {
   };
 }
 
+function normalizeEstado(s: string): Unidad['estado'] {
+  if (s === 'activa' || s === 'activo') return 'activo';
+  if (s === 'taller') return 'taller';
+  if (s === 'baja') return 'baja';
+  return 'activo';
+}
+
 function mapUnidad(u: Record<string, unknown>): Unidad {
   return {
     id: u.unidad_id as string,
@@ -27,7 +34,7 @@ function mapUnidad(u: Record<string, unknown>): Unidad {
     anio: (u.anio as number) ?? 0,
     color: (u.color as string) ?? '',
     km: (u.km as number) ?? 0,
-    estado: (u.estado as Unidad['estado']) ?? 'activo',
+    estado: normalizeEstado((u.estado as string) ?? 'activo'),
     descripcion: (u.descripcion as string) ?? '',
     creadoEn: u.creado_en as string,
     actualizadoEn: u.actualizado_en as string,
