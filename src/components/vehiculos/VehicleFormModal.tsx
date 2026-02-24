@@ -5,13 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { Vehiculo, EstadoVehiculo } from '@/types/vehiculos';
+import type { Unidad, EstadoVehiculo } from '@/types/vehiculos';
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSave: (data: Omit<Vehiculo, 'id' | 'createdAt'>) => void;
-  vehiculo?: Vehiculo | null;
+  onSave: (data: Omit<Unidad, 'id' | 'createdAt'>) => void;
+  vehiculo?: Unidad | null;
+  defaultRutaId?: string;
 }
 
 const estadoOptions: { value: EstadoVehiculo; label: string }[] = [
@@ -20,8 +21,10 @@ const estadoOptions: { value: EstadoVehiculo; label: string }[] = [
   { value: 'baja', label: 'Baja' },
 ];
 
-export function VehicleFormModal({ open, onClose, onSave, vehiculo }: Props) {
+export function VehicleFormModal({ open, onClose, onSave, vehiculo, defaultRutaId }: Props) {
   const [form, setForm] = useState({
+    rutaId: vehiculo?.rutaId ?? defaultRutaId ?? '',
+    numero: vehiculo?.numero ?? '',
     placa: vehiculo?.placa ?? '',
     marca: vehiculo?.marca ?? '',
     modelo: vehiculo?.modelo ?? '',
