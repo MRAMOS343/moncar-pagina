@@ -1,42 +1,30 @@
 
+# Simplificar pagina de Vehiculos y mejorar KPI de "Por Vencer"
 
-# Cambiar Unidades de Collapsible a Modal de Detalle
+## Cambio 1: Eliminar tabs de Mantenimiento y Gastos
 
-## Objetivo
+Quitar completamente las tabs y dejar solo el contenido de Flotilla sin wrapper de Tabs. Esto implica:
 
-Actualmente, al hacer clic en una unidad dentro de una ruta, se expande un collapsible inline mostrando los documentos. El usuario quiere que al hacer clic en una unidad se **abra un modal de detalle** (similar a como funciona en Inventario al hacer clic en un producto, o en Ventas al hacer clic en una venta).
+- Eliminar el componente `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent`
+- Eliminar todo el markup de las tabs "mantenimiento" y "gastos" (lineas 140-248)
+- Eliminar los modals de `MaintenanceVehFormModal` y `ExpenseVehFormModal` (lineas 252-268)
+- Eliminar estados relacionados: `maintFormOpen`, `editingMaint`, `expenseFormOpen`
+- Eliminar imports no usados: `Plus`, `Wrench`, `Trash2`, `Table*`, `AlertDialog*`, `MaintenanceVehFormModal`, `ExpenseVehFormModal`, `Badge` (si ya no se usa), `MantenimientoVehiculo`
+- El contenido de la tab "flotilla" (buscador + lista de rutas) queda directamente en la pagina sin tabs
 
-## Cambios
+## Cambio 2: Reemplazar KPI "Por Vencer" con selector de plazo
 
-### 1. Convertir `UnidadCollapsible` en `UnidadRow` (item clickeable)
+Reemplazar la tarjeta estatica "Por Vencer (30d)" por una tarjeta interactiva con un `Select` que permita elegir entre 3 plazos: **7 dias**, **1 mes**, **2 meses**.
 
-Transformar el componente `UnidadCollapsible.tsx` en un componente simple tipo fila/tarjeta que al hacer clic dispare un callback `onClick(unidad)` en lugar de expandirse. Mostrara: numero de unidad, placa, marca/modelo, badge de estado, e indicadores de alertas (puntos rojo/amarillo).
+- Agregar estado `plazoVencer` con valores `'7d' | '1m' | '2m'`, default `'1m'`
+- El KPI mostrara el conteo segun el plazo seleccionado
+- Debajo de los KPIs, cuando haya documentos por vencer en el plazo seleccionado, mostrar una seccion expandible/lista que muestre:
+  - Nombre de la unidad (ej: "Unidad 04 — ABC-123")
+  - Documentos que vencen en ese plazo con su fecha de vigencia
+  - Agrupados por unidad para facil lectura
 
-### 2. Redisenar `VehicleDetailModal` como pantalla de documentos de unidad
-
-Actualizar `VehicleDetailModal.tsx` para que sea el modal principal al hacer clic en una unidad. Se redisena para mostrar:
-
-- **Header**: "Unidad 04 - Chevrolet Silverado 2022" con badge de estado y placa
-- **Info basica**: Color, km, descripcion
-- **Tabla de documentos**: Nombre, Tipo, Vigencia (con alertas visuales), Tamano, acciones (descargar, eliminar)
-- **Botones de accion**: "Subir Documento" y "Configurar Alertas"
-
-Este modal seguira el mismo patron visual que `ProductDetailModal` (max-w-2xl, ScrollArea, secciones con separadores).
-
-### 3. Actualizar `RutaCollapsible`
-
-Cambiar para que en lugar de renderizar `UnidadCollapsible` con expansion, renderice items de unidad clickeables que llamen a `onSelectUnidad(unidad)`.
-
-### 4. Actualizar `VehiculosPage`
-
-Agregar estado para la unidad seleccionada y renderizar condicionalmente el `VehicleDetailModal` cuando se selecciona una unidad.
-
-## Archivos a modificar
+### Archivos a modificar
 
 | Archivo | Cambio |
 |---------|--------|
-| `src/components/vehiculos/UnidadCollapsible.tsx` | Convertir de collapsible a fila clickeable (renombrar logica interna) |
-| `src/components/vehiculos/VehicleDetailModal.tsx` | Redisenar como modal de documentos con tabla, alertas y acciones |
-| `src/components/vehiculos/RutaCollapsible.tsx` | Cambiar callback de unidades de expansion a seleccion |
-| `src/pages/VehiculosPage.tsx` | Agregar estado de unidad seleccionada y renderizar modal de detalle |
-
+| `src/pages/VehiculosPage.tsx` | Eliminar tabs/mantenimiento/gastos, agregar selector de plazo en KPI y lista de docs por vencer |
