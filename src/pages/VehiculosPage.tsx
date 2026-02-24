@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Truck, Plus, Wrench, Search, Trash2, Route, Bus, AlertTriangle, FileText } from 'lucide-react';
+import { Truck, Plus, Wrench, Search, Trash2, AlertTriangle, FileText } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -46,8 +46,6 @@ export default function VehiculosPage() {
 
   // KPIs
   const kpis = useMemo(() => {
-    const totalRutas = rutas.filter(r => r.activa).length;
-    const totalUnidades = unidades.filter(u => u.estado === 'activo').length;
     const now = Date.now();
     let vencidos = 0, porVencer = 0;
     for (const d of documentos) {
@@ -56,8 +54,8 @@ export default function VehiculosPage() {
       if (diff < 0) vencidos++;
       else if (diff <= 30 * 86400000) porVencer++;
     }
-    return { totalRutas, totalUnidades, vencidos, porVencer };
-  }, [rutas, unidades, documentos]);
+    return { vencidos, porVencer };
+  }, [documentos]);
 
   // Filtered rutas
   const filteredRutas = useMemo(() => {
@@ -92,15 +90,7 @@ export default function VehiculosPage() {
       </div>
 
       {/* KPIs */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Card><CardContent className="p-4 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center"><Route className="w-5 h-5 text-primary" /></div>
-          <div><p className="text-xs text-muted-foreground">Rutas Activas</p><p className="text-xl font-bold text-foreground">{kpis.totalRutas}</p></div>
-        </CardContent></Card>
-        <Card><CardContent className="p-4 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center"><Bus className="w-5 h-5 text-primary" /></div>
-          <div><p className="text-xs text-muted-foreground">Unidades Activas</p><p className="text-xl font-bold text-foreground">{kpis.totalUnidades}</p></div>
-        </CardContent></Card>
+      <div className="grid gap-3 sm:grid-cols-2">
         <Card><CardContent className="p-4 flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-destructive/10 flex items-center justify-center"><AlertTriangle className="w-5 h-5 text-destructive" /></div>
           <div><p className="text-xs text-muted-foreground">Docs Vencidos</p><p className="text-xl font-bold text-destructive">{kpis.vencidos}</p></div>
