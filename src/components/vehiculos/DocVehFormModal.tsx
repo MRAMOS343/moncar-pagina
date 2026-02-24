@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,7 +54,9 @@ export function DocVehFormModal({ open, onClose, onSave, loading }: Props) {
           carpetaLogica: 'vehiculos',
           onProgress: (pct) => setUploadProgress(Math.round(pct * 100)),
         });
-      } catch {
+      } catch (err) {
+        console.error('Upload failed:', err);
+        toast.error('Error al subir archivo. Verifica tu conexión e intenta de nuevo.');
         setUploading(false);
         return;
       }
