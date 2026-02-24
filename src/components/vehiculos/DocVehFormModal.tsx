@@ -5,33 +5,30 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { DocumentoVehiculo, TipoDocVehiculo, Vehiculo } from '@/types/vehiculos';
+import type { DocumentoUnidad, TipoDocUnidad, Unidad } from '@/types/vehiculos';
+import { TIPO_DOC_LABELS } from '@/types/vehiculos';
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSave: (data: Omit<DocumentoVehiculo, 'id'>) => void;
-  vehiculos: Vehiculo[];
-  defaultVehiculoId?: string;
-  defaultTipo?: TipoDocVehiculo;
+  onSave: (data: Omit<DocumentoUnidad, 'id'>) => void;
+  unidades: Unidad[];
+  defaultUnidadId?: string;
+  defaultTipo?: TipoDocUnidad;
 }
 
-const tipoDocOptions: { value: TipoDocVehiculo; label: string }[] = [
-  { value: 'seguro', label: 'Seguro' },
-  { value: 'verificacion', label: 'Verificación' },
-  { value: 'tarjeta_circulacion', label: 'Tarjeta de Circulación' },
-  { value: 'factura', label: 'Factura' },
-  { value: 'permiso', label: 'Permiso' },
-  { value: 'otro', label: 'Otro' },
-];
+const tipoDocOptions: { value: TipoDocUnidad; label: string }[] = Object.entries(TIPO_DOC_LABELS).map(
+  ([value, label]) => ({ value: value as TipoDocUnidad, label })
+);
 
-export function DocVehFormModal({ open, onClose, onSave, vehiculos, defaultVehiculoId, defaultTipo }: Props) {
+export function DocVehFormModal({ open, onClose, onSave, unidades, defaultUnidadId, defaultTipo }: Props) {
   const [form, setForm] = useState({
-    vehiculoId: defaultVehiculoId ?? vehiculos[0]?.id ?? '',
+    unidadId: defaultUnidadId ?? unidades[0]?.id ?? '',
     nombre: '',
-    tipo: defaultTipo ?? 'seguro' as TipoDocVehiculo,
+    tipo: defaultTipo ?? 'cromatica' as TipoDocUnidad,
     vigencia: '',
-    archivo: null as string | null,
+    archivoUrl: null as string | null,
+    tamanoBytes: null as number | null,
     fechaSubida: new Date().toISOString().slice(0, 10),
     notas: '',
   });
@@ -52,11 +49,11 @@ export function DocVehFormModal({ open, onClose, onSave, vehiculos, defaultVehic
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label>Vehículo *</Label>
-            <Select value={form.vehiculoId} onValueChange={v => set('vehiculoId', v)}>
+            <Label>Unidad *</Label>
+            <Select value={form.unidadId} onValueChange={v => set('unidadId', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {vehiculos.map(v => <SelectItem key={v.id} value={v.id}>{v.placa} — {v.marca} {v.modelo}</SelectItem>)}
+                {unidades.map(u => <SelectItem key={u.id} value={u.id}>Unidad {u.numero} — {u.placa}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -77,7 +74,7 @@ export function DocVehFormModal({ open, onClose, onSave, vehiculos, defaultVehic
           </div>
           <div>
             <Label>Nombre *</Label>
-            <Input value={form.nombre} onChange={e => set('nombre', e.target.value)} required placeholder="Ej: Seguro GNP 2026" />
+            <Input value={form.nombre} onChange={e => set('nombre', e.target.value)} required placeholder="Ej: Poliza de Seguro 04 Chavarria.pdf" />
           </div>
           <div>
             <Label>Notas</Label>

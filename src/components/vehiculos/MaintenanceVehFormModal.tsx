@@ -5,19 +5,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { MantenimientoVehiculo, TipoMantenimientoVeh, Vehiculo } from '@/types/vehiculos';
+import type { MantenimientoVehiculo, TipoMantenimientoVeh, Unidad } from '@/types/vehiculos';
 
 interface Props {
   open: boolean;
   onClose: () => void;
   onSave: (data: Omit<MantenimientoVehiculo, 'id'>) => void;
-  vehiculos: Vehiculo[];
+  unidades: Unidad[];
   mantenimiento?: MantenimientoVehiculo | null;
 }
 
-export function MaintenanceVehFormModal({ open, onClose, onSave, vehiculos, mantenimiento }: Props) {
+export function MaintenanceVehFormModal({ open, onClose, onSave, unidades, mantenimiento }: Props) {
   const [form, setForm] = useState({
-    vehiculoId: mantenimiento?.vehiculoId ?? vehiculos[0]?.id ?? '',
+    unidadId: mantenimiento?.unidadId ?? unidades[0]?.id ?? '',
     fecha: mantenimiento?.fecha ?? new Date().toISOString().slice(0, 10),
     tipo: mantenimiento?.tipo ?? 'preventivo' as TipoMantenimientoVeh,
     descripcion: mantenimiento?.descripcion ?? '',
@@ -44,11 +44,11 @@ export function MaintenanceVehFormModal({ open, onClose, onSave, vehiculos, mant
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Vehículo *</Label>
-              <Select value={form.vehiculoId} onValueChange={v => set('vehiculoId', v)}>
+              <Label>Unidad *</Label>
+              <Select value={form.unidadId} onValueChange={v => set('unidadId', v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {vehiculos.map(v => <SelectItem key={v.id} value={v.id}>{v.placa} — {v.marca} {v.modelo}</SelectItem>)}
+                  {unidades.map(u => <SelectItem key={u.id} value={u.id}>Unidad {u.numero} — {u.placa}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

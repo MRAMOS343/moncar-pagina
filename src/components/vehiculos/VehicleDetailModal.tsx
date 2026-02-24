@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Car, Pencil, Trash2, ChevronRight, Plus, Download, Trash, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
-import type { Vehiculo, DocumentoVehiculo, TipoDocVehiculo } from '@/types/vehiculos';
+import type { Unidad, DocumentoUnidad, TipoDocVehiculo } from '@/types/vehiculos';
 
 const estadoBadge: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
   activo: { label: 'Activo', variant: 'default' },
@@ -15,10 +15,12 @@ const estadoBadge: Record<string, { label: string; variant: 'default' | 'seconda
 };
 
 const TIPOS_DOCUMENTO: { tipo: TipoDocVehiculo; label: string }[] = [
-  { tipo: 'seguro', label: 'Seguro' },
-  { tipo: 'verificacion', label: 'Verificación' },
-  { tipo: 'tarjeta_circulacion', label: 'Tarjeta de Circulación' },
+  { tipo: 'cromatica', label: 'Cromática' },
   { tipo: 'factura', label: 'Factura' },
+  { tipo: 'poliza_seguro', label: 'Póliza de Seguro' },
+  { tipo: 'tarjeta_circulacion', label: 'Tarjeta de Circulación' },
+  { tipo: 'titulo_concesion', label: 'Título de Concesión' },
+  { tipo: 'verificacion', label: 'Verificación' },
   { tipo: 'permiso', label: 'Permisos' },
   { tipo: 'otro', label: 'Otros' },
 ];
@@ -37,10 +39,10 @@ function isExpired(vigencia: string | null): boolean {
 interface Props {
   open: boolean;
   onClose: () => void;
-  vehiculo: Vehiculo | null;
-  onEdit: (v: Vehiculo) => void;
+  vehiculo: Unidad | null;
+  onEdit: (v: Unidad) => void;
   onDelete: (id: string) => void;
-  documentos?: DocumentoVehiculo[];
+  documentos?: DocumentoUnidad[];
   onAddDocumento?: (tipo: TipoDocVehiculo) => void;
   onDeleteDocumento?: (id: string) => void;
 }

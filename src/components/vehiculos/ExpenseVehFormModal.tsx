@@ -4,13 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { GastoVehiculo, TipoGastoVeh, Vehiculo } from '@/types/vehiculos';
+import type { GastoVehiculo, TipoGastoVeh, Unidad } from '@/types/vehiculos';
 
 interface Props {
   open: boolean;
   onClose: () => void;
   onSave: (data: Omit<GastoVehiculo, 'id'>) => void;
-  vehiculos: Vehiculo[];
+  unidades: Unidad[];
 }
 
 const tipoGastoOptions: { value: TipoGastoVeh; label: string }[] = [
@@ -21,9 +21,9 @@ const tipoGastoOptions: { value: TipoGastoVeh; label: string }[] = [
   { value: 'otro', label: 'Otro' },
 ];
 
-export function ExpenseVehFormModal({ open, onClose, onSave, vehiculos }: Props) {
+export function ExpenseVehFormModal({ open, onClose, onSave, unidades }: Props) {
   const [form, setForm] = useState({
-    vehiculoId: vehiculos[0]?.id ?? '',
+    unidadId: unidades[0]?.id ?? '',
     fecha: new Date().toISOString().slice(0, 10),
     tipo: 'combustible' as TipoGastoVeh,
     monto: 0,
@@ -47,11 +47,11 @@ export function ExpenseVehFormModal({ open, onClose, onSave, vehiculos }: Props)
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label>Vehículo *</Label>
-            <Select value={form.vehiculoId} onValueChange={v => set('vehiculoId', v)}>
+            <Label>Unidad *</Label>
+            <Select value={form.unidadId} onValueChange={v => set('unidadId', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {vehiculos.map(v => <SelectItem key={v.id} value={v.id}>{v.placa} — {v.marca} {v.modelo}</SelectItem>)}
+                {unidades.map(u => <SelectItem key={u.id} value={u.id}>Unidad {u.numero} — {u.placa}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>

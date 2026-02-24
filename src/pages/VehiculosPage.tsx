@@ -1,21 +1,19 @@
 import { useState, useMemo } from 'react';
-import { Truck, Plus, Wrench, Fuel, Search, Trash2 } from 'lucide-react';
+import { Truck, Plus, Wrench, Search, Trash2, Route, Bus, AlertTriangle, FileText } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { VehicleCard } from '@/components/vehiculos/VehicleCard';
-import { VehicleFormModal } from '@/components/vehiculos/VehicleFormModal';
-import { VehicleDetailModal } from '@/components/vehiculos/VehicleDetailModal';
+import { RutaCollapsible } from '@/components/vehiculos/RutaCollapsible';
 import { MaintenanceVehFormModal } from '@/components/vehiculos/MaintenanceVehFormModal';
 import { ExpenseVehFormModal } from '@/components/vehiculos/ExpenseVehFormModal';
 import { DocVehFormModal } from '@/components/vehiculos/DocVehFormModal';
+import { AlertConfigModal } from '@/components/vehiculos/AlertConfigModal';
 import { useVehiculos } from '@/hooks/useVehiculos';
-import type { Vehiculo, MantenimientoVehiculo, TipoDocVehiculo } from '@/types/vehiculos';
+import type { MantenimientoVehiculo, TipoDocUnidad } from '@/types/vehiculos';
 
 const tipoBadge: Record<string, 'default' | 'secondary'> = {
   preventivo: 'default',
@@ -27,78 +25,90 @@ const tipoGastoLabels: Record<string, string> = {
 
 export default function VehiculosPage() {
   const {
-    vehiculos, documentos, mantenimientos, gastos,
-    addVehiculo, updateVehiculo, deleteVehiculo,
+    rutas, unidades, documentos, mantenimientos, gastos, alertas,
     addDocumento, deleteDocumento,
     addMantenimiento, updateMantenimiento,
     addGasto, deleteGasto,
+    upsertAlerta,
   } = useVehiculos();
 
   // Filters
   const [search, setSearch] = useState('');
-  const [estadoFilter, setEstadoFilter] = useState('all');
 
   // Modals
-  const [vehFormOpen, setVehFormOpen] = useState(false);
-  const [editingVeh, setEditingVeh] = useState<Vehiculo | null>(null);
-  const [detailVeh, setDetailVeh] = useState<Vehiculo | null>(null);
   const [maintFormOpen, setMaintFormOpen] = useState(false);
   const [editingMaint, setEditingMaint] = useState<MantenimientoVehiculo | null>(null);
   const [expenseFormOpen, setExpenseFormOpen] = useState(false);
   const [docFormOpen, setDocFormOpen] = useState(false);
-  const [docDefaultTipo, setDocDefaultTipo] = useState<TipoDocVehiculo | undefined>();
-  const [docDefaultVehId, setDocDefaultVehId] = useState<string | undefined>();
-
-  const filteredVehiculos = useMemo(() => {
-    return vehiculos.filter(v => {
-      if (search) {
-        const q = search.toLowerCase();
-        if (!v.placa.toLowerCase().includes(q) && !v.marca.toLowerCase().includes(q) && !v.modelo.toLowerCase().includes(q)) return false;
-      }
-      if (estadoFilter !== 'all' && v.estado !== estadoFilter) return false;
-      return true;
-    });
-  }, [vehiculos, search, estadoFilter]);
+  const [docDefaultTipo, setDocDefaultTipo] = useState<TipoDocUnidad | undefined>();
+  const [docDefaultUnidadId, setDocDefaultUnidadId] = useState<string | undefined>();
+  const [alertModalUnidadId, setAlertModalUnidadId] = useState<string | null>(null);
 
   // KPIs
   const kpis = useMemo(() => {
-    const activos = vehiculos.filter(v => v.estado === 'activo').length;
-    const enTaller = vehiculos.filter(v => v.estado === 'taller').length;
-    const gastoMes = gastos
-      .filter(g => g.fecha.startsWith(new Date().toISOString().slice(0, 7)))
-      .reduce((s, g) => s + g.monto, 0);
-    const mantenimientoMes = mantenimientos
-      .filter(m => m.fecha.startsWith(new Date().toISOString().slice(0, 7)))
-      .reduce((s, m) => s + m.costo, 0);
-    return { activos, enTaller, gastoMes, mantenimientoMes };
-  }, [vehiculos, gastos, mantenimientos]);
+    const totalRutas = rutas.filter(r => r.activa).length;
+    const totalUnidades = unidades.filter(u => u.estado === 'activo').length;
+    const now = Date.now();
+    let vencidos = 0, porVencer = 0;
+    for (const d of documentos) {
+      if (!d.vigencia) continue;
+      const diff = new Date(d.vigencia).getTime() - now;
+      if (diff < 0) vencidos++;
+      else if (diff <= 30 * 86400000) porVencer++;
+    }
+    return { totalRutas, totalUnidades, vencidos, porVencer };
+  }, [rutas, unidades, documentos]);
 
-  const handleAddDocFromDetail = (tipo: TipoDocVehiculo) => {
+  // Filtered rutas
+  const filteredRutas = useMemo(() => {
+    if (!search) return rutas;
+    const q = search.toLowerCase();
+    return rutas.filter(r => {
+      if (r.nombre.toLowerCase().includes(q)) return true;
+      const rutaUnidades = unidades.filter(u => u.rutaId === r.id);
+      return rutaUnidades.some(u =>
+        u.numero.toLowerCase().includes(q) ||
+        u.placa.toLowerCase().includes(q) ||
+        u.marca.toLowerCase().includes(q)
+      );
+    });
+  }, [rutas, unidades, search]);
+
+  const handleAddDoc = (unidadId: string, tipo?: TipoDocUnidad) => {
+    setDocDefaultUnidadId(unidadId);
     setDocDefaultTipo(tipo);
-    setDocDefaultVehId(detailVeh?.id);
     setDocFormOpen(true);
   };
 
-  const detailDocs = useMemo(() => {
-    if (!detailVeh) return [];
-    return documentos.filter(d => d.vehiculoId === detailVeh.id);
-  }, [documentos, detailVeh]);
+  const alertModalUnidad = alertModalUnidadId ? unidades.find(u => u.id === alertModalUnidadId) : null;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><Truck className="w-6 h-6 text-primary" />Flotilla de Vehículos</h1>
-          <p className="text-sm text-muted-foreground">Administración de vehículos, mantenimiento y gastos de transporte</p>
+          <p className="text-sm text-muted-foreground">Rutas, unidades y documentación de transporte</p>
         </div>
       </div>
 
       {/* KPIs */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Activos</p><p className="text-xl font-bold text-foreground">{kpis.activos}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">En Taller</p><p className="text-xl font-bold text-foreground">{kpis.enTaller}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Gastos (Mes)</p><p className="text-xl font-bold text-foreground">${kpis.gastoMes.toLocaleString()}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Mant. (Mes)</p><p className="text-xl font-bold text-foreground">${kpis.mantenimientoMes.toLocaleString()}</p></CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center"><Route className="w-5 h-5 text-primary" /></div>
+          <div><p className="text-xs text-muted-foreground">Rutas Activas</p><p className="text-xl font-bold text-foreground">{kpis.totalRutas}</p></div>
+        </CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center"><Bus className="w-5 h-5 text-primary" /></div>
+          <div><p className="text-xs text-muted-foreground">Unidades Activas</p><p className="text-xl font-bold text-foreground">{kpis.totalUnidades}</p></div>
+        </CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-destructive/10 flex items-center justify-center"><AlertTriangle className="w-5 h-5 text-destructive" /></div>
+          <div><p className="text-xs text-muted-foreground">Docs Vencidos</p><p className="text-xl font-bold text-destructive">{kpis.vencidos}</p></div>
+        </CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center"><FileText className="w-5 h-5 text-amber-600" /></div>
+          <div><p className="text-xs text-muted-foreground">Por Vencer (30d)</p><p className="text-xl font-bold text-foreground">{kpis.porVencer}</p></div>
+        </CardContent></Card>
       </div>
 
       <Tabs defaultValue="flotilla" className="space-y-4">
@@ -110,32 +120,28 @@ export default function VehiculosPage() {
 
         {/* ── TAB: FLOTILLA ── */}
         <TabsContent value="flotilla" className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3 justify-between">
-            <div className="flex gap-2 flex-1">
-              <div className="relative flex-1 max-w-xs">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input placeholder="Buscar placa, marca..." className="pl-10" value={search} onChange={e => setSearch(e.target.value)} />
-              </div>
-              <Select value={estadoFilter} onValueChange={setEstadoFilter}>
-                <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="activo">Activos</SelectItem>
-                  <SelectItem value="taller">En Taller</SelectItem>
-                  <SelectItem value="baja">Baja</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="flex gap-3">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input placeholder="Buscar ruta, unidad, placa..." className="pl-10" value={search} onChange={e => setSearch(e.target.value)} />
             </div>
-            <Button onClick={() => { setEditingVeh(null); setVehFormOpen(true); }} className="shrink-0">
-              <Plus className="w-4 h-4 mr-1" />Nuevo Vehículo
-            </Button>
           </div>
-          {filteredVehiculos.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">No se encontraron vehículos</div>
+
+          {filteredRutas.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">No se encontraron rutas</div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredVehiculos.map(v => (
-                <VehicleCard key={v.id} vehiculo={v} onClick={setDetailVeh} />
+            <div className="space-y-3">
+              {filteredRutas.map(r => (
+                <RutaCollapsible
+                  key={r.id}
+                  ruta={r}
+                  unidades={unidades.filter(u => u.rutaId === r.id)}
+                  documentos={documentos.filter(d => unidades.some(u => u.rutaId === r.id && u.id === d.unidadId))}
+                  alertas={alertas.filter(a => unidades.some(u => u.rutaId === r.id && u.id === a.unidadId))}
+                  onAddDoc={handleAddDoc}
+                  onDeleteDoc={deleteDocumento}
+                  onConfigAlertas={(unidadId) => setAlertModalUnidadId(unidadId)}
+                />
               ))}
             </div>
           )}
@@ -152,7 +158,7 @@ export default function VehiculosPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Vehículo</TableHead>
+                  <TableHead>Unidad</TableHead>
                   <TableHead>Fecha</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Descripción</TableHead>
@@ -167,10 +173,10 @@ export default function VehiculosPage() {
                   <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Sin registros</TableCell></TableRow>
                 )}
                 {mantenimientos.map(m => {
-                  const veh = vehiculos.find(v => v.id === m.vehiculoId);
+                  const u = unidades.find(v => v.id === m.unidadId);
                   return (
                     <TableRow key={m.id}>
-                      <TableCell className="text-sm">{veh ? `${veh.placa} — ${veh.marca}` : '—'}</TableCell>
+                      <TableCell className="text-sm">{u ? `Unidad ${u.numero} — ${u.placa}` : '—'}</TableCell>
                       <TableCell className="text-sm">{m.fecha}</TableCell>
                       <TableCell><Badge variant={tipoBadge[m.tipo]} className="text-xs capitalize">{m.tipo}</Badge></TableCell>
                       <TableCell className="text-sm max-w-[200px] truncate">{m.descripcion}</TableCell>
@@ -201,7 +207,7 @@ export default function VehiculosPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Vehículo</TableHead>
+                  <TableHead>Unidad</TableHead>
                   <TableHead>Fecha</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Descripción</TableHead>
@@ -214,10 +220,10 @@ export default function VehiculosPage() {
                   <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Sin gastos</TableCell></TableRow>
                 )}
                 {gastos.map(g => {
-                  const veh = vehiculos.find(v => v.id === g.vehiculoId);
+                  const u = unidades.find(v => v.id === g.unidadId);
                   return (
                     <TableRow key={g.id}>
-                      <TableCell className="text-sm">{veh ? `${veh.placa} — ${veh.marca}` : '—'}</TableCell>
+                      <TableCell className="text-sm">{u ? `Unidad ${u.numero} — ${u.placa}` : '—'}</TableCell>
                       <TableCell className="text-sm">{g.fecha}</TableCell>
                       <TableCell><Badge variant="outline" className="text-xs">{tipoGastoLabels[g.tipo]}</Badge></TableCell>
                       <TableCell className="text-sm max-w-[200px] truncate">{g.descripcion}</TableCell>
@@ -252,33 +258,13 @@ export default function VehiculosPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Modals — conditional rendering forces remount & state reset */}
-      {vehFormOpen && (
-        <VehicleFormModal
-          open={vehFormOpen}
-          onClose={() => { setVehFormOpen(false); setEditingVeh(null); }}
-          onSave={data => editingVeh ? updateVehiculo(editingVeh.id, data) : addVehiculo(data)}
-          vehiculo={editingVeh}
-        />
-      )}
-      {!!detailVeh && (
-        <VehicleDetailModal
-          open={!!detailVeh}
-          onClose={() => setDetailVeh(null)}
-          vehiculo={detailVeh}
-          onEdit={v => { setDetailVeh(null); setEditingVeh(v); setVehFormOpen(true); }}
-          onDelete={deleteVehiculo}
-          documentos={detailDocs}
-          onAddDocumento={handleAddDocFromDetail}
-          onDeleteDocumento={deleteDocumento}
-        />
-      )}
+      {/* Modals */}
       {maintFormOpen && (
         <MaintenanceVehFormModal
           open={maintFormOpen}
           onClose={() => { setMaintFormOpen(false); setEditingMaint(null); }}
           onSave={data => editingMaint ? updateMantenimiento(editingMaint.id, data) : addMantenimiento(data)}
-          vehiculos={vehiculos}
+          unidades={unidades}
           mantenimiento={editingMaint}
         />
       )}
@@ -287,17 +273,27 @@ export default function VehiculosPage() {
           open={expenseFormOpen}
           onClose={() => setExpenseFormOpen(false)}
           onSave={addGasto}
-          vehiculos={vehiculos}
+          unidades={unidades}
         />
       )}
       {docFormOpen && (
         <DocVehFormModal
           open={docFormOpen}
-          onClose={() => { setDocFormOpen(false); setDocDefaultTipo(undefined); setDocDefaultVehId(undefined); }}
+          onClose={() => { setDocFormOpen(false); setDocDefaultTipo(undefined); setDocDefaultUnidadId(undefined); }}
           onSave={addDocumento}
-          vehiculos={vehiculos}
-          defaultVehiculoId={docDefaultVehId}
+          unidades={unidades}
+          defaultUnidadId={docDefaultUnidadId}
           defaultTipo={docDefaultTipo}
+        />
+      )}
+      {alertModalUnidad && (
+        <AlertConfigModal
+          open={!!alertModalUnidadId}
+          onClose={() => setAlertModalUnidadId(null)}
+          unidadId={alertModalUnidad.id}
+          unidadLabel={alertModalUnidad.numero}
+          alertas={alertas.filter(a => a.unidadId === alertModalUnidad.id)}
+          onSave={upsertAlerta}
         />
       )}
     </div>
