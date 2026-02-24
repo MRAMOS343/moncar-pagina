@@ -8,12 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { RutaCollapsible } from '@/components/vehiculos/RutaCollapsible';
+import { VehicleDetailModal } from '@/components/vehiculos/VehicleDetailModal';
 import { MaintenanceVehFormModal } from '@/components/vehiculos/MaintenanceVehFormModal';
 import { ExpenseVehFormModal } from '@/components/vehiculos/ExpenseVehFormModal';
 import { DocVehFormModal } from '@/components/vehiculos/DocVehFormModal';
 import { AlertConfigModal } from '@/components/vehiculos/AlertConfigModal';
 import { useVehiculos } from '@/hooks/useVehiculos';
-import type { MantenimientoVehiculo, TipoDocUnidad } from '@/types/vehiculos';
+import type { MantenimientoVehiculo, Unidad, TipoDocUnidad } from '@/types/vehiculos';
 
 const tipoBadge: Record<string, 'default' | 'secondary'> = {
   preventivo: 'default',
@@ -43,6 +44,7 @@ export default function VehiculosPage() {
   const [docDefaultTipo, setDocDefaultTipo] = useState<TipoDocUnidad | undefined>();
   const [docDefaultUnidadId, setDocDefaultUnidadId] = useState<string | undefined>();
   const [alertModalUnidadId, setAlertModalUnidadId] = useState<string | null>(null);
+  const [selectedUnidad, setSelectedUnidad] = useState<Unidad | null>(null);
 
   // KPIs
   const kpis = useMemo(() => {
@@ -128,9 +130,7 @@ export default function VehiculosPage() {
                   unidades={unidades.filter(u => u.rutaId === r.id)}
                   documentos={documentos.filter(d => unidades.some(u => u.rutaId === r.id && u.id === d.unidadId))}
                   alertas={alertas.filter(a => unidades.some(u => u.rutaId === r.id && u.id === a.unidadId))}
-                  onAddDoc={handleAddDoc}
-                  onDeleteDoc={deleteDocumento}
-                  onConfigAlertas={(unidadId) => setAlertModalUnidadId(unidadId)}
+                  onSelectUnidad={setSelectedUnidad}
                 />
               ))}
             </div>
@@ -284,6 +284,18 @@ export default function VehiculosPage() {
           unidadLabel={alertModalUnidad.numero}
           alertas={alertas.filter(a => a.unidadId === alertModalUnidad.id)}
           onSave={upsertAlerta}
+        />
+      )}
+      {selectedUnidad && (
+        <VehicleDetailModal
+          open={!!selectedUnidad}
+          onClose={() => setSelectedUnidad(null)}
+          unidad={selectedUnidad}
+          documentos={documentos.filter(d => d.unidadId === selectedUnidad.id)}
+          alertas={alertas.filter(a => a.unidadId === selectedUnidad.id)}
+          onAddDoc={handleAddDoc}
+          onDeleteDoc={deleteDocumento}
+          onConfigAlertas={(unidadId) => { setSelectedUnidad(null); setAlertModalUnidadId(unidadId); }}
         />
       )}
     </div>
