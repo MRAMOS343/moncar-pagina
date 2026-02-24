@@ -3,7 +3,7 @@ import { ChevronRight, FolderOpen, AlertTriangle } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
 import { UnidadCollapsible } from './UnidadCollapsible';
-import type { Ruta, Unidad, DocumentoUnidad, AlertaDocumento, TipoDocUnidad } from '@/types/vehiculos';
+import type { Ruta, Unidad, DocumentoUnidad, AlertaDocumento } from '@/types/vehiculos';
 
 function isExpired(v: string | null) { return v ? new Date(v).getTime() < Date.now() : false; }
 function isExpiringSoon(v: string | null, dias = 30) {
@@ -17,12 +17,10 @@ interface Props {
   unidades: Unidad[];
   documentos: DocumentoUnidad[];
   alertas: AlertaDocumento[];
-  onAddDoc: (unidadId: string, tipo?: TipoDocUnidad) => void;
-  onDeleteDoc: (id: string) => void;
-  onConfigAlertas: (unidadId: string) => void;
+  onSelectUnidad: (unidad: Unidad) => void;
 }
 
-export function RutaCollapsible({ ruta, unidades, documentos, alertas, onAddDoc, onDeleteDoc, onConfigAlertas }: Props) {
+export function RutaCollapsible({ ruta, unidades, documentos, alertas, onSelectUnidad }: Props) {
   const alertCount = useMemo(() => {
     let expired = 0, expiring = 0;
     for (const d of documentos) {
@@ -62,10 +60,7 @@ export function RutaCollapsible({ ruta, unidades, documentos, alertas, onAddDoc,
                   key={u.id}
                   unidad={u}
                   documentos={documentos.filter(d => d.unidadId === u.id)}
-                  alertas={alertas.filter(a => a.unidadId === u.id)}
-                  onAddDoc={(tipo) => onAddDoc(u.id, tipo)}
-                  onDeleteDoc={onDeleteDoc}
-                  onConfigAlertas={() => onConfigAlertas(u.id)}
+                  onClick={() => onSelectUnidad(u)}
                 />
               ))
           )}
