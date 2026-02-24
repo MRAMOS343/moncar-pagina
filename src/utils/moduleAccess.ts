@@ -28,7 +28,7 @@ export const MODULES: ModuleInfo[] = [
   {
     id: 'vehiculos',
     title: 'Vehículos',
-    description: 'Flotilla de transporte, mantenimiento y gastos',
+    description: 'Flotilla de transporte y documentación',
     icon: 'Truck',
     basePath: '/vehiculos',
   },
@@ -40,7 +40,7 @@ const MODULE_ACCESS: Record<User['role'], ModuleId[]> = {
   gerente: ['refaccionarias'],
   cajero: ['refaccionarias'],
   gestor_propiedades: ['propiedades'],
-  gestor_vehiculos: ['vehiculos'],
+  gestor_vehiculos: [],
 };
 
 export function getUserModules(role: User['role']): ModuleId[] {

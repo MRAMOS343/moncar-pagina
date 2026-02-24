@@ -3,7 +3,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import App from "./App.tsx";
 import "./index.css";
-import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { ProtectedRoute, AdminRoute } from "./components/auth/ProtectedRoute";
 import { ModuleRoute } from "./components/auth/ModuleRoute";
 
 // Lazy load pages
@@ -85,9 +85,9 @@ const router = createBrowserRouter([
       {
         path: "vehiculos",
         element: (
-          <ModuleRoute module="vehiculos">
+          <AdminRoute>
             <S><VehiculosLayout /></S>
-          </ModuleRoute>
+          </AdminRoute>
         ),
         children: [
           { index: true, element: <S><VehiculosPage /></S> },

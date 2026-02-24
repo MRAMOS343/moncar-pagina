@@ -4,8 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import type { AlertaDocumento, TipoDocUnidad } from '@/types/vehiculos';
+import type { TipoDocUnidad } from '@/types/vehiculos';
 import { TIPO_DOC_LABELS } from '@/types/vehiculos';
+import { useAlertas, useUpsertAlerta } from '@/hooks/useVehiculosAPI';
+import { toast } from 'sonner';
 
 const ALL_TIPOS: TipoDocUnidad[] = ['cromatica', 'factura', 'poliza_seguro', 'tarjeta_circulacion', 'titulo_concesion', 'verificacion', 'permiso'];
 
@@ -14,11 +16,12 @@ interface Props {
   onClose: () => void;
   unidadId: string;
   unidadLabel: string;
-  alertas: AlertaDocumento[];
-  onSave: (data: Omit<AlertaDocumento, 'id'>) => void;
 }
 
-export function AlertConfigModal({ open, onClose, unidadId, unidadLabel, alertas, onSave }: Props) {
+export function AlertConfigModal({ open, onClose, unidadId, unidadLabel }: Props) {
+  const { data: alertas = [] } = useAlertas(unidadId);
+  const upsertAlerta = useUpsertAlerta();
+
   const initialState = useMemo(() => {
     return ALL_TIPOS.map(tipo => {
       const existing = alertas.find(a => a.tipoDocumento === tipo);
@@ -36,11 +39,20 @@ export function AlertConfigModal({ open, onClose, unidadId, unidadLabel, alertas
     setConfigs(prev => prev.map((c, i) => i === idx ? { ...c, [field]: value } : c));
   };
 
-  const handleSave = () => {
-    for (const c of configs) {
-      onSave({ unidadId, tipoDocumento: c.tipoDocumento, diasAntes: c.diasAntes, activa: c.activa });
+  const handleSave = async () => {
+    try {
+      for (const c of configs) {
+        await upsertAlerta.mutateAsync({
+          unidadId,
+          tipoDocumento: c.tipoDocumento,
+          data: { dias_antes: c.diasAntes, activa: c.activa },
+        });
+      }
+      toast.success('Alertas actualizadas');
+      onClose();
+    } catch {
+      toast.error('Error al guardar alertas');
     }
-    onClose();
   };
 
   return (
@@ -71,7 +83,9 @@ export function AlertConfigModal({ open, onClose, unidadId, unidadLabel, alertas
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button onClick={handleSave}>Guardar</Button>
+          <Button onClick={handleSave} disabled={upsertAlerta.isPending}>
+            {upsertAlerta.isPending ? 'Guardando...' : 'Guardar'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
