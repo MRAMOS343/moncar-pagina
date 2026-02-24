@@ -1,27 +1,42 @@
 
 
-# Correcciones en Módulo de Vehículos
+# Cambiar Unidades de Collapsible a Modal de Detalle
 
-## Cambio 1: Eliminar KPIs de "Rutas Activas" y "Unidades Activas"
+## Objetivo
 
-En `VehiculosPage.tsx`, eliminar las dos primeras tarjetas KPI (lineas 96-103) y cambiar el grid de 4 columnas a 2 columnas, dejando solo:
-- Docs Vencidos
-- Por Vencer (30d)
+Actualmente, al hacer clic en una unidad dentro de una ruta, se expande un collapsible inline mostrando los documentos. El usuario quiere que al hacer clic en una unidad se **abra un modal de detalle** (similar a como funciona en Inventario al hacer clic en un producto, o en Ventas al hacer clic en una venta).
 
-Tambien eliminar del calculo de `kpis` (lineas 48-60) las variables `totalRutas` y `totalUnidades` que ya no se necesitan.
+## Cambios
 
-## Cambio 2: Corregir warning de ref en sidebar
+### 1. Convertir `UnidadCollapsible` en `UnidadRow` (item clickeable)
 
-En `AppSidebar.tsx`, el `<span className="contents">` wrapper alrededor del `NavLink` no es suficiente para absorber el ref que `TooltipTrigger` intenta pasar. La solucion es usar un `<a>` nativo en lugar de `NavLink` cuando el sidebar esta colapsado (tooltip activo), o mover el wrapper para que sea un elemento que acepte refs (como un `div`).
+Transformar el componente `UnidadCollapsible.tsx` en un componente simple tipo fila/tarjeta que al hacer clic dispare un callback `onClick(unidad)` en lugar de expandirse. Mostrara: numero de unidad, placa, marca/modelo, badge de estado, e indicadores de alertas (puntos rojo/amarillo).
 
-La correccion mas limpia: cambiar el wrapper `<span className="contents">` por un `React.forwardRef` wrapper, o simplemente no usar `asChild` en `SidebarMenuButton` cuando hay tooltip, renderizando directamente el contenido del boton sin `NavLink` como hijo de `Slot`.
+### 2. Redisenar `VehicleDetailModal` como pantalla de documentos de unidad
 
-**Enfoque elegido**: Convertir el wrapper a un elemento que acepte refs nativamente. Un `<a>` funciona porque `NavLink` renderiza un `<a>`, asi que podemos usar un anchor con `onClick` que llame a `navigate()`, o mas simple: envolver en un `div` con `className="contents"` que si acepta refs.
+Actualizar `VehicleDetailModal.tsx` para que sea el modal principal al hacer clic en una unidad. Se redisena para mostrar:
 
-### Archivos a modificar
+- **Header**: "Unidad 04 - Chevrolet Silverado 2022" con badge de estado y placa
+- **Info basica**: Color, km, descripcion
+- **Tabla de documentos**: Nombre, Tipo, Vigencia (con alertas visuales), Tamano, acciones (descargar, eliminar)
+- **Botones de accion**: "Subir Documento" y "Configurar Alertas"
+
+Este modal seguira el mismo patron visual que `ProductDetailModal` (max-w-2xl, ScrollArea, secciones con separadores).
+
+### 3. Actualizar `RutaCollapsible`
+
+Cambiar para que en lugar de renderizar `UnidadCollapsible` con expansion, renderice items de unidad clickeables que llamen a `onSelectUnidad(unidad)`.
+
+### 4. Actualizar `VehiculosPage`
+
+Agregar estado para la unidad seleccionada y renderizar condicionalmente el `VehicleDetailModal` cuando se selecciona una unidad.
+
+## Archivos a modificar
 
 | Archivo | Cambio |
 |---------|--------|
-| `src/pages/VehiculosPage.tsx` | Eliminar KPIs de rutas y unidades, ajustar grid |
-| `src/components/layout/AppSidebar.tsx` | Corregir wrapper de NavLink para aceptar ref |
+| `src/components/vehiculos/UnidadCollapsible.tsx` | Convertir de collapsible a fila clickeable (renombrar logica interna) |
+| `src/components/vehiculos/VehicleDetailModal.tsx` | Redisenar como modal de documentos con tabla, alertas y acciones |
+| `src/components/vehiculos/RutaCollapsible.tsx` | Cambiar callback de unidades de expansion a seleccion |
+| `src/pages/VehiculosPage.tsx` | Agregar estado de unidad seleccionada y renderizar modal de detalle |
 
