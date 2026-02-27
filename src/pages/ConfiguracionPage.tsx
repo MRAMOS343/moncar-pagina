@@ -29,9 +29,13 @@ import { Badge } from "@/components/ui/badge";
 
 export default function ConfiguracionPage() {
   const { currentUser, updateUserRole } = useAuth();
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'developer';
   
   // Control de acceso por rol
   const canManageSettings = currentUser?.role === 'admin' || currentUser?.role === 'gerente';
+
+  // Usuarios (solo admin)
+  const { data: usuarios, isLoading: loadingUsuarios } = useUsuarios();
   
   // === Hooks de datos ===
   const { data: preferences, isLoading: loadingPrefs } = useUserPreferences();
