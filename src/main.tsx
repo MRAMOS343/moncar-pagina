@@ -25,6 +25,7 @@ const ConfiguracionPage = lazy(() => import("./pages/ConfiguracionPage"));
 const SoportePage = lazy(() => import("./pages/SoportePage"));
 const PropiedadesPage = lazy(() => import("./pages/PropiedadesPage"));
 const VehiculosPage = lazy(() => import("./pages/VehiculosPage"));
+const InvitacionPage = lazy(() => import("./pages/InvitacionPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
