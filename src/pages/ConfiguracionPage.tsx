@@ -21,8 +21,11 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User, Building2, Package, Shield, Settings, Loader2 } from "lucide-react";
+import { User, Building2, Package, Shield, Settings, Loader2, UserPlus } from "lucide-react";
 import { showSuccessToast, showErrorToast } from "@/utils/toastHelpers";
+import { NuevoUsuarioForm } from "@/components/admin/NuevoUsuarioForm";
+import { useUsuarios } from "@/hooks/useUsuarios";
+import { Badge } from "@/components/ui/badge";
 
 export default function ConfiguracionPage() {
   const { currentUser, updateUserRole } = useAuth();
