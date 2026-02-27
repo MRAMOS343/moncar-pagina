@@ -171,6 +171,12 @@ export default function ConfiguracionPage() {
               </TabsTrigger>
             </>
           )}
+          {isAdmin && (
+            <TabsTrigger value="usuarios" className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              Usuarios
+            </TabsTrigger>
+          )}
           <TabsTrigger value="permisos" className="gap-2">
             <Shield className="h-4 w-4" />
             Roles
