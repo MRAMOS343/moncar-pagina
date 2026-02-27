@@ -154,7 +154,7 @@ export default function ConfiguracionPage() {
       </div>
 
       <Tabs defaultValue="perfil" className="space-y-4">
-        <TabsList className={`grid w-full ${canManageSettings ? 'grid-cols-5' : 'grid-cols-3'}`}>
+        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-6' : canManageSettings ? 'grid-cols-5' : 'grid-cols-3'}`}>
           <TabsTrigger value="perfil" className="gap-2">
             <User className="h-4 w-4" />
             Perfil
