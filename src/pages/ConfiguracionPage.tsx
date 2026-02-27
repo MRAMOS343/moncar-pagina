@@ -450,6 +450,46 @@ export default function ConfiguracionPage() {
           </TabsContent>
         )}
 
+        {/* Pestaña: Usuarios (solo admin) */}
+        {isAdmin && (
+          <TabsContent value="usuarios" className="space-y-4">
+            <NuevoUsuarioForm />
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Usuarios registrados</CardTitle>
+                <CardDescription>
+                  Lista de usuarios en el sistema
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingUsuarios ? (
+                  <Skeleton className="h-24 w-full" />
+                ) : usuarios && usuarios.length > 0 ? (
+                  <div className="space-y-2">
+                    {usuarios.map((u) => (
+                      <div
+                        key={u.usuario_id}
+                        className="flex items-center justify-between p-3 rounded-lg border"
+                      >
+                        <div>
+                          <p className="font-medium">{u.nombre}</p>
+                          <p className="text-sm text-muted-foreground">{u.email}</p>
+                        </div>
+                        <Badge variant="secondary">Activo</Badge>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No hay usuarios registrados aún.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
         {/* Pestaña: Roles y Permisos */}
         <TabsContent value="permisos" className="space-y-4">
           <Card>
