@@ -25,6 +25,7 @@ const ConfiguracionPage = lazy(() => import("./pages/ConfiguracionPage"));
 const SoportePage = lazy(() => import("./pages/SoportePage"));
 const PropiedadesPage = lazy(() => import("./pages/PropiedadesPage"));
 const VehiculosPage = lazy(() => import("./pages/VehiculosPage"));
+const InvitacionPage = lazy(() => import("./pages/InvitacionPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
@@ -44,6 +45,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <S><Index /></S> },
       { path: "login", element: <S><LoginPage /></S> },
+      { path: "invitacion", element: <S><InvitacionPage /></S> },
       {
         path: "selector",
         element: (

@@ -1,78 +1,166 @@
 
 
-# Implementar flujo de invitacion y gestion de usuarios
+# Conectar Modulo de Vehiculos a la API REST
 
 ## Resumen
 
-Crear 3 elementos principales:
-1. Pagina publica `/invitacion` para activar cuenta con token
-2. Componente `SetPasswordForm` con indicador de fortaleza
-3. Seccion admin en Configuracion para crear usuarios e invitarlos
-
-Todo usando los componentes UI existentes (Card, Input, Label, Button, Select, Alert, Progress) y el patron visual del LoginForm.
+Reemplazar los datos mock por llamadas reales a la API REST, agregar CRUD completo de rutas/unidades, implementar el flujo de subida de archivos multipart, y restringir el acceso solo a admin.
 
 ---
 
-## Cambio 1: Crear servicio de invitacion
+## Cambio 1: Actualizar tipos para coincidir con la API
 
-**Archivo nuevo**: `src/services/invitacionService.ts`
+**Archivo**: `src/types/vehiculos.ts`
 
-- `validateInvitation(token)` → GET `/auth/invitation/:token` (sin auth)
-- `setPassword(token, password)` → POST `/auth/set-password` (sin auth)
-- `createUsuario(data, authToken)` → POST `/admin/usuarios` (con auth)
+Actualizar las interfaces para reflejar los campos exactos de la API (manteniendo camelCase en el frontend, el mapeo se hara en el service):
 
-Usa `apiRequest` del `apiClient.ts` existente.
+- `Ruta`: agregar `unidadesCount` (viene de la API), renombrar `createdAt` a `creadoEn`, agregar `actualizadoEn`
+- `Unidad`: agregar `rutaNombre` (viene en GET individual), renombrar `createdAt` a `creadoEn`, agregar `actualizadoEn`
+- `DocumentoUnidad`: reemplazar `archivoUrl` por `archivoId`, agregar `fechaDocumento`, renombrar `vigencia` a `vigenciaHasta`, agregar campos del archivo (`archivoNombre`, `archivoMime`, `archivoBytes`, `archivoEstado`)
+- `AlertaDocumento`: agregar `creadoEn`, `actualizadoEn`
+- Eliminar tipos de Mantenimiento y Gastos (ya no se usan)
 
-## Cambio 2: Crear componente SetPasswordForm
+## Cambio 2: Crear servicio de vehiculos
 
-**Archivo nuevo**: `src/components/auth/SetPasswordForm.tsx`
+**Archivo nuevo**: `src/services/vehiculoService.ts`
 
-- Formulario con campos password y confirm usando Input/Label/Button existentes
-- Barra de fortaleza usando el componente Progress de la UI
-- Colores: rojo (debil), amarillo (medio), verde (fuerte)
-- Validacion: minimo 8 caracteres, passwords coinciden
-- Estilo consistente con LoginForm (space-y-4, Labels, etc.)
+Funciones que consumen la API usando `apiRequest` de `apiClient.ts`:
 
-## Cambio 3: Crear pagina de invitacion
+```
+- fetchRutas()          -> GET /vehiculos/rutas
+- createRuta(data)      -> POST /vehiculos/rutas
+- updateRuta(id, data)  -> PATCH /vehiculos/rutas/:ruta_id
+- deleteRuta(id)        -> DELETE /vehiculos/rutas/:ruta_id
+- fetchUnidades(rutaId) -> GET /vehiculos/rutas/:ruta_id/unidades
+- fetchUnidad(id)       -> GET /vehiculos/unidades/:unidad_id
+- createUnidad(rutaId, data) -> POST /vehiculos/rutas/:ruta_id/unidades
+- updateUnidad(id, data)     -> PATCH /vehiculos/unidades/:unidad_id
+- deleteUnidad(id)           -> DELETE /vehiculos/unidades/:unidad_id
+- fetchDocumentos(unidadId)  -> GET /vehiculos/unidades/:unidad_id/documentos
+- createDocumento(unidadId, data) -> POST /vehiculos/unidades/:unidad_id/documentos
+- updateDocumento(id, data)  -> PATCH /vehiculos/documentos/:documento_id
+- deleteDocumento(id)        -> DELETE /vehiculos/documentos/:documento_id
+- fetchAlertas(unidadId)     -> GET /vehiculos/unidades/:unidad_id/alertas
+- upsertAlerta(unidadId, tipo, data) -> PUT /vehiculos/unidades/:unidad_id/alertas/:tipo
+- fetchDocsPorVencer(dias)   -> GET /vehiculos/documentos/por-vencer?dias=X
+```
 
-**Archivo nuevo**: `src/pages/InvitacionPage.tsx`
+Cada funcion incluira un mapper snake_case -> camelCase para mantener la consistencia del frontend.
 
-- Layout centrado identico al LoginForm (`min-h-screen flex items-center justify-center bg-background`)
-- Card con logo Moncar igual que login
-- Estados: loading (spinner), valid (formulario), invalid (Alert destructive), success (mensaje + redirect a /login)
-- Usa `SetPasswordForm` para el paso de crear password
-- Redirect automatico a `/login?activated=true` tras exito
+## Cambio 3: Crear servicio de archivos
 
-## Cambio 4: Crear componente de crear usuario (admin)
+**Archivo nuevo**: `src/services/archivoService.ts`
 
-**Archivo nuevo**: `src/components/admin/NuevoUsuarioForm.tsx`
+Implementa el flujo multipart de subida:
 
-- Formulario con: nombre, correo, rol (Select con roles del sistema), sucursal (Select con useSucursales)
+1. `initUpload(data)` -> POST /archivos/init (devuelve archivo_id, upload_id, parte_bytes, partes_totales)
+2. `getPartUrl(archivoId, numeroParte)` -> POST /archivos/:archivo_id/parte-url
+3. `uploadPart(url, chunk)` -> PUT directo a URL firmada (captura ETag del header)
+4. `completeUpload(archivoId, partes)` -> POST /archivos/:archivo_id/completar
+5. `getDownloadUrl(archivoId)` -> GET /archivos/:archivo_id/descargar
+
+Funcion de alto nivel `uploadFile(file: File)` que orquesta todo el flujo:
+- Llama init -> divide el File en chunks segun parte_bytes -> sube cada parte -> completa -> devuelve archivo_id
+
+## Cambio 4: Crear hooks de React Query
+
+**Archivo nuevo**: `src/hooks/useVehiculosAPI.ts`
+
+Reemplaza el hook local `useVehiculos.ts` con hooks basados en React Query:
+
+- `useRutas()` - query para listar rutas
+- `useUnidades(rutaId)` - query para unidades de una ruta (carga lazy al expandir)
+- `useUnidadDetalle(unidadId)` - query para detalle individual
+- `useDocumentos(unidadId)` - query para documentos de una unidad
+- `useAlertas(unidadId)` - query para alertas de una unidad
+- `useDocsPorVencer(dias)` - query para KPI de docs por vencer
+
+Mutations:
+- `useCreateRuta()`, `useUpdateRuta()`, `useDeleteRuta()`
+- `useCreateUnidad()`, `useUpdateUnidad()`, `useDeleteUnidad()`
+- `useCreateDocumento()`, `useUpdateDocumento()`, `useDeleteDocumento()`
+- `useUpsertAlerta()`
+
+Cada mutation invalida las queries correspondientes para actualizar la UI automaticamente.
+
+## Cambio 5: Crear modales CRUD de Rutas y Unidades
+
+**Archivo nuevo**: `src/components/vehiculos/RutaFormModal.tsx`
+
+Modal con formulario para crear/editar ruta:
+- Campos: nombre (requerido), descripcion, activa (switch)
 - Validacion con Zod
-- Al enviar: POST a `/admin/usuarios`, muestra toast de exito/error
-- Usa los mismos patrones de Card/Label/Input/Button/Select que ConfiguracionPage
+- Usa mutation de crear o actualizar segun si recibe ruta existente
 
-## Cambio 5: Agregar tab "Usuarios" en ConfiguracionPage
+**Archivo nuevo**: `src/components/vehiculos/UnidadFormModal.tsx`
 
-**Archivo**: `src/pages/ConfiguracionPage.tsx`
+Modal con formulario para crear/editar unidad:
+- Campos: numero (requerido), placa (requerido), marca, modelo, anio, color, km, estado (select), descripcion
+- Validacion con Zod
+- Incluye confirmacion de eliminacion con AlertDialog
 
-- Agregar nueva tab "Usuarios" visible solo para admin
-- Contenido: `NuevoUsuarioForm` + lista de usuarios existentes usando `useUsuarios()`
-- Icono: `UserPlus` de lucide
+## Cambio 6: Actualizar DocVehFormModal con subida de archivos
 
-## Cambio 6: Agregar ruta /invitacion al router
+**Archivo**: `src/components/vehiculos/DocVehFormModal.tsx`
+
+- Agregar campo `fecha_documento` (date input)
+- Renombrar campo vigencia a `vigencia_hasta`
+- Agregar file input para seleccionar archivo
+- Al guardar: primero sube el archivo con `uploadFile()`, obtiene `archivo_id`, luego crea el documento con POST enviando ese `archivo_id`
+- Mostrar progreso de subida (barra o porcentaje)
+- Ya no necesita selector de unidad (siempre se abre desde el contexto de una unidad)
+
+## Cambio 7: Actualizar VehicleDetailModal
+
+**Archivo**: `src/components/vehiculos/VehicleDetailModal.tsx`
+
+- Cargar documentos y alertas con queries de React Query (en vez de recibirlos como props)
+- Boton "Descargar" ahora llama a `getDownloadUrl(archivoId)` y abre la URL en nueva pestania
+- Agregar boton "Editar" en header que abre `UnidadFormModal`
+- Agregar boton "Eliminar unidad" con confirmacion
+- Agregar accion "Editar metadata" en cada documento (abre modal de edicion con PATCH)
+- Mostrar `archivoNombre` y `archivoBytes` en la tabla de documentos
+
+## Cambio 8: Actualizar RutaCollapsible
+
+**Archivo**: `src/components/vehiculos/RutaCollapsible.tsx`
+
+- Cargar unidades con lazy loading: al expandir la ruta, dispara `useUnidades(rutaId)` con `enabled: isOpen`
+- Agregar boton de menu (tres puntos) en el header de la ruta con opciones: "Editar ruta", "Agregar unidad", "Eliminar ruta"
+- DELETE de ruta: si el backend responde 409 (RUTA_CON_UNIDADES), mostrar toast con mensaje de error
+
+## Cambio 9: Actualizar VehiculosPage
+
+**Archivo**: `src/pages/VehiculosPage.tsx`
+
+- Reemplazar `useVehiculos()` por los nuevos hooks de React Query
+- KPIs: usar `useDocsPorVencer(dias)` con el plazo seleccionado
+- Agregar boton "Nueva Ruta" en el header de la pagina
+- Agregar estados para modales de crear/editar ruta y unidad
+- Loading states: skeleton mientras cargan las rutas
+- Error states: mensaje con boton de reintentar
+
+## Cambio 10: Restringir acceso a solo admin
 
 **Archivo**: `src/main.tsx`
 
-- Agregar ruta publica (sin ProtectedRoute): `{ path: "invitacion", element: <S><InvitacionPage /></S> }`
-- Agregar lazy import de InvitacionPage
+Cambiar el wrapper de la ruta `/vehiculos` de `ModuleRoute` a `AdminRoute`:
 
-## Cambio 7: Mostrar mensaje de activacion en LoginPage
+```
+// Antes:
+<ModuleRoute module="vehiculos">
 
-**Archivo**: `src/pages/LoginPage.tsx`
+// Despues:
+<AdminRoute>
+```
 
-- Leer query param `?activated=true`
-- Si presente, mostrar Alert de exito: "Cuenta activada. Ahora puedes iniciar sesion."
+**Archivo**: `src/components/layout/AppSidebar.tsx`
+
+Ajustar la condicion de visibilidad del item "Vehiculos" en el sidebar para mostrar solo a admin (actualmente muestra a gestor_vehiculos tambien).
+
+**Archivo**: `src/utils/moduleAccess.ts`
+
+Remover `vehiculos` de la lista de modulos de `gestor_vehiculos`. Actualizar la descripcion del modulo vehiculos.
 
 ---
 
@@ -80,11 +168,20 @@ Usa `apiRequest` del `apiClient.ts` existente.
 
 | Archivo | Accion |
 |---------|--------|
-| `src/services/invitacionService.ts` | Crear - endpoints de invitacion |
-| `src/components/auth/SetPasswordForm.tsx` | Crear - formulario con strength bar |
-| `src/pages/InvitacionPage.tsx` | Crear - pagina publica de activacion |
-| `src/components/admin/NuevoUsuarioForm.tsx` | Crear - formulario admin crear usuario |
-| `src/pages/ConfiguracionPage.tsx` | Modificar - agregar tab Usuarios |
-| `src/main.tsx` | Modificar - agregar ruta /invitacion |
-| `src/pages/LoginPage.tsx` | Modificar - mensaje activacion exitosa |
+| `src/types/vehiculos.ts` | Modificar - actualizar interfaces |
+| `src/services/vehiculoService.ts` | Crear - servicio API |
+| `src/services/archivoService.ts` | Crear - flujo de archivos multipart |
+| `src/hooks/useVehiculosAPI.ts` | Crear - hooks React Query |
+| `src/components/vehiculos/RutaFormModal.tsx` | Crear - modal CRUD ruta |
+| `src/components/vehiculos/UnidadFormModal.tsx` | Crear - modal CRUD unidad |
+| `src/components/vehiculos/DocVehFormModal.tsx` | Modificar - agregar file upload |
+| `src/components/vehiculos/VehicleDetailModal.tsx` | Modificar - usar queries y acciones reales |
+| `src/components/vehiculos/RutaCollapsible.tsx` | Modificar - lazy load y menu de acciones |
+| `src/components/vehiculos/AlertConfigModal.tsx` | Modificar - usar mutation real |
+| `src/pages/VehiculosPage.tsx` | Modificar - conectar a API, agregar CRUD |
+| `src/main.tsx` | Modificar - cambiar a AdminRoute |
+| `src/utils/moduleAccess.ts` | Modificar - ajustar permisos |
+| `src/components/layout/AppSidebar.tsx` | Modificar - visibilidad sidebar |
+| `src/hooks/useVehiculos.ts` | Eliminar - ya no se usa (reemplazado por useVehiculosAPI) |
+| `src/data/mockVehiculos.ts` | Eliminar - ya no se necesita |
 

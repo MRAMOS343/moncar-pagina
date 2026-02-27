@@ -21,14 +21,21 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User, Building2, Package, Shield, Settings, Loader2 } from "lucide-react";
+import { User, Building2, Package, Shield, Settings, Loader2, UserPlus } from "lucide-react";
 import { showSuccessToast, showErrorToast } from "@/utils/toastHelpers";
+import { NuevoUsuarioForm } from "@/components/admin/NuevoUsuarioForm";
+import { useUsuarios } from "@/hooks/useUsuarios";
+import { Badge } from "@/components/ui/badge";
 
 export default function ConfiguracionPage() {
   const { currentUser, updateUserRole } = useAuth();
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'developer';
   
   // Control de acceso por rol
   const canManageSettings = currentUser?.role === 'admin' || currentUser?.role === 'gerente';
+
+  // Usuarios (solo admin)
+  const { data: usuarios, isLoading: loadingUsuarios } = useUsuarios();
   
   // === Hooks de datos ===
   const { data: preferences, isLoading: loadingPrefs } = useUserPreferences();
@@ -147,7 +154,7 @@ export default function ConfiguracionPage() {
       </div>
 
       <Tabs defaultValue="perfil" className="space-y-4">
-        <TabsList className={`grid w-full ${canManageSettings ? 'grid-cols-5' : 'grid-cols-3'}`}>
+        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-6' : canManageSettings ? 'grid-cols-5' : 'grid-cols-3'}`}>
           <TabsTrigger value="perfil" className="gap-2">
             <User className="h-4 w-4" />
             Perfil
@@ -163,6 +170,12 @@ export default function ConfiguracionPage() {
                 Inventario
               </TabsTrigger>
             </>
+          )}
+          {isAdmin && (
+            <TabsTrigger value="usuarios" className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              Usuarios
+            </TabsTrigger>
           )}
           <TabsTrigger value="permisos" className="gap-2">
             <Shield className="h-4 w-4" />
@@ -431,6 +444,46 @@ export default function ConfiguracionPage() {
                       Guardar configuración
                     </Button>
                   </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        {/* Pestaña: Usuarios (solo admin) */}
+        {isAdmin && (
+          <TabsContent value="usuarios" className="space-y-4">
+            <NuevoUsuarioForm />
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Usuarios registrados</CardTitle>
+                <CardDescription>
+                  Lista de usuarios en el sistema
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loadingUsuarios ? (
+                  <Skeleton className="h-24 w-full" />
+                ) : usuarios && usuarios.length > 0 ? (
+                  <div className="space-y-2">
+                    {usuarios.map((u) => (
+                      <div
+                        key={u.usuario_id}
+                        className="flex items-center justify-between p-3 rounded-lg border"
+                      >
+                        <div>
+                          <p className="font-medium">{u.nombre}</p>
+                          <p className="text-sm text-muted-foreground">{u.email}</p>
+                        </div>
+                        <Badge variant="secondary">Activo</Badge>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No hay usuarios registrados aún.
+                  </p>
                 )}
               </CardContent>
             </Card>
