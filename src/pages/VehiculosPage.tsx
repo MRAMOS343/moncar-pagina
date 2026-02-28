@@ -32,7 +32,7 @@ export default function VehiculosPage() {
 
   // Modals
   const [selectedUnidad, setSelectedUnidad] = useState<Unidad | null>(null);
-  const [docFormUnidadId, setDocFormUnidadId] = useState<string | null>(null);
+  const [docFormUnidad, setDocFormUnidad] = useState<{ id: string; numero: string } | null>(null);
   const [alertModalUnidadId, setAlertModalUnidadId] = useState<string | null>(null);
   const [alertModalLabel, setAlertModalLabel] = useState('');
 
@@ -112,13 +112,16 @@ export default function VehiculosPage() {
 
   // Doc handler
   const handleAddDoc = (unidadId: string) => {
-    setDocFormUnidadId(unidadId);
+    // Find the unit number from rutas data
+    const allUnidades = rutas.flatMap(r => (r as any).unidades ?? []);
+    const unidad = allUnidades.find((u: any) => u.id === unidadId);
+    setDocFormUnidad({ id: unidadId, numero: unidad?.numero ?? '' });
   };
 
   const handleSaveDoc = (data: { tipo: string; nombre: string; notas?: string; fecha_documento?: string; vigencia_hasta?: string; archivo_id?: string }) => {
-    if (!docFormUnidadId) return;
-    createDocumento.mutate({ unidadId: docFormUnidadId, data }, {
-      onSuccess: () => { toast.success('Documento creado'); setDocFormUnidadId(null); },
+    if (!docFormUnidad) return;
+    createDocumento.mutate({ unidadId: docFormUnidad.id, data }, {
+      onSuccess: () => { toast.success('Documento creado'); setDocFormUnidad(null); },
       onError: () => toast.error('Error al crear documento'),
     });
   };
@@ -236,12 +239,13 @@ export default function VehiculosPage() {
         loading={createUnidad.isPending || updateUnidad.isPending}
       />
 
-      {docFormUnidadId && (
+      {docFormUnidad && (
         <DocVehFormModal
-          open={!!docFormUnidadId}
-          onClose={() => setDocFormUnidadId(null)}
+          open={!!docFormUnidad}
+          onClose={() => setDocFormUnidad(null)}
           onSave={handleSaveDoc}
           loading={createDocumento.isPending}
+          unidadNumero={docFormUnidad.numero}
         />
       )}
 
