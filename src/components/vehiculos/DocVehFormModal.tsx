@@ -20,6 +20,7 @@ interface Props {
     fecha_documento?: string; vigencia_hasta?: string; archivo_id?: string;
   }) => void;
   loading?: boolean;
+  unidadNumero?: string;
 }
 
 const tipoDocOptions: { value: TipoDocUnidad; label: string }[] = Object.entries(TIPO_DOC_LABELS).map(
