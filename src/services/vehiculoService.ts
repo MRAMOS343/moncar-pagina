@@ -15,14 +15,9 @@ function mapRuta(r: Record<string, unknown>): Ruta {
   };
 }
 
-function normalizeEstado(s: string): Unidad['estado'] {
-  if (s === 'activa' || s === 'activo') return 'activo';
-  if (s === 'taller') return 'taller';
-  if (s === 'baja') return 'baja';
-  return 'activo';
-}
-
 function mapUnidad(u: Record<string, unknown>): Unidad {
+  const raw = (u.estado as string) ?? 'activa';
+  const estado: Unidad['estado'] = (raw === 'activa' || raw === 'taller' || raw === 'baja') ? raw : 'activa';
   return {
     id: u.unidad_id as string,
     rutaId: u.ruta_id as string,
@@ -34,7 +29,7 @@ function mapUnidad(u: Record<string, unknown>): Unidad {
     anio: (u.anio as number) ?? 0,
     color: (u.color as string) ?? '',
     km: (u.km as number) ?? 0,
-    estado: normalizeEstado((u.estado as string) ?? 'activo'),
+    estado,
     descripcion: (u.descripcion as string) ?? '',
     creadoEn: u.creado_en as string,
     actualizadoEn: u.actualizado_en as string,

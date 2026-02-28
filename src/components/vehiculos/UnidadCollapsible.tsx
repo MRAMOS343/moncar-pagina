@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import type { Unidad } from '@/types/vehiculos';
 
 const estadoBadge: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
-  activo: { label: 'Activo', variant: 'default' },
+  activa: { label: 'Activo', variant: 'default' },
   taller: { label: 'En Taller', variant: 'secondary' },
   baja: { label: 'Baja', variant: 'destructive' },
 };

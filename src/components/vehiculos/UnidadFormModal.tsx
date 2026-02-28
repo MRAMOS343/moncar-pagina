@@ -104,7 +104,7 @@ export function UnidadFormModal({ open, onClose, onSave, unidad, loading }: Prop
             <Select value={form.estado} onValueChange={v => set('estado', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="activo">Activo</SelectItem>
+                <SelectItem value="activa">Activo</SelectItem>
                 <SelectItem value="taller">En Taller</SelectItem>
                 <SelectItem value="baja">Baja</SelectItem>
               </SelectContent>
