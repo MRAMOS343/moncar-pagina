@@ -34,7 +34,7 @@ export async function downloadSalesReport(token: string, params: ReportParams): 
   const filename = disposition?.match(/filename="(.+)"/)?.[1] ?? "reporte_ventas.xlsx";
   console.log('[SalesReport] Filename:', filename);
 
-  const url = URL.createObjectURL(blob);
+  const blobUrl = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;
