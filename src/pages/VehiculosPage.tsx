@@ -112,13 +112,15 @@ export default function VehiculosPage() {
 
   // Doc handler
   const handleAddDoc = (unidadId: string) => {
-    setDocFormUnidadId(unidadId);
+    // Find the unit number from rutas data
+    const unidad = rutas.flatMap(r => r.unidades ?? []).find(u => u.id === unidadId);
+    setDocFormUnidad({ id: unidadId, numero: unidad?.numero ?? '' });
   };
 
   const handleSaveDoc = (data: { tipo: string; nombre: string; notas?: string; fecha_documento?: string; vigencia_hasta?: string; archivo_id?: string }) => {
-    if (!docFormUnidadId) return;
-    createDocumento.mutate({ unidadId: docFormUnidadId, data }, {
-      onSuccess: () => { toast.success('Documento creado'); setDocFormUnidadId(null); },
+    if (!docFormUnidad) return;
+    createDocumento.mutate({ unidadId: docFormUnidad.id, data }, {
+      onSuccess: () => { toast.success('Documento creado'); setDocFormUnidad(null); },
       onError: () => toast.error('Error al crear documento'),
     });
   };
