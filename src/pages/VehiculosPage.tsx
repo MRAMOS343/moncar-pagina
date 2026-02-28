@@ -113,7 +113,8 @@ export default function VehiculosPage() {
   // Doc handler
   const handleAddDoc = (unidadId: string) => {
     // Find the unit number from rutas data
-    const unidad = rutas.flatMap(r => r.unidades ?? []).find(u => u.id === unidadId);
+    const allUnidades = rutas.flatMap(r => (r as any).unidades ?? []);
+    const unidad = allUnidades.find((u: any) => u.id === unidadId);
     setDocFormUnidad({ id: unidadId, numero: unidad?.numero ?? '' });
   };
 

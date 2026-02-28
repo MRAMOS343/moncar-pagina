@@ -32,7 +32,7 @@ const buildNombre = (tipo: TipoDocUnidad, numero?: string) =>
 
 export function DocVehFormModal({ open, onClose, onSave, loading, unidadNumero }: Props) {
   const defaultTipo: TipoDocUnidad = 'cromatica';
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{ nombre: string; tipo: TipoDocUnidad; vigenciaHasta: string; fechaDocumento: string; notas: string }>({
     nombre: buildNombre(defaultTipo, unidadNumero),
     tipo: defaultTipo,
     vigenciaHasta: '',
