@@ -238,12 +238,13 @@ export default function VehiculosPage() {
         loading={createUnidad.isPending || updateUnidad.isPending}
       />
 
-      {docFormUnidadId && (
+      {docFormUnidad && (
         <DocVehFormModal
-          open={!!docFormUnidadId}
-          onClose={() => setDocFormUnidadId(null)}
+          open={!!docFormUnidad}
+          onClose={() => setDocFormUnidad(null)}
           onSave={handleSaveDoc}
           loading={createDocumento.isPending}
+          unidadNumero={docFormUnidad.numero}
         />
       )}
 

@@ -27,19 +27,31 @@ const tipoDocOptions: { value: TipoDocUnidad; label: string }[] = Object.entries
   ([value, label]) => ({ value: value as TipoDocUnidad, label })
 );
 
-export function DocVehFormModal({ open, onClose, onSave, loading }: Props) {
+const buildNombre = (tipo: TipoDocUnidad, numero?: string) =>
+  numero ? `${TIPO_DOC_LABELS[tipo]} ${numero}` : TIPO_DOC_LABELS[tipo];
+
+export function DocVehFormModal({ open, onClose, onSave, loading, unidadNumero }: Props) {
+  const defaultTipo: TipoDocUnidad = 'cromatica';
   const [form, setForm] = useState({
-    nombre: '',
-    tipo: 'cromatica' as TipoDocUnidad,
+    nombre: buildNombre(defaultTipo, unidadNumero),
+    tipo: defaultTipo,
     vigenciaHasta: '',
     fechaDocumento: new Date().toISOString().slice(0, 10),
     notas: '',
   });
+  const [nombreTouched, setNombreTouched] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  const set = (key: string, value: unknown) => setForm(prev => ({ ...prev, [key]: value }));
+  const set = (key: string, value: unknown) => {
+    if (key === 'tipo' && !nombreTouched) {
+      setForm(prev => ({ ...prev, [key]: value, nombre: buildNombre(value as TipoDocUnidad, unidadNumero) }));
+      return;
+    }
+    if (key === 'nombre') setNombreTouched(true);
+    setForm(prev => ({ ...prev, [key]: value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
