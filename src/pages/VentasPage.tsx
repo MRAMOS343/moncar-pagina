@@ -46,6 +46,10 @@ export default function VentasPage() {
   const [dateRange, setDateRange] = useState<string>('30d');
   const [includeCancelled, setIncludeCancelled] = useState(false);
   
+  // Estado para reporte
+  const [reportPeriod, setReportPeriod] = useState<string>('1m');
+  const [isDownloading, setIsDownloading] = useState(false);
+  
   // Estado para modal de detalle
   const [selectedSaleId, setSelectedSaleId] = useState<number | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
