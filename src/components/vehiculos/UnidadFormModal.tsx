@@ -21,7 +21,7 @@ interface Props {
 export function UnidadFormModal({ open, onClose, onSave, unidad, loading }: Props) {
   const [form, setForm] = useState({
     numero: '', placa: '', marca: '', modelo: '',
-    anio: new Date().getFullYear(), color: '', km: 0, estado: 'activo', descripcion: '',
+    anio: new Date().getFullYear(), color: '', km: 0, estado: 'activa', descripcion: '',
   });
 
   useEffect(() => {
