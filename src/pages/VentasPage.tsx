@@ -188,49 +188,81 @@ export default function VentasPage() {
     setDetailOpen(true);
   }, []);
 
-  const handleCreateSale = () => {
-    if (currentUser.role === 'admin' || currentUser.role === 'gerente' || currentUser.role === 'cajero') {
-      showInfoToast(
-        "Funcionalidad disponible próximamente",
-        "El módulo de creación de ventas será implementado en la siguiente versión."
-      );
-    } else {
-      showErrorToast(
-        "Acceso denegado",
-        "No tienes permisos para crear ventas."
-      );
-    }
-  };
+  const handleDownloadReport = useCallback(async () => {
+    setIsDownloading(true);
+    try {
+      const token = localStorage.getItem('moncar_token');
+      if (!token) {
+        showErrorToast("Error", "Sesión no válida. Inicia sesión nuevamente.");
+        return;
+      }
 
-  const handleExportCSV = () => {
-    logger.info('Exportación de ventas iniciada', {
-      cantidadVentas: salesData.length,
-      dateRange
-    });
-    
-    exportToCSV(
-      salesData.map(sale => ({
-        Folio: sale.folio_numero,
-        Fecha: sale.usu_fecha,
-        Hora: sale.usu_hora,
-        Sucursal: sale.sucursal_id,
-        Estado: sale.estado_origen,
-        Pagos: sale.pagos_resumen ?? '',
-        Subtotal: toNumber(sale.subtotal),
-        IVA: toNumber(sale.impuesto),
-        Total: toNumber(sale.total),
-        Cancelada: sale.cancelada ? 'Sí' : 'No'
-      })),
-      `ventas_${dateRange}_${new Date().toISOString().split('T')[0]}`
-    );
-    
-    showSuccessToast(
-      "Exportación exitosa",
-      "Los datos de ventas se han exportado a CSV correctamente."
-    );
-    
-    logger.info('Exportación de ventas completada exitosamente');
-  };
+      const now = new Date();
+      let fromDate: string;
+      switch (reportPeriod) {
+        case '7d': fromDate = format(subDays(now, 7), 'yyyy-MM-dd'); break;
+        case '1m': fromDate = format(subDays(now, 30), 'yyyy-MM-dd'); break;
+        case '3m': fromDate = format(subDays(now, 90), 'yyyy-MM-dd'); break;
+        case 'all': fromDate = '2020-01-01'; break;
+        default: fromDate = format(subDays(now, 30), 'yyyy-MM-dd');
+      }
+
+      // Fetch all pages for the report
+      let allItems: SaleListItem[] = [];
+      let cursorFecha: string | undefined;
+      let cursorVentaId: number | undefined;
+      let hasMore = true;
+
+      while (hasMore) {
+        const res = await fetchSales(token, {
+          from: fromDate,
+          sucursal_id: currentWarehouse === 'all' ? undefined : currentWarehouse,
+          include_cancelled: true,
+          limit: 200,
+          cursor_fecha: cursorFecha,
+          cursor_venta_id: cursorVentaId,
+        });
+        allItems = [...allItems, ...res.items];
+        if (res.next_cursor) {
+          cursorFecha = res.next_cursor.cursor_fecha;
+          cursorVentaId = res.next_cursor.cursor_venta_id;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      if (allItems.length === 0) {
+        showInfoToast("Sin datos", "No hay ventas en el período seleccionado.");
+        return;
+      }
+
+      const periodLabels: Record<string, string> = { '7d': '1_semana', '1m': '1_mes', '3m': '3_meses', 'all': 'historico' };
+
+      exportToCSV(
+        allItems.map(sale => ({
+          Folio: sale.folio_numero,
+          Fecha: sale.usu_fecha,
+          Hora: sale.usu_hora,
+          Sucursal: sale.sucursal_id,
+          Estado: sale.estado_origen,
+          Pagos: sale.pagos_resumen ?? '',
+          Subtotal: toNumber(sale.subtotal),
+          IVA: toNumber(sale.impuesto),
+          Total: toNumber(sale.total),
+          Cancelada: sale.cancelada ? 'Sí' : 'No'
+        })),
+        `reporte_ventas_${periodLabels[reportPeriod] ?? reportPeriod}_${format(now, 'yyyy-MM-dd')}`
+      );
+
+      showSuccessToast("Reporte descargado", `Se exportaron ${allItems.length} ventas correctamente.`);
+      logger.info('Reporte de ventas descargado', { period: reportPeriod, count: allItems.length });
+    } catch (err: any) {
+      showErrorToast("Error al descargar", err?.message || "No se pudo generar el reporte.");
+      logger.error('Error descargando reporte de ventas', err);
+    } finally {
+      setIsDownloading(false);
+    }
+  }, [reportPeriod, currentWarehouse]);
 
   // Columnas de tabla
   const columns = useMemo(() => getVentasColumns(handleViewDetail), [handleViewDetail]);
