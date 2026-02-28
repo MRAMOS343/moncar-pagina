@@ -16,8 +16,8 @@ import { getVentasColumns } from '@/config/tableColumns';
 import { User, KPIData, ChartDataPoint, Warehouse } from '../types';
 import { format, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { exportToCSV } from '@/utils/exportCSV';
-import { fetchSales } from '@/services/salesService';
+import { downloadSalesReport } from '@/services/salesReportService';
+import type { SaleListItem } from '@/types/sales';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { ChartSkeleton } from '@/components/ui/chart-skeleton';
@@ -29,7 +29,7 @@ import { useSales } from '@/hooks/useSales';
 import { useVentasKPIs } from '@/hooks/useVentasKPIs';
 import { SaleDetailModal } from '@/components/modals/SaleDetailModal';
 import { toNumber, formatCurrency } from '@/utils/formatters';
-import type { SaleListItem } from '@/types/sales';
+
 
 interface ContextType {
   currentWarehouse: string;
@@ -198,64 +198,22 @@ export default function VentasPage() {
       }
 
       const now = new Date();
-      let fromDate: string;
+      let reportFrom: string;
       switch (reportPeriod) {
-        case '7d': fromDate = format(subDays(now, 7), 'yyyy-MM-dd'); break;
-        case '1m': fromDate = format(subDays(now, 30), 'yyyy-MM-dd'); break;
-        case '3m': fromDate = format(subDays(now, 90), 'yyyy-MM-dd'); break;
-        case 'all': fromDate = '2020-01-01'; break;
-        default: fromDate = format(subDays(now, 30), 'yyyy-MM-dd');
+        case '7d': reportFrom = format(subDays(now, 7), 'yyyy-MM-dd'); break;
+        case '1m': reportFrom = format(subDays(now, 30), 'yyyy-MM-dd'); break;
+        case '3m': reportFrom = format(subDays(now, 90), 'yyyy-MM-dd'); break;
+        case 'all': reportFrom = '2020-01-01'; break;
+        default: reportFrom = format(subDays(now, 30), 'yyyy-MM-dd');
       }
 
-      // Fetch all pages for the report
-      let allItems: SaleListItem[] = [];
-      let cursorFecha: string | undefined;
-      let cursorVentaId: number | undefined;
-      let hasMore = true;
+      await downloadSalesReport(token, {
+        from: reportFrom,
+        sucursal_id: currentWarehouse === 'all' ? undefined : currentWarehouse,
+      });
 
-      while (hasMore) {
-        const res = await fetchSales(token, {
-          from: fromDate,
-          sucursal_id: currentWarehouse === 'all' ? undefined : currentWarehouse,
-          include_cancelled: true,
-          limit: 200,
-          cursor_fecha: cursorFecha,
-          cursor_venta_id: cursorVentaId,
-        });
-        allItems = [...allItems, ...res.items];
-        if (res.next_cursor) {
-          cursorFecha = res.next_cursor.cursor_fecha;
-          cursorVentaId = res.next_cursor.cursor_venta_id;
-        } else {
-          hasMore = false;
-        }
-      }
-
-      if (allItems.length === 0) {
-        showInfoToast("Sin datos", "No hay ventas en el período seleccionado.");
-        return;
-      }
-
-      const periodLabels: Record<string, string> = { '7d': '1_semana', '1m': '1_mes', '3m': '3_meses', 'all': 'historico' };
-
-      exportToCSV(
-        allItems.map(sale => ({
-          Folio: sale.folio_numero,
-          Fecha: sale.usu_fecha,
-          Hora: sale.usu_hora,
-          Sucursal: sale.sucursal_id,
-          Estado: sale.estado_origen,
-          Pagos: sale.pagos_resumen ?? '',
-          Subtotal: toNumber(sale.subtotal),
-          IVA: toNumber(sale.impuesto),
-          Total: toNumber(sale.total),
-          Cancelada: sale.cancelada ? 'Sí' : 'No'
-        })),
-        `reporte_ventas_${periodLabels[reportPeriod] ?? reportPeriod}_${format(now, 'yyyy-MM-dd')}`
-      );
-
-      showSuccessToast("Reporte descargado", `Se exportaron ${allItems.length} ventas correctamente.`);
-      logger.info('Reporte de ventas descargado', { period: reportPeriod, count: allItems.length });
+      showSuccessToast("Reporte descargado", "El archivo Excel se descargó correctamente.");
+      logger.info('Reporte de ventas descargado', { period: reportPeriod });
     } catch (err: any) {
       showErrorToast("Error al descargar", err?.message || "No se pudo generar el reporte.");
       logger.error('Error descargando reporte de ventas', err);
