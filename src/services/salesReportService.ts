@@ -36,7 +36,7 @@ export async function downloadSalesReport(token: string, params: ReportParams): 
 
   const blobUrl = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
+  a.href = blobUrl;
   a.download = filename;
   a.style.display = "none";
   document.body.appendChild(a);
