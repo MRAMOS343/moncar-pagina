@@ -317,14 +317,32 @@ export default function VentasPage() {
             }
           </p>
         </div>
-        <div className="flex gap-2 self-end sm:self-auto">
-          <Button onClick={handleCreateSale} size="sm" className="btn-hover touch-target" aria-label="Crear nueva venta">
-            <Plus className="w-4 h-4 sm:mr-2" />
-            <span className="hidden sm:inline">Nueva Venta</span>
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleExportCSV} className="btn-hover touch-target" aria-label="Exportar datos de ventas a CSV">
-            <Download className="w-4 h-4 sm:mr-2" />
-            <span className="hidden sm:inline">Exportar</span>
+        <div className="flex items-center gap-2 self-end sm:self-auto">
+          <Select value={reportPeriod} onValueChange={setReportPeriod}>
+            <SelectTrigger className="w-[140px] h-9 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7d">1 Semana</SelectItem>
+              <SelectItem value="1m">1 Mes</SelectItem>
+              <SelectItem value="3m">3 Meses</SelectItem>
+              <SelectItem value="all">Histórico</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleDownloadReport} 
+            disabled={isDownloading}
+            className="btn-hover touch-target" 
+            aria-label="Descargar reporte de ventas"
+          >
+            {isDownloading ? (
+              <Loader2 className="w-4 h-4 sm:mr-2 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4 sm:mr-2" />
+            )}
+            <span className="hidden sm:inline">Descargar Reporte</span>
           </Button>
         </div>
       </div>
