@@ -21,7 +21,7 @@ interface Props {
 export function UnidadFormModal({ open, onClose, onSave, unidad, loading }: Props) {
   const [form, setForm] = useState({
     numero: '', placa: '', marca: '', modelo: '',
-    anio: new Date().getFullYear(), color: '', km: 0, estado: 'activo', descripcion: '',
+    anio: new Date().getFullYear(), color: '', km: 0, estado: 'activa', descripcion: '',
   });
 
   useEffect(() => {
@@ -34,7 +34,7 @@ export function UnidadFormModal({ open, onClose, onSave, unidad, loading }: Prop
         anio: unidad?.anio ?? new Date().getFullYear(),
         color: unidad?.color ?? '',
         km: unidad?.km ?? 0,
-        estado: unidad?.estado ?? 'activo',
+        estado: unidad?.estado ?? 'activa',
         descripcion: unidad?.descripcion ?? '',
       });
     }
@@ -104,7 +104,7 @@ export function UnidadFormModal({ open, onClose, onSave, unidad, loading }: Prop
             <Select value={form.estado} onValueChange={v => set('estado', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="activo">Activo</SelectItem>
+                <SelectItem value="activa">Activo</SelectItem>
                 <SelectItem value="taller">En Taller</SelectItem>
                 <SelectItem value="baja">Baja</SelectItem>
               </SelectContent>

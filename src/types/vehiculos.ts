@@ -1,4 +1,4 @@
-export type EstadoVehiculo = 'activo' | 'taller' | 'baja';
+export type EstadoVehiculo = 'activa' | 'taller' | 'baja';
 export type TipoDocUnidad = 'cromatica' | 'factura' | 'poliza_seguro' | 'tarjeta_circulacion' | 'titulo_concesion' | 'verificacion' | 'permiso' | 'otro';
 
 /* ── Ruta ── */
