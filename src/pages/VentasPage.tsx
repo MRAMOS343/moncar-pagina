@@ -17,6 +17,7 @@ import { User, KPIData, ChartDataPoint, Warehouse } from '../types';
 import { format, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { exportToCSV } from '@/utils/exportCSV';
+import { fetchSales } from '@/services/salesService';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { ChartSkeleton } from '@/components/ui/chart-skeleton';
