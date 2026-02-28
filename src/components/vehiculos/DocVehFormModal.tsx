@@ -46,11 +46,12 @@ export function DocVehFormModal({ open, onClose, onSave, loading, unidadNumero }
 
   const set = (key: string, value: unknown) => {
     if (key === 'tipo' && !nombreTouched) {
-      setForm(prev => ({ ...prev, [key]: value, nombre: buildNombre(value as TipoDocUnidad, unidadNumero) }));
+      const newTipo = value as TipoDocUnidad;
+      setForm(prev => ({ ...prev, tipo: newTipo, nombre: buildNombre(newTipo, unidadNumero) }));
       return;
     }
     if (key === 'nombre') setNombreTouched(true);
-    setForm(prev => ({ ...prev, [key]: value }));
+    setForm(prev => ({ ...prev, [key]: value } as typeof prev));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
