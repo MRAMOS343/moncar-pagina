@@ -523,10 +523,6 @@ export default function VentasPage() {
               icon={ShoppingBag}
               title="No hay ventas registradas"
               description="No se encontraron ventas que coincidan con los filtros aplicados. Intenta ajustar los criterios de búsqueda."
-              action={{
-                label: "Crear Nueva Venta",
-                onClick: handleCreateSale
-              }}
             />
           ) : (
             <>
