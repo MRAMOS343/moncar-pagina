@@ -28,7 +28,7 @@ import { useSales } from '@/hooks/useSales';
 import { useVentasKPIs } from '@/hooks/useVentasKPIs';
 import { SaleDetailModal } from '@/components/modals/SaleDetailModal';
 import { toNumber, formatCurrency } from '@/utils/formatters';
-import type { SaleListItem } from '@/types/sales';
+
 
 interface ContextType {
   currentWarehouse: string;
