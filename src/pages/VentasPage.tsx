@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ResponsiveTable } from '@/components/ui/responsive-table';
-import { Plus, Download, ShoppingBag, Filter, AlertCircle, RefreshCw } from 'lucide-react';
+import { Download, ShoppingBag, Filter, AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
 import { LazyLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from '@/components/charts/LazyLineChart';
 import { getVentasColumns } from '@/config/tableColumns';
 import { User, KPIData, ChartDataPoint, Warehouse } from '../types';
