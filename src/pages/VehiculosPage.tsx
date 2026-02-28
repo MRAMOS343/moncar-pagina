@@ -32,7 +32,7 @@ export default function VehiculosPage() {
 
   // Modals
   const [selectedUnidad, setSelectedUnidad] = useState<Unidad | null>(null);
-  const [docFormUnidadId, setDocFormUnidadId] = useState<string | null>(null);
+  const [docFormUnidad, setDocFormUnidad] = useState<{ id: string; numero: string } | null>(null);
   const [alertModalUnidadId, setAlertModalUnidadId] = useState<string | null>(null);
   const [alertModalLabel, setAlertModalLabel] = useState('');
 
