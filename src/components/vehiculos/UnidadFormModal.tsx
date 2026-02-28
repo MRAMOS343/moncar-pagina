@@ -34,7 +34,7 @@ export function UnidadFormModal({ open, onClose, onSave, unidad, loading }: Prop
         anio: unidad?.anio ?? new Date().getFullYear(),
         color: unidad?.color ?? '',
         km: unidad?.km ?? 0,
-        estado: unidad?.estado ?? 'activo',
+        estado: unidad?.estado ?? 'activa',
         descripcion: unidad?.descripcion ?? '',
       });
     }
