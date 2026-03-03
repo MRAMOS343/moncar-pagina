@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Bus, Plus, Bell, Download, Trash, AlertTriangle, FileText, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { Unidad, TipoDocUnidad } from '@/types/vehiculos';
 import { TIPO_DOC_LABELS } from '@/types/vehiculos';
 import { useDocumentos, useDeleteDocumento, getDownloadUrl } from '@/hooks/useVehiculosAPI';
@@ -44,6 +45,7 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
   const unidadId = unidad?.id ?? null;
   const { data: documentos = [], isLoading: docsLoading } = useDocumentos(unidadId);
   const deleteDoc = useDeleteDocumento();
+  const isMobile = useIsMobile();
 
   const alertCounts = useMemo(() => {
     let expired = 0, expiring = 0;
@@ -61,7 +63,13 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
     if (!archivoId) { toast.info('Sin archivo asociado'); return; }
     try {
       const url = await getDownloadUrl(archivoId);
-      window.open(url, '_blank');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     } catch {
       toast.error('Error al obtener enlace de descarga');
     }
@@ -76,21 +84,23 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[85vh] p-0">
-        <DialogHeader className="px-6 pt-6 pb-0">
-          <DialogTitle className="flex items-center gap-2">
-            <Bus className="w-5 h-5 text-primary" />
-            Unidad {unidad.numero} — {unidad.marca} {unidad.modelo} ({unidad.anio})
+      <DialogContent className="max-w-2xl max-h-[90vh] p-0 w-[95vw] md:w-auto">
+        <DialogHeader className="px-4 md:px-6 pt-4 md:pt-6 pb-0">
+          <DialogTitle className="flex items-center gap-2 text-base md:text-lg">
+            <Bus className="w-5 h-5 text-primary shrink-0" />
+            <span className="truncate">
+              Unidad {unidad.numero} — {unidad.marca} {unidad.modelo} ({unidad.anio})
+            </span>
             {onEditUnidad && (
-              <Button variant="ghost" size="icon" className="h-7 w-7 ml-auto" onClick={() => onEditUnidad(unidad)}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 md:h-7 md:w-7 ml-auto shrink-0" onClick={() => onEditUnidad(unidad)}>
                 <Pencil className="w-3.5 h-3.5" />
               </Button>
             )}
           </DialogTitle>
         </DialogHeader>
-        <ScrollArea className="max-h-[calc(85vh-80px)]">
-          <div className="px-6 pb-6 space-y-4">
-            <div className="flex items-center gap-2">
+        <ScrollArea className="max-h-[calc(90vh-80px)]">
+          <div className="px-4 md:px-6 pb-6 space-y-4">
+            <div className="flex flex-wrap items-center gap-2">
               <Badge variant={badge.variant}>{badge.label}</Badge>
               <span className="text-sm font-medium text-muted-foreground">{unidad.placa}</span>
               {alertCounts.expired > 0 && (
@@ -113,14 +123,16 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
 
             <Separator />
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <h3 className="text-sm font-semibold">Documentos</h3>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => onConfigAlertas(unidad.id)}>
-                  <Bell className="w-3 h-3 mr-1" />Alertas
+                <Button variant="outline" size="sm" className="h-8 md:h-7 text-xs" onClick={() => onConfigAlertas(unidad.id)}>
+                  <Bell className="w-3 h-3 mr-1" />
+                  <span className="hidden sm:inline">Alertas</span>
                 </Button>
-                <Button size="sm" className="h-7 text-xs" onClick={() => onAddDoc(unidad.id)}>
-                  <Plus className="w-3 h-3 mr-1" />Subir Documento
+                <Button size="sm" className="h-8 md:h-7 text-xs" onClick={() => onAddDoc(unidad.id)}>
+                  <Plus className="w-3 h-3 mr-1" />
+                  <span className="hidden sm:inline">Subir</span> Documento
                 </Button>
               </div>
             </div>
@@ -134,7 +146,48 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
                 <FileText className="w-8 h-8 mx-auto mb-2 text-muted-foreground/40" />
                 Sin documentos registrados
               </div>
+            ) : isMobile ? (
+              /* Mobile: stacked cards */
+              <div className="space-y-2">
+                {documentos.map(d => {
+                  const expired = isExpired(d.vigenciaHasta);
+                  const expiring = isExpiringSoon(d.vigenciaHasta);
+                  return (
+                    <div
+                      key={d.id}
+                      className={`border rounded-lg p-3 space-y-2 ${expired ? 'bg-destructive/5 border-destructive/20' : expiring ? 'bg-amber-500/5 border-amber-300/30' : ''}`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{d.archivoNombre ?? d.nombre}</p>
+                          <Badge variant="outline" className="text-[10px] mt-1">{TIPO_DOC_LABELS[d.tipo]}</Badge>
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => handleDownload(d.archivoId)}>
+                            <Download className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => handleDeleteDoc(d.id)}>
+                            <Trash className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        {d.vigenciaHasta ? (
+                          <span className={`flex items-center gap-1 ${expired ? 'text-destructive font-medium' : expiring ? 'text-amber-600 font-medium' : ''}`}>
+                            {(expired || expiring) && <AlertTriangle className="w-3 h-3" />}
+                            Vigencia: {d.vigenciaHasta}
+                          </span>
+                        ) : (
+                          <span>Sin vigencia</span>
+                        )}
+                        <span>{formatBytes(d.archivoBytes)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
+              /* Desktop: table */
               <div className="border rounded-md overflow-auto">
                 <Table>
                   <TableHeader>

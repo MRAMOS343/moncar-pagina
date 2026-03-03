@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-
 import { Search, Moon, Sun, Bell } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -60,6 +59,7 @@ export function AppTopbar({
 }: AppTopbarProps) {
   const location = useLocation();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const breadcrumbNames: Record<string, string> = {
     dashboard: 'Dashboard',
@@ -91,58 +91,85 @@ export function AppTopbar({
   };
 
   return (
-    <header className="h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-      <div className="flex h-full items-center gap-2 md:gap-4 px-2 md:px-4">
-        {/* Sidebar Toggle */}
+    <header className="h-14 md:h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+      <div className="flex h-full items-center gap-1.5 md:gap-4 px-2 md:px-4">
         <SidebarTrigger className="flex-shrink-0" />
 
-        {/* Breadcrumbs */}
-        <div className="flex-1 min-w-0 py-1">
-          <Breadcrumb>
-            <BreadcrumbList className="flex-wrap">
-              {dynamicBreadcrumbs.map((crumb, index) => (
-                <div key={index} className="flex items-center">
-                  {index > 0 && <BreadcrumbSeparator />}
-                  <BreadcrumbItem>
-                    {crumb.href && index < dynamicBreadcrumbs.length - 1 ? (
-                      <BreadcrumbLink href={crumb.href} className="truncate max-w-[200px]">
-                        {crumb.label}
-                      </BreadcrumbLink>
-                    ) : (
-                      <BreadcrumbPage className="truncate max-w-[300px]">{crumb.label}</BreadcrumbPage>
-                    )}
-                  </BreadcrumbItem>
-                </div>
-              ))}
-            </BreadcrumbList>
-          </Breadcrumb>
-        </div>
-
-        {showSearch && (
-          <div className="relative flex-shrink-0 w-80 max-w-sm">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Buscar productos, SKU... (Ctrl+/)"
-              className="pl-10"
-              onChange={(e) => onSearch?.(e.target.value)}
-              onKeyDown={(e) => {
-                if ((e.ctrlKey || e.metaKey) && e.key === '/') {
-                  e.preventDefault();
-                  e.currentTarget.focus();
-                }
-              }}
-            />
+        {/* Breadcrumbs — hidden when mobile search is open */}
+        {!searchOpen && (
+          <div className="flex-1 min-w-0 py-1">
+            <Breadcrumb>
+              <BreadcrumbList className="flex-wrap">
+                {dynamicBreadcrumbs.map((crumb, index) => (
+                  <div key={index} className="flex items-center">
+                    {index > 0 && <BreadcrumbSeparator />}
+                    <BreadcrumbItem>
+                      {crumb.href && index < dynamicBreadcrumbs.length - 1 ? (
+                        <BreadcrumbLink href={crumb.href} className="truncate max-w-[120px] md:max-w-[200px]">
+                          {crumb.label}
+                        </BreadcrumbLink>
+                      ) : (
+                        <BreadcrumbPage className="truncate max-w-[140px] md:max-w-[300px]">{crumb.label}</BreadcrumbPage>
+                      )}
+                    </BreadcrumbItem>
+                  </div>
+                ))}
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
         )}
 
+        {/* Search — icon on mobile, full input on desktop */}
+        {showSearch && (
+          <>
+            {/* Mobile: toggle search */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden flex-shrink-0"
+              onClick={() => setSearchOpen(!searchOpen)}
+              aria-label="Buscar"
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+            {searchOpen && (
+              <div className="flex-1 min-w-0 md:hidden">
+                <Input
+                  placeholder="Buscar..."
+                  className="h-9"
+                  autoFocus
+                  onChange={(e) => onSearch?.(e.target.value)}
+                  onBlur={() => setSearchOpen(false)}
+                />
+              </div>
+            )}
+            {/* Desktop: always visible */}
+            <div className="relative flex-shrink-0 w-80 max-w-sm hidden md:block">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Buscar productos, SKU... (Ctrl+/)"
+                className="pl-10"
+                onChange={(e) => onSearch?.(e.target.value)}
+                onKeyDown={(e) => {
+                  if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+                    e.preventDefault();
+                    e.currentTarget.focus();
+                  }
+                }}
+              />
+            </div>
+          </>
+        )}
+
+        {/* Warehouse selector — compact on mobile */}
         {showWarehouseSelector && (
           <Select value={currentWarehouse} onValueChange={onWarehouseChange} disabled={warehousesLoading}>
-            <SelectTrigger className="w-40">
-              <span className={warehousesLoading ? "flex-1 truncate text-muted-foreground" : "flex-1 truncate"}>
+            <SelectTrigger className="w-28 md:w-40 shrink-0">
+              <span className={`flex-1 truncate text-xs md:text-sm ${warehousesLoading ? "text-muted-foreground" : ""}`}>
                 {warehousesLoading
                   ? "Cargando..."
                   : currentWarehouse === "all"
-                    ? "Todas las Sucursales"
+                    ? "Todas"
                     : (warehouses.find((w) => w.id === currentWarehouse)?.nombre?.trim() ??
                       warehouses.find((w) => w.id === currentWarehouse)?.nombre ??
                       "Sucursal")}
@@ -159,9 +186,9 @@ export function AppTopbar({
           </Select>
         )}
 
-        {/* Role Simulator — only in DEV and Refaccionarias */}
+        {/* Role Simulator — only in DEV, Refaccionarias, hidden on mobile */}
         {import.meta.env.DEV && location.pathname.startsWith('/refaccionarias') && (
-          <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Rol:</span>
             <Select 
               value={currentUser?.role || 'cajero'} 
@@ -183,7 +210,7 @@ export function AppTopbar({
         )}
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 md:gap-2">
           <Button
             variant="ghost"
             size="icon"
