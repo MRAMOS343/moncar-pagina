@@ -33,7 +33,7 @@ export function RutaCollapsible({ ruta, onSelectUnidad, onEditRuta, onDeleteRuta
         </CollapsibleTrigger>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 mr-2 shrink-0">
+            <Button variant="ghost" size="icon" className="h-10 w-10 md:h-8 md:w-8 mr-1 md:mr-2 shrink-0">
               <MoreHorizontal className="w-4 h-4" />
             </Button>
           </DropdownMenuTrigger>

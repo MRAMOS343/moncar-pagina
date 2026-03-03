@@ -1,4 +1,4 @@
-import { Bus, AlertTriangle } from 'lucide-react';
+import { Bus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Unidad } from '@/types/vehiculos';
 
@@ -20,12 +20,14 @@ export function UnidadCollapsible({ unidad, onClick }: Props) {
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-muted/30 transition-colors rounded-r-md ml-4 border-l-2 border-muted"
+      className="flex items-center gap-2 md:gap-3 w-full px-3 md:px-4 py-3 text-left hover:bg-muted/30 transition-colors rounded-r-md ml-2 md:ml-4 border-l-2 border-muted min-h-[44px]"
     >
       <Bus className="w-4 h-4 text-primary/70 shrink-0" />
-      <span className="font-medium text-sm">Unidad {unidad.numero}</span>
-      <span className="text-xs text-muted-foreground">{unidad.placa} · {unidad.marca} {unidad.modelo}</span>
-      <Badge variant={badge.variant} className="text-[10px] ml-auto">{badge.label}</Badge>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2 flex-1 min-w-0">
+        <span className="font-medium text-sm whitespace-nowrap">Unidad {unidad.numero}</span>
+        <span className="text-xs text-muted-foreground truncate">{unidad.placa} · {unidad.marca} {unidad.modelo}</span>
+      </div>
+      <Badge variant={badge.variant} className="text-[10px] shrink-0">{badge.label}</Badge>
     </button>
   );
 }
