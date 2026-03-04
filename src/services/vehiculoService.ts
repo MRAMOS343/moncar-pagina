@@ -156,6 +156,16 @@ export async function upsertAlerta(unidadId: string, tipoDocumento: string, data
   await apiRequest(`/vehiculos/unidades/${unidadId}/alertas/${tipoDocumento}`, { method: 'PUT', token: getToken(), body: data });
 }
 
+/* ── Bulk import ── */
+
+export async function checkDuplicados(rutaId: string, numeros: string): Promise<{ duplicados: string[] }> {
+  return apiRequest<{ duplicados: string[] }>(`/vehiculos/rutas/${rutaId}/unidades/check?numeros=${numeros}`, { token: getToken() });
+}
+
+export async function importarBulk(rutaId: string, body: import('@/types/vehiculos').ImportarBulkBody): Promise<import('@/types/vehiculos').ImportarBulkResultado> {
+  return apiRequest<import('@/types/vehiculos').ImportarBulkResultado>(`/vehiculos/rutas/${rutaId}/importar`, { method: 'POST', token: getToken(), body });
+}
+
 /* ── KPI por vencer ── */
 
 export interface DocPorVencer {

@@ -70,6 +70,47 @@ export const TIPO_DOC_LABELS: Record<TipoDocUnidad, string> = {
   otro: 'Otro',
 };
 
+/* ── Bulk import types ── */
+
+export interface ParsedDocumento {
+  file: File;
+  nombre: string;
+  tipo: TipoDocUnidad;
+}
+
+export interface ParsedUnidad {
+  numero: string;
+  nombre: string;
+  documentos: ParsedDocumento[];
+}
+
+export interface DocumentoParaImportar {
+  archivo_id: string;
+  tipo: string;
+  nombre: string;
+  vencimiento?: string | null;
+}
+
+export interface UnidadParaImportar {
+  numero: string;
+  nombre?: string;
+  placa?: string | null;
+  documentos: DocumentoParaImportar[];
+}
+
+export interface ImportarBulkBody {
+  unidades: UnidadParaImportar[];
+  omitir_duplicados: boolean;
+}
+
+export interface ImportarBulkResultado {
+  ok: boolean;
+  creadas: string[];
+  omitidas: string[];
+  errores: { numero: string; error: string }[];
+  resumen: string;
+}
+
 // Legacy aliases
 export type Vehiculo = Unidad;
 export type DocumentoVehiculo = DocumentoUnidad;
