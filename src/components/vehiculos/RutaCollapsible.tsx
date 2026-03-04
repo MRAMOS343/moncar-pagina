@@ -18,7 +18,7 @@ interface Props {
   onImportFolder?: (rutaId: string) => void;
 }
 
-export function RutaCollapsible({ ruta, onSelectUnidad, onEditRuta, onDeleteRuta, onAddUnidad }: Props) {
+export function RutaCollapsible({ ruta, onSelectUnidad, onEditRuta, onDeleteRuta, onAddUnidad, onImportFolder }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const { data: unidades = [], isLoading } = useUnidades(ruta.id, isOpen);
 
@@ -42,6 +42,11 @@ export function RutaCollapsible({ ruta, onSelectUnidad, onEditRuta, onDeleteRuta
             <DropdownMenuItem onClick={() => onAddUnidad(ruta.id)}>
               <Plus className="w-4 h-4 mr-2" />Agregar Unidad
             </DropdownMenuItem>
+            {onImportFolder && (
+              <DropdownMenuItem onClick={() => onImportFolder(ruta.id)}>
+                <Upload className="w-4 h-4 mr-2" />Importar Carpeta
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onClick={() => onEditRuta(ruta)}>
               <Pencil className="w-4 h-4 mr-2" />Editar Ruta
             </DropdownMenuItem>
