@@ -346,6 +346,17 @@ export default function VehiculosPage() {
           }}
         />
       )}
+
+      {bulkImportData && bulkImportRutaId && (
+        <BulkImportModal
+          open={!!bulkImportData}
+          onClose={() => { setBulkImportData(null); setBulkImportRutaId(null); }}
+          rutaId={bulkImportRutaId}
+          rutaNombre={rutas.find(r => r.id === bulkImportRutaId)?.nombre ?? ''}
+          unidades={bulkImportData.unidades}
+          duplicados={bulkImportData.duplicados}
+        />
+      )}
     </div>
   );
 }
