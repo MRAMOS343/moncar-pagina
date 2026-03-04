@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronRight, FolderOpen, AlertTriangle, MoreHorizontal, Plus, Pencil, Trash } from 'lucide-react';
+import { ChevronRight, FolderOpen, AlertTriangle, MoreHorizontal, Plus, Pencil, Trash, Upload } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ interface Props {
   onEditRuta: (ruta: Ruta) => void;
   onDeleteRuta: (rutaId: string) => void;
   onAddUnidad: (rutaId: string) => void;
+  onImportFolder?: (rutaId: string) => void;
 }
 
 export function RutaCollapsible({ ruta, onSelectUnidad, onEditRuta, onDeleteRuta, onAddUnidad }: Props) {
