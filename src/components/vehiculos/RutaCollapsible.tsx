@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronRight, FolderOpen, AlertTriangle, MoreHorizontal, Plus, Pencil, Trash } from 'lucide-react';
+import { ChevronRight, FolderOpen, AlertTriangle, MoreHorizontal, Plus, Pencil, Trash, Upload } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,9 +15,10 @@ interface Props {
   onEditRuta: (ruta: Ruta) => void;
   onDeleteRuta: (rutaId: string) => void;
   onAddUnidad: (rutaId: string) => void;
+  onImportFolder?: (rutaId: string) => void;
 }
 
-export function RutaCollapsible({ ruta, onSelectUnidad, onEditRuta, onDeleteRuta, onAddUnidad }: Props) {
+export function RutaCollapsible({ ruta, onSelectUnidad, onEditRuta, onDeleteRuta, onAddUnidad, onImportFolder }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const { data: unidades = [], isLoading } = useUnidades(ruta.id, isOpen);
 
@@ -41,6 +42,11 @@ export function RutaCollapsible({ ruta, onSelectUnidad, onEditRuta, onDeleteRuta
             <DropdownMenuItem onClick={() => onAddUnidad(ruta.id)}>
               <Plus className="w-4 h-4 mr-2" />Agregar Unidad
             </DropdownMenuItem>
+            {onImportFolder && (
+              <DropdownMenuItem onClick={() => onImportFolder(ruta.id)}>
+                <Upload className="w-4 h-4 mr-2" />Importar Carpeta
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onClick={() => onEditRuta(ruta)}>
               <Pencil className="w-4 h-4 mr-2" />Editar Ruta
             </DropdownMenuItem>

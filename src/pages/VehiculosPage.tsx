@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Truck, Search, AlertTriangle, FileText, ChevronDown, Plus, RefreshCw } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,9 +13,12 @@ import { DocVehFormModal } from '@/components/vehiculos/DocVehFormModal';
 import { AlertConfigModal } from '@/components/vehiculos/AlertConfigModal';
 import { RutaFormModal } from '@/components/vehiculos/RutaFormModal';
 import { UnidadFormModal } from '@/components/vehiculos/UnidadFormModal';
+import { BulkImportModal } from '@/components/vehiculos/BulkImportModal';
 import { useRutas, useDocsPorVencer, useCreateRuta, useUpdateRuta, useDeleteRuta, useCreateUnidad, useUpdateUnidad, useCreateDocumento } from '@/hooks/useVehiculosAPI';
+import { checkDuplicados } from '@/services/vehiculoService';
+import { inferirTipoDocumento } from '@/utils/vehiculos';
 import { TIPO_DOC_LABELS } from '@/types/vehiculos';
-import type { Unidad, Ruta, TipoDocUnidad } from '@/types/vehiculos';
+import type { Unidad, Ruta, TipoDocUnidad, ParsedUnidad } from '@/types/vehiculos';
 import { toast } from 'sonner';
 import { ApiError } from '@/services/apiClient';
 
@@ -52,6 +55,61 @@ export default function VehiculosPage() {
 
   // Doc CRUD
   const createDocumento = useCreateDocumento();
+
+  // Bulk import
+  const folderInputRef = useRef<HTMLInputElement>(null);
+  const [bulkImportRutaId, setBulkImportRutaId] = useState<string | null>(null);
+  const [bulkImportData, setBulkImportData] = useState<{ unidades: ParsedUnidad[]; duplicados: string[] } | null>(null);
+
+  const handleImportFolder = (rutaId: string) => {
+    setBulkImportRutaId(rutaId);
+    folderInputRef.current?.click();
+  };
+
+  const handleFolderSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0 || !bulkImportRutaId) return;
+
+    const unidadesMap = new Map<string, ParsedUnidad>();
+
+    for (const file of files) {
+      const parts = file.webkitRelativePath.split('/');
+      if (parts.length < 3) continue;
+
+      const carpetaUnidad = parts[1];
+      const numero = carpetaUnidad.replace(/\D/g, '').padStart(2, '0');
+
+      if (!unidadesMap.has(numero)) {
+        unidadesMap.set(numero, { numero, nombre: carpetaUnidad, documentos: [] });
+      }
+
+      unidadesMap.get(numero)!.documentos.push({
+        file,
+        nombre: file.name,
+        tipo: inferirTipoDocumento(file.name),
+      });
+    }
+
+    const parsedUnidades = Array.from(unidadesMap.values())
+      .sort((a, b) => a.numero.localeCompare(b.numero));
+
+    if (parsedUnidades.length === 0) {
+      toast.error('No se detectaron subcarpetas de unidades en la carpeta seleccionada');
+      e.target.value = '';
+      return;
+    }
+
+    try {
+      const numeros = parsedUnidades.map(u => u.numero).join(',');
+      const check = await checkDuplicados(bulkImportRutaId, numeros);
+      setBulkImportData({ unidades: parsedUnidades, duplicados: check.duplicados });
+    } catch {
+      // If check fails, proceed without duplicate info
+      setBulkImportData({ unidades: parsedUnidades, duplicados: [] });
+    }
+
+    e.target.value = '';
+  };
 
   // KPIs
   const kpis = useMemo(() => {
@@ -128,6 +186,16 @@ export default function VehiculosPage() {
 
   return (
     <div className="space-y-6">
+      {/* Hidden folder input */}
+      <input
+        ref={folderInputRef}
+        type="file"
+        // @ts-ignore — webkitdirectory not in React types
+        webkitdirectory=""
+        multiple
+        style={{ display: 'none' }}
+        onChange={handleFolderSelected}
+      />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><Truck className="w-6 h-6 text-primary" />Flotilla de Vehículos</h1>
@@ -217,6 +285,7 @@ export default function VehiculosPage() {
               onEditRuta={(ruta) => { setEditingRuta(ruta); setRutaFormOpen(true); }}
               onDeleteRuta={handleDeleteRuta}
               onAddUnidad={(rutaId) => { setUnidadFormRutaId(rutaId); setEditingUnidad(null); setUnidadFormOpen(true); }}
+              onImportFolder={handleImportFolder}
             />
           ))}
         </div>
@@ -275,6 +344,17 @@ export default function VehiculosPage() {
             setUnidadFormRutaId(u.rutaId);
             setUnidadFormOpen(true);
           }}
+        />
+      )}
+
+      {bulkImportData && bulkImportRutaId && (
+        <BulkImportModal
+          open={!!bulkImportData}
+          onClose={() => { setBulkImportData(null); setBulkImportRutaId(null); }}
+          rutaId={bulkImportRutaId}
+          rutaNombre={rutas.find(r => r.id === bulkImportRutaId)?.nombre ?? ''}
+          unidades={bulkImportData.unidades}
+          duplicados={bulkImportData.duplicados}
         />
       )}
     </div>
