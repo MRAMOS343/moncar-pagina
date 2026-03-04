@@ -56,6 +56,61 @@ export default function VehiculosPage() {
   // Doc CRUD
   const createDocumento = useCreateDocumento();
 
+  // Bulk import
+  const folderInputRef = useRef<HTMLInputElement>(null);
+  const [bulkImportRutaId, setBulkImportRutaId] = useState<string | null>(null);
+  const [bulkImportData, setBulkImportData] = useState<{ unidades: ParsedUnidad[]; duplicados: string[] } | null>(null);
+
+  const handleImportFolder = (rutaId: string) => {
+    setBulkImportRutaId(rutaId);
+    folderInputRef.current?.click();
+  };
+
+  const handleFolderSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0 || !bulkImportRutaId) return;
+
+    const unidadesMap = new Map<string, ParsedUnidad>();
+
+    for (const file of files) {
+      const parts = file.webkitRelativePath.split('/');
+      if (parts.length < 3) continue;
+
+      const carpetaUnidad = parts[1];
+      const numero = carpetaUnidad.replace(/\D/g, '').padStart(2, '0');
+
+      if (!unidadesMap.has(numero)) {
+        unidadesMap.set(numero, { numero, nombre: carpetaUnidad, documentos: [] });
+      }
+
+      unidadesMap.get(numero)!.documentos.push({
+        file,
+        nombre: file.name,
+        tipo: inferirTipoDocumento(file.name),
+      });
+    }
+
+    const parsedUnidades = Array.from(unidadesMap.values())
+      .sort((a, b) => a.numero.localeCompare(b.numero));
+
+    if (parsedUnidades.length === 0) {
+      toast.error('No se detectaron subcarpetas de unidades en la carpeta seleccionada');
+      e.target.value = '';
+      return;
+    }
+
+    try {
+      const numeros = parsedUnidades.map(u => u.numero).join(',');
+      const check = await checkDuplicados(bulkImportRutaId, numeros);
+      setBulkImportData({ unidades: parsedUnidades, duplicados: check.duplicados });
+    } catch {
+      // If check fails, proceed without duplicate info
+      setBulkImportData({ unidades: parsedUnidades, duplicados: [] });
+    }
+
+    e.target.value = '';
+  };
+
   // KPIs
   const kpis = useMemo(() => {
     if (!porVencerData) return { vencidos: 0, porVencer: 0 };
