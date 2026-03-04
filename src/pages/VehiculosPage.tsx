@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Truck, Search, AlertTriangle, FileText, ChevronDown, Plus, RefreshCw } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,9 +13,12 @@ import { DocVehFormModal } from '@/components/vehiculos/DocVehFormModal';
 import { AlertConfigModal } from '@/components/vehiculos/AlertConfigModal';
 import { RutaFormModal } from '@/components/vehiculos/RutaFormModal';
 import { UnidadFormModal } from '@/components/vehiculos/UnidadFormModal';
+import { BulkImportModal } from '@/components/vehiculos/BulkImportModal';
 import { useRutas, useDocsPorVencer, useCreateRuta, useUpdateRuta, useDeleteRuta, useCreateUnidad, useUpdateUnidad, useCreateDocumento } from '@/hooks/useVehiculosAPI';
+import { checkDuplicados } from '@/services/vehiculoService';
+import { inferirTipoDocumento } from '@/utils/vehiculos';
 import { TIPO_DOC_LABELS } from '@/types/vehiculos';
-import type { Unidad, Ruta, TipoDocUnidad } from '@/types/vehiculos';
+import type { Unidad, Ruta, TipoDocUnidad, ParsedUnidad } from '@/types/vehiculos';
 import { toast } from 'sonner';
 import { ApiError } from '@/services/apiClient';
 
