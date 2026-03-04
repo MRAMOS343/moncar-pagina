@@ -186,6 +186,16 @@ export default function VehiculosPage() {
 
   return (
     <div className="space-y-6">
+      {/* Hidden folder input */}
+      <input
+        ref={folderInputRef}
+        type="file"
+        // @ts-ignore — webkitdirectory not in React types
+        webkitdirectory=""
+        multiple
+        style={{ display: 'none' }}
+        onChange={handleFolderSelected}
+      />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><Truck className="w-6 h-6 text-primary" />Flotilla de Vehículos</h1>
@@ -275,6 +285,7 @@ export default function VehiculosPage() {
               onEditRuta={(ruta) => { setEditingRuta(ruta); setRutaFormOpen(true); }}
               onDeleteRuta={handleDeleteRuta}
               onAddUnidad={(rutaId) => { setUnidadFormRutaId(rutaId); setEditingUnidad(null); setUnidadFormOpen(true); }}
+              onImportFolder={handleImportFolder}
             />
           ))}
         </div>
