@@ -298,8 +298,8 @@ export default function PrediccionPage() {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">MAPE (Error Porcentual Medio):</span>
-                    <Badge variant={metricas.mape !== null && metricas.mape < 15 ? 'default' : 'secondary'}>
-                      {metricas.mape !== null ? `${metricas.mape.toFixed(1)}%` : 'Sin datos suficientes'}
+                    <Badge variant={metricas.mape !== null && Number(metricas.mape) < 15 ? 'default' : 'secondary'}>
+                      {metricas.mape !== null ? `${Number(metricas.mape).toFixed(1)}%` : 'Sin datos suficientes'}
                     </Badge>
                   </div>
                   <div className="flex justify-between items-center">
