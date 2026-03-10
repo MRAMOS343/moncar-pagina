@@ -403,7 +403,7 @@ export default function PrediccionPage() {
                   }}
                   formatter={(val: number, name: string) => {
                     const label = name === 'value' ? 'Histórico real' : 'Pronóstico';
-                    return [val?.toFixed(1), label];
+                    return [val != null ? Number(val).toFixed(1) : '—', label];
                   }}
                 />
                 <Line
