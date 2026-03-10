@@ -293,13 +293,13 @@ export default function PrediccionPage() {
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">MAE (Error Absoluto Medio):</span>
                     <Badge variant="outline">
-                      {metricas.mae !== null ? `${metricas.mae.toFixed(2)} unidades` : 'Sin datos suficientes'}
+                      {metricas.mae !== null ? `${Number(metricas.mae).toFixed(2)} unidades` : 'Sin datos suficientes'}
                     </Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">MAPE (Error Porcentual Medio):</span>
-                    <Badge variant={metricas.mape !== null && metricas.mape < 15 ? 'default' : 'secondary'}>
-                      {metricas.mape !== null ? `${metricas.mape.toFixed(1)}%` : 'Sin datos suficientes'}
+                    <Badge variant={metricas.mape !== null && Number(metricas.mape) < 15 ? 'default' : 'secondary'}>
+                      {metricas.mape !== null ? `${Number(metricas.mape).toFixed(1)}%` : 'Sin datos suficientes'}
                     </Badge>
                   </div>
                   <div className="flex justify-between items-center">
@@ -403,7 +403,7 @@ export default function PrediccionPage() {
                   }}
                   formatter={(val: number, name: string) => {
                     const label = name === 'value' ? 'Histórico real' : 'Pronóstico';
-                    return [val?.toFixed(1), label];
+                    return [val != null ? Number(val).toFixed(1) : '—', label];
                   }}
                 />
                 <Line
