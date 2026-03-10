@@ -1,187 +1,105 @@
 
 
-# Conectar Modulo de Vehiculos a la API REST
+## Connect ComprasPage to Real Backend + Verify PrediccionPage
 
-## Resumen
+### Overview
 
-Reemplazar los datos mock por llamadas reales a la API REST, agregar CRUD completo de rutas/unidades, implementar el flujo de subida de archivos multipart, y restringir el acceso solo a admin.
+Replace all mock/synthetic data in ComprasPage with real API calls, add priority filter cards, editable quantities, row selection, and a pre-order confirmation modal. Also verify PrediccionPage has no issues.
 
----
+### PrediccionPage Verification
 
-## Cambio 1: Actualizar tipos para coincidir con la API
+Reviewed the code — no errors found. The data flow, chart mapping, trend section, and recalculate button all look correct. One minor note: the `selectedSku` won't reset when switching warehouses if the current product doesn't exist in the new warehouse's product list, but React Query will simply return empty data, which is handled gracefully.
 
-**Archivo**: `src/types/vehiculos.ts`
+### Files to Create
 
-Actualizar las interfaces para reflejar los campos exactos de la API (manteniendo camelCase en el frontend, el mapeo se hara en el service):
+**1. `src/services/compraService.ts`** — Types + API calls
+- Types: `CompraSugeridaItem`, `CompraSugeridaResumen`, `CompraSugeridaResponse`, `PreOrdenItem`, `PreOrdenBody`, `PreOrdenResponse`
+- `fetchCompraSugerida(token, { sucursal_id?, prioridad?, page?, limit? })` → GET `/api/v1/compras/sugerida`
+- `crearPreOrden(token, body)` → POST `/api/v1/compras/pre-orden`
+- `recalcularCompras(token)` → POST `/api/v1/compras/recalcular`
 
-- `Ruta`: agregar `unidadesCount` (viene de la API), renombrar `createdAt` a `creadoEn`, agregar `actualizadoEn`
-- `Unidad`: agregar `rutaNombre` (viene en GET individual), renombrar `createdAt` a `creadoEn`, agregar `actualizadoEn`
-- `DocumentoUnidad`: reemplazar `archivoUrl` por `archivoId`, agregar `fechaDocumento`, renombrar `vigencia` a `vigenciaHasta`, agregar campos del archivo (`archivoNombre`, `archivoMime`, `archivoBytes`, `archivoEstado`)
-- `AlertaDocumento`: agregar `creadoEn`, `actualizadoEn`
-- Eliminar tipos de Mantenimiento y Gastos (ya no se usan)
+**2. `src/hooks/useCompraSugerida.ts`** — React Query hook
+- `useCompraSugerida(sucursalId?, prioridad?)` wrapping `fetchCompraSugerida`
+- Uses `useAuth()` for token, 5min staleTime, retry 2
 
-## Cambio 2: Crear servicio de vehiculos
+### Files to Modify
 
-**Archivo nuevo**: `src/services/vehiculoService.ts`
+**3. `src/pages/ComprasPage.tsx`** — Full rewrite
 
-Funciones que consumen la API usando `apiRequest` de `apiClient.ts`:
+**Remove:**
+- `useData()` import and all mock data generation (`Math.random`, `useMemo` for `purchaseSuggestions`)
+- `useProductCache`, `useLoadingState` imports
+- `PurchaseSuggestion` type from `../types`
+- The "simulación" Alert banner
+- The "Configuración de Cálculo" card (leadTime, safetyStock, horizonte — backend handles this now)
 
-```
-- fetchRutas()          -> GET /vehiculos/rutas
-- createRuta(data)      -> POST /vehiculos/rutas
-- updateRuta(id, data)  -> PATCH /vehiculos/rutas/:ruta_id
-- deleteRuta(id)        -> DELETE /vehiculos/rutas/:ruta_id
-- fetchUnidades(rutaId) -> GET /vehiculos/rutas/:ruta_id/unidades
-- fetchUnidad(id)       -> GET /vehiculos/unidades/:unidad_id
-- createUnidad(rutaId, data) -> POST /vehiculos/rutas/:ruta_id/unidades
-- updateUnidad(id, data)     -> PATCH /vehiculos/unidades/:unidad_id
-- deleteUnidad(id)           -> DELETE /vehiculos/unidades/:unidad_id
-- fetchDocumentos(unidadId)  -> GET /vehiculos/unidades/:unidad_id/documentos
-- createDocumento(unidadId, data) -> POST /vehiculos/unidades/:unidad_id/documentos
-- updateDocumento(id, data)  -> PATCH /vehiculos/documentos/:documento_id
-- deleteDocumento(id)        -> DELETE /vehiculos/documentos/:documento_id
-- fetchAlertas(unidadId)     -> GET /vehiculos/unidades/:unidad_id/alertas
-- upsertAlerta(unidadId, tipo, data) -> PUT /vehiculos/unidades/:unidad_id/alertas/:tipo
-- fetchDocsPorVencer(dias)   -> GET /vehiculos/documentos/por-vencer?dias=X
-```
+**Add:**
+- Import `useCompraSugerida` hook, `crearPreOrden`, `recalcularCompras` from services
+- Import `useAuth` for token + role check
+- Import `useWarehouses` for warehouse selector
+- Import `Checkbox` from ui/checkbox
+- Import `Dialog` components for pre-order confirmation modal
+- Import `Progress` for coverage bar
+- Import `formatCurrency` from formatters
+- Import `format` from date-fns + es locale
+- Import `toast` from sonner
 
-Cada funcion incluira un mapper snake_case -> camelCase para mantener la consistencia del frontend.
+**State:**
+- `selectedWarehouse` (from outlet context)
+- `prioridadFilter`: `'urgente' | 'normal' | 'opcional' | null` — toggle filter via clickable summary cards
+- `selectedSkus`: `Set<string>` — tracks which rows are checked
+- `cantidades`: `Record<string, number>` — editable quantities per SKU, initialized from `cantidad_sugerida`
+- `preOrderOpen`: boolean — modal visibility
+- `preOrderNotas`: string — notes field in modal
+- `recalculating`: boolean — 30s cooldown
 
-## Cambio 3: Crear servicio de archivos
+**Summary Cards (3 clickable KPI cards above table):**
+- 🔴 Urgente: `resumen.urgente` products — click toggles `prioridadFilter = 'urgente'`
+- 🟡 Normal: `resumen.normal` products — click toggles `prioridadFilter = 'normal'`
+- 🟢 Opcional: `resumen.opcional` products — click toggles `prioridadFilter = 'opcional'`
+- Active card gets a ring/border highlight; clicking again clears filter
 
-**Archivo nuevo**: `src/services/archivoService.ts`
+**Last updated text:**
+- Below title: "Última actualización: {items[0].calculado_en formatted}" or "Sin datos aún"
 
-Implementa el flujo multipart de subida:
+**Table columns (using ResponsiveTable):**
+1. Checkbox — `<Checkbox>` controlling `selectedSkus`
+2. SKU — `item.sku` in mono font
+3. Producto — `item.nombre` + `item.marca` subtitle
+4. Stock actual — `item.stock_actual` / `item.stock_minimo`
+5. Cubre (días) — `item.dias_cobertura` with 1 decimal + `<Progress>` bar (red < 7, yellow < 14, green >= 14)
+6. Sugerir pedir — `item.cantidad_sugerida`
+7. Precio unitario — `formatCurrency(item.precio)`
+8. Total sugerido — `formatCurrency(cantidades[sku] * item.precio)`
+9. Prioridad — Badge: 🔴 Urgente / 🟡 Normal / 🟢 Opcional
+10. Cantidad a pedir — `<Input type="number">` editable, pre-populated with `cantidad_sugerida`, min 0, updates `cantidades` state
 
-1. `initUpload(data)` -> POST /archivos/init (devuelve archivo_id, upload_id, parte_bytes, partes_totales)
-2. `getPartUrl(archivoId, numeroParte)` -> POST /archivos/:archivo_id/parte-url
-3. `uploadPart(url, chunk)` -> PUT directo a URL firmada (captura ETag del header)
-4. `completeUpload(archivoId, partes)` -> POST /archivos/:archivo_id/completar
-5. `getDownloadUrl(archivoId)` -> GET /archivos/:archivo_id/descargar
+**Initialize `cantidades`:** `useEffect` on data change, sets each SKU's quantity to `cantidad_sugerida`
 
-Funcion de alto nivel `uploadFile(file: File)` que orquesta todo el flujo:
-- Llama init -> divide el File en chunks segun parte_bytes -> sube cada parte -> completa -> devuelve archivo_id
+**Client-side filter:** If `prioridadFilter` is set, filter displayed items by that priority (data already fetched)
 
-## Cambio 4: Crear hooks de React Query
+**"Generar Pre-orden" button:**
+- Disabled if `selectedSkus.size === 0`
+- Opens confirmation modal showing selected items with edited quantities + total in pesos
+- Modal has optional "Notas" textarea
+- Confirm calls `crearPreOrden` with selected items using `cantidades` values
+- Success: toast + close modal + clear selection
+- Error: toast
 
-**Archivo nuevo**: `src/hooks/useVehiculosAPI.ts`
+**"Actualizar sugerencias" button (admin only):**
+- Top-right corner, calls `recalcularCompras`, toast, 30s cooldown
 
-Reemplaza el hook local `useVehiculos.ts` con hooks basados en React Query:
+**Empty state:** "No hay productos que necesiten reabastecimiento en este momento. El sistema recalcula cada lunes."
 
-- `useRutas()` - query para listar rutas
-- `useUnidades(rutaId)` - query para unidades de una ruta (carga lazy al expandir)
-- `useUnidadDetalle(unidadId)` - query para detalle individual
-- `useDocumentos(unidadId)` - query para documentos de una unidad
-- `useAlertas(unidadId)` - query para alertas de una unidad
-- `useDocsPorVencer(dias)` - query para KPI de docs por vencer
+**Loading:** `TableSkeleton` + `Skeleton` cards driven by React Query `isLoading`
 
-Mutations:
-- `useCreateRuta()`, `useUpdateRuta()`, `useDeleteRuta()`
-- `useCreateUnidad()`, `useUpdateUnidad()`, `useDeleteUnidad()`
-- `useCreateDocumento()`, `useUpdateDocumento()`, `useDeleteDocumento()`
-- `useUpsertAlerta()`
+**Error:** React Query `isError` → toast
 
-Cada mutation invalida las queries correspondientes para actualizar la UI automaticamente.
+### Summary
 
-## Cambio 5: Crear modales CRUD de Rutas y Unidades
-
-**Archivo nuevo**: `src/components/vehiculos/RutaFormModal.tsx`
-
-Modal con formulario para crear/editar ruta:
-- Campos: nombre (requerido), descripcion, activa (switch)
-- Validacion con Zod
-- Usa mutation de crear o actualizar segun si recibe ruta existente
-
-**Archivo nuevo**: `src/components/vehiculos/UnidadFormModal.tsx`
-
-Modal con formulario para crear/editar unidad:
-- Campos: numero (requerido), placa (requerido), marca, modelo, anio, color, km, estado (select), descripcion
-- Validacion con Zod
-- Incluye confirmacion de eliminacion con AlertDialog
-
-## Cambio 6: Actualizar DocVehFormModal con subida de archivos
-
-**Archivo**: `src/components/vehiculos/DocVehFormModal.tsx`
-
-- Agregar campo `fecha_documento` (date input)
-- Renombrar campo vigencia a `vigencia_hasta`
-- Agregar file input para seleccionar archivo
-- Al guardar: primero sube el archivo con `uploadFile()`, obtiene `archivo_id`, luego crea el documento con POST enviando ese `archivo_id`
-- Mostrar progreso de subida (barra o porcentaje)
-- Ya no necesita selector de unidad (siempre se abre desde el contexto de una unidad)
-
-## Cambio 7: Actualizar VehicleDetailModal
-
-**Archivo**: `src/components/vehiculos/VehicleDetailModal.tsx`
-
-- Cargar documentos y alertas con queries de React Query (en vez de recibirlos como props)
-- Boton "Descargar" ahora llama a `getDownloadUrl(archivoId)` y abre la URL en nueva pestania
-- Agregar boton "Editar" en header que abre `UnidadFormModal`
-- Agregar boton "Eliminar unidad" con confirmacion
-- Agregar accion "Editar metadata" en cada documento (abre modal de edicion con PATCH)
-- Mostrar `archivoNombre` y `archivoBytes` en la tabla de documentos
-
-## Cambio 8: Actualizar RutaCollapsible
-
-**Archivo**: `src/components/vehiculos/RutaCollapsible.tsx`
-
-- Cargar unidades con lazy loading: al expandir la ruta, dispara `useUnidades(rutaId)` con `enabled: isOpen`
-- Agregar boton de menu (tres puntos) en el header de la ruta con opciones: "Editar ruta", "Agregar unidad", "Eliminar ruta"
-- DELETE de ruta: si el backend responde 409 (RUTA_CON_UNIDADES), mostrar toast con mensaje de error
-
-## Cambio 9: Actualizar VehiculosPage
-
-**Archivo**: `src/pages/VehiculosPage.tsx`
-
-- Reemplazar `useVehiculos()` por los nuevos hooks de React Query
-- KPIs: usar `useDocsPorVencer(dias)` con el plazo seleccionado
-- Agregar boton "Nueva Ruta" en el header de la pagina
-- Agregar estados para modales de crear/editar ruta y unidad
-- Loading states: skeleton mientras cargan las rutas
-- Error states: mensaje con boton de reintentar
-
-## Cambio 10: Restringir acceso a solo admin
-
-**Archivo**: `src/main.tsx`
-
-Cambiar el wrapper de la ruta `/vehiculos` de `ModuleRoute` a `AdminRoute`:
-
-```
-// Antes:
-<ModuleRoute module="vehiculos">
-
-// Despues:
-<AdminRoute>
-```
-
-**Archivo**: `src/components/layout/AppSidebar.tsx`
-
-Ajustar la condicion de visibilidad del item "Vehiculos" en el sidebar para mostrar solo a admin (actualmente muestra a gestor_vehiculos tambien).
-
-**Archivo**: `src/utils/moduleAccess.ts`
-
-Remover `vehiculos` de la lista de modulos de `gestor_vehiculos`. Actualizar la descripcion del modulo vehiculos.
-
----
-
-## Archivos a modificar/crear
-
-| Archivo | Accion |
-|---------|--------|
-| `src/types/vehiculos.ts` | Modificar - actualizar interfaces |
-| `src/services/vehiculoService.ts` | Crear - servicio API |
-| `src/services/archivoService.ts` | Crear - flujo de archivos multipart |
-| `src/hooks/useVehiculosAPI.ts` | Crear - hooks React Query |
-| `src/components/vehiculos/RutaFormModal.tsx` | Crear - modal CRUD ruta |
-| `src/components/vehiculos/UnidadFormModal.tsx` | Crear - modal CRUD unidad |
-| `src/components/vehiculos/DocVehFormModal.tsx` | Modificar - agregar file upload |
-| `src/components/vehiculos/VehicleDetailModal.tsx` | Modificar - usar queries y acciones reales |
-| `src/components/vehiculos/RutaCollapsible.tsx` | Modificar - lazy load y menu de acciones |
-| `src/components/vehiculos/AlertConfigModal.tsx` | Modificar - usar mutation real |
-| `src/pages/VehiculosPage.tsx` | Modificar - conectar a API, agregar CRUD |
-| `src/main.tsx` | Modificar - cambiar a AdminRoute |
-| `src/utils/moduleAccess.ts` | Modificar - ajustar permisos |
-| `src/components/layout/AppSidebar.tsx` | Modificar - visibilidad sidebar |
-| `src/hooks/useVehiculos.ts` | Eliminar - ya no se usa (reemplazado por useVehiculosAPI) |
-| `src/data/mockVehiculos.ts` | Eliminar - ya no se necesita |
+| File | Action |
+|------|--------|
+| `src/services/compraService.ts` | Create — API calls + types |
+| `src/hooks/useCompraSugerida.ts` | Create — React Query hook |
+| `src/pages/ComprasPage.tsx` | Rewrite — real data, priority filters, editable quantities, pre-order modal |
 
