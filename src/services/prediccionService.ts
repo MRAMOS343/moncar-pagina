@@ -2,97 +2,68 @@ import { apiRequest } from "./apiClient";
 
 /* ── Types ── */
 
-export interface PrediccionProductoItem {
-  sku: string;
-  nombre: string;
-  marca: string;
-  mae: number | null;
-  mape: number | null;
-  stock_actual: number;
+export interface HistorialDiarioItem {
+  fecha: string;
+  monto: number;
+  num_ventas: number;
+  dia_semana: number;
 }
 
-export interface PrediccionProductosResponse {
-  ok: boolean;
-  productos: PrediccionProductoItem[];
-}
-
-export interface HistorialItem {
-  semana: string;
-  unidades: number;
-}
-
-export interface PrediccionItem {
-  semana_inicio: string;
-  unidades_pred: number;
-  unidades_reales: number | null;
+export interface PrediccionDiariaItem {
+  fecha: string;
+  monto_pred: number;
+  monto_real: number | null;
   tendencia: "subiendo" | "bajando" | "estable";
   confianza: number;
+  dia_semana: number;
 }
 
-export interface PrediccionMetricas {
+export interface PrediccionDiariaMetricas {
   mae: number | null;
   mape: number | null;
-  semanas_data: number;
+  dias_data: number;
   calculado_en: string;
 }
 
-export interface PrediccionProductoDetalle {
-  sku: string;
-  nombre: string;
-  precio: number;
-  marca: string;
-  categoria: string;
-  stock_minimo: number;
-  stock_actual: number;
-  stock_por_almacen: { almacen: string; existencia: number }[];
+export interface PrediccionDiariaKPIs {
+  promedio_semanal: number;
+  total_pred_30d: number;
+  tendencia: "subiendo" | "bajando" | "estable" | null;
+  confianza: number | null;
 }
 
-export interface PrediccionResponse {
+export interface PrediccionDiariaResponse {
   ok: boolean;
-  producto: PrediccionProductoDetalle;
-  historial: HistorialItem[];
-  predicciones: PrediccionItem[];
-  metricas: PrediccionMetricas;
+  historial: HistorialDiarioItem[];
+  predicciones: PrediccionDiariaItem[];
+  metricas: PrediccionDiariaMetricas | null;
   sin_datos: boolean;
-  calculado_en: string;
+  calculado_en: string | null;
+  kpis: PrediccionDiariaKPIs;
 }
 
 /* ── API calls ── */
 
-export async function fetchPrediccionProductos(
+export async function fetchPrediccionDiaria(
   token: string,
-  sucursalId?: string
-): Promise<PrediccionProductosResponse> {
-  const params = new URLSearchParams();
-  if (sucursalId) params.set("sucursal_id", sucursalId);
-  const qs = params.toString();
-  return apiRequest<PrediccionProductosResponse>(
-    `/api/v1/prediccion/productos${qs ? `?${qs}` : ""}`,
-    { token }
-  );
-}
-
-export async function fetchPrediccion(
-  token: string,
-  productoSku: string,
   sucursalId?: string,
   horizonte?: number
-): Promise<PrediccionResponse> {
+): Promise<PrediccionDiariaResponse> {
   const params = new URLSearchParams();
-  params.set("producto_sku", productoSku);
   if (sucursalId) params.set("sucursal_id", sucursalId);
   if (horizonte) params.set("horizonte", String(horizonte));
-  return apiRequest<PrediccionResponse>(
-    `/api/v1/prediccion?${params.toString()}`,
+  const qs = params.toString();
+  return apiRequest<PrediccionDiariaResponse>(
+    `/api/v1/prediccion/diaria${qs ? `?${qs}` : ""}`,
     { token }
   );
 }
 
-export async function recalcularPredicciones(
+export async function recalcularPrediccionesDiarias(
   token: string
 ): Promise<{ ok: boolean; message: string }> {
   return apiRequest<{ ok: boolean; message: string }>(
-    "/api/v1/prediccion/recalcular",
+    "/api/v1/prediccion/diaria/recalcular",
     { method: "POST", token }
   );
 }
