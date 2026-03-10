@@ -293,7 +293,7 @@ export default function PrediccionPage() {
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">MAE (Error Absoluto Medio):</span>
                     <Badge variant="outline">
-                      {metricas.mae !== null ? `${metricas.mae.toFixed(2)} unidades` : 'Sin datos suficientes'}
+                      {metricas.mae !== null ? `${Number(metricas.mae).toFixed(2)} unidades` : 'Sin datos suficientes'}
                     </Badge>
                   </div>
                   <div className="flex justify-between items-center">
