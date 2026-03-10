@@ -344,7 +344,7 @@ export default function PrediccionPage() {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <span className="text-sm text-muted-foreground cursor-help underline decoration-dotted">
-                            Confianza: {firstPred.confianza.toFixed(0)}%
+                            Confianza: {Number(firstPred.confianza).toFixed(0)}%
                           </span>
                         </TooltipTrigger>
                         <TooltipContent>
