@@ -358,7 +358,7 @@ export default function ComprasPage() {
                     header: 'Cubre (días)',
                     render: (value: number) => (
                       <div className="space-y-1 min-w-[80px]">
-                        <span className={value < 7 ? 'text-destructive font-medium' : ''}>{value.toFixed(1)}</span>
+                        <span className={Number(value) < 7 ? 'text-destructive font-medium' : ''}>{Number(value).toFixed(1)}</span>
                         <Progress
                           value={getCoveragePercent(value)}
                           className={`h-1.5 ${getCoverageColor(value)}`}
