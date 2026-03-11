@@ -429,7 +429,7 @@ export default function ComprasPage() {
                       <div>
                         <p className="text-muted-foreground">Cobertura</p>
                         <p className={item.dias_cobertura < 7 ? 'text-destructive font-medium' : ''}>
-                          {item.dias_cobertura.toFixed(1)} días
+                          {Number(item.dias_cobertura).toFixed(1)} días
                         </p>
                       </div>
                       <div>
