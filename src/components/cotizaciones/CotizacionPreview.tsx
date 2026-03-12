@@ -54,7 +54,7 @@ export const CotizacionPreview = forwardRef<HTMLDivElement, Props>(({ cotizacion
           {/* Empty rows to fill space */}
           {cotizacion.items.length < 8 &&
             Array.from({ length: 8 - cotizacion.items.length }).map((_, i) => (
-              <tr key={`empty-${i}`} className={((cotizacion.items.length + i) % 2 === 0) ? 'bg-gray-50' : 'bg-white'}>
+              <tr key={`empty-${i}`} className={((cotizacion.items.length + i) % 2 === 0) ? 'bg-muted/40' : 'bg-background'}>
                 <td className="py-2 px-3">&nbsp;</td>
                 <td className="py-2 px-3"></td>
                 <td className="py-2 px-3"></td>
