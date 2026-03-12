@@ -23,6 +23,7 @@ const EquiposPage = lazy(() => import("./pages/EquiposPage"));
 const ProveedoresPage = lazy(() => import("./pages/ProveedoresPage"));
 const ConfiguracionPage = lazy(() => import("./pages/ConfiguracionPage"));
 const SoportePage = lazy(() => import("./pages/SoportePage"));
+const CotizacionesPage = lazy(() => import("./pages/CotizacionesPage"));
 const PropiedadesPage = lazy(() => import("./pages/PropiedadesPage"));
 const VehiculosPage = lazy(() => import("./pages/VehiculosPage"));
 const InvitacionPage = lazy(() => import("./pages/InvitacionPage"));
