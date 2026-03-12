@@ -14,6 +14,7 @@ const navItems: SidebarNavItem[] = [
   { title: "Dashboard", url: "/refaccionarias", icon: LayoutDashboard, description: "Resumen general del sistema" },
   { title: "Inventario", url: "/refaccionarias/inventario", icon: Package, description: "Gestión de productos y stock" },
   { title: "Ventas", url: "/refaccionarias/ventas", icon: ShoppingCart, description: "Registro y consulta de ventas" },
+  { title: "Cotizaciones", url: "/refaccionarias/cotizaciones", icon: FileText, description: "Generación y seguimiento de cotizaciones" },
   { title: "Predicción", url: "/refaccionarias/prediccion", icon: TrendingUp, description: "Pronósticos de demanda" },
   { title: "Compra Sugerida", url: "/refaccionarias/compras", icon: ShoppingBag, description: "Sugerencias de reabastecimiento" },
   { title: "Equipos", url: "/refaccionarias/equipos", icon: Users, description: "Gestión de equipos de trabajo" },
