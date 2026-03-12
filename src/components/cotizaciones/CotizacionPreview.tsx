@@ -11,7 +11,7 @@ export const CotizacionPreview = forwardRef<HTMLDivElement, Props>(({ cotizacion
     n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
 
   return (
-    <div ref={ref} className="bg-white text-black p-8 max-w-[800px] mx-auto print:p-4 print:max-w-none print:shadow-none shadow-lg rounded-lg">
+    <div ref={ref} className="bg-white text-foreground p-8 max-w-[800px] mx-auto print:p-4 print:max-w-none print:shadow-none shadow-lg rounded-lg print:text-black">
       {/* Header */}
       <div className="flex items-center justify-between border-b-2 border-red-600 pb-4 mb-6">
         <img src={logoMoncar} alt="Grupo Moncar" className="h-16 object-contain" />
