@@ -43,7 +43,7 @@ export const CotizacionPreview = forwardRef<HTMLDivElement, Props>(({ cotizacion
         </thead>
         <tbody>
           {cotizacion.items.map((item, i) => (
-            <tr key={i} className={i % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+            <tr key={i} className={i % 2 === 0 ? 'bg-muted/40' : 'bg-background'}>
               <td className="py-2 px-3">{item.cantidad}</td>
               <td className="py-2 px-3">{item.descripcion}</td>
               <td className="py-2 px-3">{item.pieza}</td>
