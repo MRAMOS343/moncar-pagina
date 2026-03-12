@@ -76,7 +76,7 @@ export const CotizacionPreview = forwardRef<HTMLDivElement, Props>(({ cotizacion
             <span>IVA (16%):</span>
             <span>{fmt(cotizacion.iva)}</span>
           </div>
-          <div className="flex justify-between font-bold text-base border-t-2 border-red-600 pt-2 mt-2">
+          <div className="flex justify-between font-bold text-base border-t-2 border-primary pt-2 mt-2">
             <span>Total:</span>
             <span>{fmt(cotizacion.total)}</span>
           </div>
