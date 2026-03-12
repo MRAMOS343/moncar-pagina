@@ -33,7 +33,7 @@ export const CotizacionPreview = forwardRef<HTMLDivElement, Props>(({ cotizacion
       {/* Table */}
       <table className="w-full text-sm border-collapse mb-6">
         <thead>
-          <tr className="bg-red-600 text-white">
+          <tr className="bg-primary text-primary-foreground">
             <th className="py-2 px-3 text-left w-20">Cantidad</th>
             <th className="py-2 px-3 text-left">Descripción</th>
             <th className="py-2 px-3 text-left w-20">Pieza</th>
