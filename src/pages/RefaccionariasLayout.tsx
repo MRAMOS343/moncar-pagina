@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useWarehouses } from '@/hooks/useWarehouses';
 import { toast } from '@/hooks/use-toast';
-import { LayoutDashboard, Package, ShoppingCart, TrendingUp, ShoppingBag, Users, Truck, Settings, LifeBuoy } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, FileText, TrendingUp, ShoppingBag, Users, Truck, Settings, LifeBuoy } from 'lucide-react';
 
 const navItems: SidebarNavItem[] = [
   { title: "Dashboard", url: "/refaccionarias", icon: LayoutDashboard, description: "Resumen general del sistema" },
