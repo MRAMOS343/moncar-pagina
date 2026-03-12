@@ -13,10 +13,10 @@ export const CotizacionPreview = forwardRef<HTMLDivElement, Props>(({ cotizacion
   return (
     <div ref={ref} className="bg-white text-foreground p-8 max-w-[800px] mx-auto print:p-4 print:max-w-none print:shadow-none shadow-lg rounded-lg print:text-black">
       {/* Header */}
-      <div className="flex items-center justify-between border-b-2 border-red-600 pb-4 mb-6">
+      <div className="flex items-center justify-between border-b-2 border-primary pb-4 mb-6">
         <img src={logoMoncar} alt="Grupo Moncar" className="h-16 object-contain" />
         <div className="text-right">
-          <h1 className="text-2xl font-bold text-red-600 tracking-wide">COTIZACIÓN</h1>
+          <h1 className="text-2xl font-bold text-primary tracking-wide">COTIZACIÓN</h1>
           <p className="text-sm text-gray-600 mt-1">{cotizacion.folio}</p>
         </div>
       </div>
