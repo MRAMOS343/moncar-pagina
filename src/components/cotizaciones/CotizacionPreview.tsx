@@ -84,7 +84,7 @@ export const CotizacionPreview = forwardRef<HTMLDivElement, Props>(({ cotizacion
       </div>
 
       {/* Footer */}
-      <div className="border-t border-gray-300 pt-4 text-xs text-gray-500 text-center space-y-1">
+      <div className="border-t border-border pt-4 text-xs text-muted-foreground text-center space-y-1">
         <p className="font-semibold">RFC: MON25091344C9</p>
         <p>Dirección Poniente #1234, Colonia San Rafael, Ciudad, Estado, CP 02000</p>
         <p>Tel: (123) 456-7890 | Atención a clientes: 01 800 123 4567</p>
