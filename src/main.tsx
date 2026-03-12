@@ -66,6 +66,7 @@ const router = createBrowserRouter([
           { index: true, element: <S><DashboardPage /></S> },
           { path: "inventario", element: <S><InventarioPage /></S> },
           { path: "ventas", element: <S><VentasPage /></S> },
+          { path: "cotizaciones", element: <S><CotizacionesPage /></S> },
           { path: "compras", element: <S><ComprasPage /></S> },
           { path: "prediccion", element: <S><PrediccionPage /></S> },
           { path: "equipos", element: <S><EquiposPage /></S> },

@@ -51,7 +51,7 @@ export default function CotizacionesPage() {
       cliente: cliente.trim(),
       sucursal: sucursal.trim() || 'Principal',
       vendedorId: currentUser?.id ?? '',
-      vendedorNombre: currentUser?.name ?? currentUser?.email ?? 'Vendedor',
+      vendedorNombre: currentUser?.nombre ?? currentUser?.email ?? 'Vendedor',
       fecha: new Date().toISOString().split('T')[0],
       items,
       subtotal,

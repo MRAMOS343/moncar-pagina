@@ -27,6 +27,7 @@ const routeLabels: Record<string, string> = {
   '/refaccionarias': 'Dashboard',
   '/refaccionarias/inventario': 'Inventario',
   '/refaccionarias/ventas': 'Ventas',
+  '/refaccionarias/cotizaciones': 'Cotizaciones',
   '/refaccionarias/prediccion': 'Predicción de Ventas',
   '/refaccionarias/compras': 'Compra Sugerida',
   '/refaccionarias/equipos': 'Equipos',
