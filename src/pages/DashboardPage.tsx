@@ -112,9 +112,9 @@ export default function DashboardPage() {
   // Datos del pie chart (métodos de pago)
   const pieChartData = (metodosPago.data?.data ?? []).map((item) => ({
     name: item.metodo,
-    value: item.total,
+    value: Number(item.total),
     count: item.num_pagos,
-    percentage: item.porcentaje.toFixed(1),
+    percentage: Number(item.porcentaje).toFixed(1),
   }));
 
   const handleRefresh = () => {
