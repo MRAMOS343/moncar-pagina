@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,8 +23,20 @@ export function CotizacionForm({ items, cliente, sucursal, onItemsChange, onClie
   const [skuSearch, setSkuSearch] = useState('');
   const [showResults, setShowResults] = useState(false);
   const debouncedSearch = useDebounce(skuSearch, 400);
-  const { products, isLoading: searching } = useProducts({ q: debouncedSearch, limit: 10, enabled: debouncedSearch.length >= 2 });
+  const { products, isLoading: searching } = useProducts({ q: debouncedSearch, limit: 50, enabled: debouncedSearch.length >= 2 });
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Filtrado client-side: palabras desordenadas sobre sku+descrip+marca
+  const filteredProducts = useMemo(() => {
+    if (!skuSearch.trim() || skuSearch.trim().length < 2) return [];
+    const words = skuSearch.toLowerCase().split(/\s+/).filter(Boolean);
+    return products
+      .filter(p => {
+        const target = `${p.sku} ${p.descrip ?? ''} ${p.marca ?? ''}`.toLowerCase();
+        return words.every(w => target.includes(w));
+      })
+      .slice(0, 10);
+  }, [products, skuSearch]);
 
   const calcPrecioConIva = (product: ApiProduct) => {
     const base = product.precio1 ?? 0;
@@ -107,10 +119,10 @@ export function CotizacionForm({ items, cliente, sucursal, onItemsChange, onClie
             <CardContent className="p-0">
               {searching ? (
                 <p className="p-3 text-sm text-muted-foreground">Buscando...</p>
-              ) : products.length === 0 ? (
+              ) : filteredProducts.length === 0 ? (
                 <p className="p-3 text-sm text-muted-foreground">Sin resultados</p>
               ) : (
-                products.map(p => (
+                filteredProducts.map(p => (
                   <button
                     key={p.sku}
                     type="button"
