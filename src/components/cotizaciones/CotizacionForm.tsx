@@ -23,7 +23,14 @@ export function CotizacionForm({ items, cliente, sucursal, onItemsChange, onClie
   const [skuSearch, setSkuSearch] = useState('');
   const [showResults, setShowResults] = useState(false);
   const debouncedSearch = useDebounce(skuSearch, 400);
-  const { products, isLoading: searching } = useProducts({ q: debouncedSearch, limit: 50, enabled: debouncedSearch.length >= 2 });
+  const { products, isLoading: searching, fetchNextPage, hasNextPage, isFetchingNextPage } = useProducts({ q: debouncedSearch, limit: 200, enabled: debouncedSearch.length >= 2 });
+
+  // Auto-fetch remaining pages when searching
+  useEffect(() => {
+    if (hasNextPage && !isFetchingNextPage && debouncedSearch.length >= 2) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, debouncedSearch, fetchNextPage]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Filtrado client-side: palabras desordenadas sobre sku+descrip+marca
