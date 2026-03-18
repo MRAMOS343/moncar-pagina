@@ -61,7 +61,7 @@ export function CotizacionForm({ items, cliente, sucursal, onItemsChange, onClie
           : i
       ));
     } else {
-      const precio = calcPrecioConIva(product);
+      const precio = product.precio1 ?? 0;
       onItemsChange([...items, {
         sku: product.sku,
         descripcion: product.descrip ?? product.sku,
