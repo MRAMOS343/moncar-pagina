@@ -32,7 +32,7 @@ export function CotizacionForm({ items, cliente, sucursal, onItemsChange, onClie
     const words = skuSearch.toLowerCase().split(/\s+/).filter(Boolean);
     return products
       .filter(p => {
-        const target = `${p.sku} ${p.descrip ?? ''} ${p.marca ?? ''}`.toLowerCase();
+        const target = `${p.sku} ${p.descrip ?? ''} ${p.marca ?? ''} ${p.notes ?? ''}`.toLowerCase();
         return words.every(w => target.includes(w));
       })
       .slice(0, 10);
