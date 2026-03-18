@@ -119,10 +119,10 @@ export function CotizacionForm({ items, cliente, sucursal, onItemsChange, onClie
             <CardContent className="p-0">
               {searching ? (
                 <p className="p-3 text-sm text-muted-foreground">Buscando...</p>
-              ) : products.length === 0 ? (
+              ) : filteredProducts.length === 0 ? (
                 <p className="p-3 text-sm text-muted-foreground">Sin resultados</p>
               ) : (
-                products.map(p => (
+                filteredProducts.map(p => (
                   <button
                     key={p.sku}
                     type="button"
