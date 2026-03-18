@@ -138,7 +138,7 @@ export function CotizacionForm({ items, cliente, sucursal, onItemsChange, onClie
                   >
                     <div>
                       <span className="font-mono font-medium">{p.sku}</span>
-                      <span className="ml-2 text-muted-foreground">{p.descrip}</span>
+                      <span className="ml-2 text-muted-foreground">{p.notes ?? p.descrip}</span>
                     </div>
                     <Badge variant="secondary">{fmt(calcPrecioConIva(p))}</Badge>
                   </button>
