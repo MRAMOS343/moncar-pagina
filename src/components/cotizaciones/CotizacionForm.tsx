@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,7 +23,14 @@ export function CotizacionForm({ items, cliente, sucursal, onItemsChange, onClie
   const [skuSearch, setSkuSearch] = useState('');
   const [showResults, setShowResults] = useState(false);
   const debouncedSearch = useDebounce(skuSearch, 400);
-  const { products, isLoading: searching } = useProducts({ q: debouncedSearch, limit: 50, enabled: debouncedSearch.length >= 2 });
+  const { products, isLoading: searching, fetchNextPage, hasNextPage, isFetchingNextPage } = useProducts({ q: debouncedSearch, limit: 200, enabled: debouncedSearch.length >= 2 });
+
+  // Auto-fetch remaining pages when searching
+  useEffect(() => {
+    if (hasNextPage && !isFetchingNextPage && debouncedSearch.length >= 2) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, debouncedSearch, fetchNextPage]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Filtrado client-side: palabras desordenadas sobre sku+descrip+marca
@@ -131,7 +138,7 @@ export function CotizacionForm({ items, cliente, sucursal, onItemsChange, onClie
                   >
                     <div>
                       <span className="font-mono font-medium">{p.sku}</span>
-                      <span className="ml-2 text-muted-foreground">{p.descrip}</span>
+                      <span className="ml-2 text-muted-foreground">{p.notes ?? p.descrip}</span>
                     </div>
                     <Badge variant="secondary">{fmt(calcPrecioConIva(p))}</Badge>
                   </button>
