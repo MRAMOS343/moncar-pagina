@@ -48,7 +48,32 @@ export default function VentasPage() {
   
   // Estado para reporte
   const [reportPeriod, setReportPeriod] = useState<string>('1m');
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => format(new Date(), 'yyyy-MM'));
   const [isDownloading, setIsDownloading] = useState(false);
+
+  // Generar lista de meses desde Enero 2024 hasta mes actual
+  const availableMonths = useMemo(() => {
+    const months: { value: string; label: string; isCurrent: boolean }[] = [];
+    const now = new Date();
+    const currentYM = format(now, 'yyyy-MM');
+    let cursor = new Date(2024, 0, 1); // Enero 2024
+    while (cursor <= now) {
+      const value = format(cursor, 'yyyy-MM');
+      const label = format(cursor, 'MMMM yyyy', { locale: es });
+      // Capitalize first letter
+      const capitalizedLabel = label.charAt(0).toUpperCase() + label.slice(1);
+      months.push({ value, label: capitalizedLabel, isCurrent: value === currentYM });
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+    }
+    return months.reverse(); // Most recent first
+  }, []);
+
+  // Leyenda contextual del mes seleccionado
+  const monthHint = useMemo(() => {
+    const currentYM = format(new Date(), 'yyyy-MM');
+    if (selectedMonth === currentYM) return 'Del 01 al día de hoy';
+    return 'Mes completo';
+  }, [selectedMonth]);
   
   // Estado para modal de detalle
   const [selectedSaleId, setSelectedSaleId] = useState<number | null>(null);
@@ -197,30 +222,32 @@ export default function VentasPage() {
         return;
       }
 
-      const now = new Date();
-      let reportFrom: string;
-      switch (reportPeriod) {
-        case '7d': reportFrom = format(subDays(now, 7), 'yyyy-MM-dd'); break;
-        case '1m': reportFrom = format(subDays(now, 30), 'yyyy-MM-dd'); break;
-        case '3m': reportFrom = format(subDays(now, 90), 'yyyy-MM-dd'); break;
-        case 'all': reportFrom = '2020-01-01'; break;
-        default: reportFrom = format(subDays(now, 30), 'yyyy-MM-dd');
+      const sucursal_id = currentWarehouse === 'all' ? undefined : currentWarehouse;
+
+      if (reportPeriod === 'month') {
+        await downloadSalesReport(token, { month: selectedMonth, sucursal_id });
+      } else {
+        const now = new Date();
+        let reportFrom: string;
+        switch (reportPeriod) {
+          case '7d': reportFrom = format(subDays(now, 7), 'yyyy-MM-dd'); break;
+          case '1m': reportFrom = format(subDays(now, 30), 'yyyy-MM-dd'); break;
+          case '3m': reportFrom = format(subDays(now, 90), 'yyyy-MM-dd'); break;
+          case 'all': reportFrom = '2020-01-01'; break;
+          default: reportFrom = format(subDays(now, 30), 'yyyy-MM-dd');
+        }
+        await downloadSalesReport(token, { from: reportFrom, sucursal_id });
       }
 
-      await downloadSalesReport(token, {
-        from: reportFrom,
-        sucursal_id: currentWarehouse === 'all' ? undefined : currentWarehouse,
-      });
-
       showSuccessToast("Reporte descargado", "El archivo Excel se descargó correctamente.");
-      logger.info('Reporte de ventas descargado', { period: reportPeriod });
+      logger.info('Reporte de ventas descargado', { period: reportPeriod, month: selectedMonth });
     } catch (err: any) {
       showErrorToast("Error al descargar", err?.message || "No se pudo generar el reporte.");
       logger.error('Error descargando reporte de ventas', err);
     } finally {
       setIsDownloading(false);
     }
-  }, [reportPeriod, currentWarehouse]);
+  }, [reportPeriod, selectedMonth, currentWarehouse]);
 
   // Columnas de tabla
   const columns = useMemo(() => getVentasColumns(handleViewDetail), [handleViewDetail]);
@@ -275,9 +302,9 @@ export default function VentasPage() {
             }
           </p>
         </div>
-        <div className="flex items-center gap-2 self-end sm:self-auto">
+        <div className="flex flex-wrap items-center gap-2 self-end sm:self-auto">
           <Select value={reportPeriod} onValueChange={setReportPeriod}>
-            <SelectTrigger className="w-[140px] h-9 text-sm">
+            <SelectTrigger className="w-[160px] h-9 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -285,8 +312,27 @@ export default function VentasPage() {
               <SelectItem value="1m">1 Mes</SelectItem>
               <SelectItem value="3m">3 Meses</SelectItem>
               <SelectItem value="all">Histórico</SelectItem>
+              <div className="my-1 border-t border-border" />
+              <SelectItem value="month">Mes específico</SelectItem>
             </SelectContent>
           </Select>
+
+          {reportPeriod === 'month' && (
+            <div className="flex flex-col gap-0.5">
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger className="w-[180px] h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="max-h-[260px]">
+                  {availableMonths.map(m => (
+                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="text-[11px] text-muted-foreground pl-1">{monthHint}</span>
+            </div>
+          )}
+
           <Button 
             variant="outline" 
             size="sm" 
