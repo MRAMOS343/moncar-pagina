@@ -73,7 +73,7 @@ function getToken() {
 /* ── Rutas ── */
 
 export async function fetchRutas(): Promise<Ruta[]> {
-  const res = await apiRequest<{ items: Record<string, unknown>[] }>('/vehiculos/rutas', { token: getToken() });
+  const res = await apiRequest<{ items: Record<string, unknown>[] }>('/api/v1/vehiculos/rutas', { token: getToken() });
   return res.items.map(mapRuta);
 }
 
