@@ -114,7 +114,7 @@ export async function updateUnidad(id: string, data: Partial<{
   numero: string; placa: string; marca: string; modelo: string;
   anio: number; color: string; km: number; estado: string; descripcion: string;
 }>): Promise<void> {
-  await apiRequest(`/vehiculos/unidades/${id}`, { method: 'PATCH', token: getToken(), body: data });
+  await apiRequest(`/api/v1/vehiculos/unidades/${id}`, { method: 'PATCH', token: getToken(), body: data });
 }
 
 export async function deleteUnidad(id: string): Promise<void> {
