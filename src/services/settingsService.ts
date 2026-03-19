@@ -19,7 +19,7 @@ export async function patchUserPreferences(
   token: string, 
   data: Partial<UserPreferences>
 ): Promise<UserPreferencesResponse> {
-  return apiRequest<UserPreferencesResponse>("/users/me/preferences", {
+  return apiRequest<UserPreferencesResponse>("/api/v1/users/me/preferences", {
     method: "PATCH",
     token,
     body: data,
