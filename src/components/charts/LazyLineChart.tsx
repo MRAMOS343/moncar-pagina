@@ -7,6 +7,7 @@ export { Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer };
 interface LazyLineChartProps {
   data: any[];
   height?: number | string;
+  margin?: { top?: number; right?: number; left?: number; bottom?: number };
   children?: React.ReactNode;
   [key: string]: any;
 }
