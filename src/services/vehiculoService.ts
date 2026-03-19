@@ -142,7 +142,7 @@ export async function updateDocumento(id: string, data: Partial<{
 }
 
 export async function deleteDocumento(id: string): Promise<void> {
-  await apiRequest(`/vehiculos/documentos/${id}`, { method: 'DELETE', token: getToken() });
+  await apiRequest(`/api/v1/vehiculos/documentos/${id}`, { method: 'DELETE', token: getToken() });
 }
 
 /* ── Alertas ── */
