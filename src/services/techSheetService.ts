@@ -48,7 +48,7 @@ export async function updateTechSheet(
   data: TechSheetUpdateRequest
 ): Promise<TechSheetDetailResponse> {
   return apiRequest<TechSheetDetailResponse>(
-    `/tech-sheets/${encodeURIComponent(sku)}`,
+    `/api/v1/tech-sheets/${encodeURIComponent(sku)}`,
     { method: 'PATCH', token, body: data }
   );
 }
