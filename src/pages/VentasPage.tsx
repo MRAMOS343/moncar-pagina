@@ -2,34 +2,29 @@ import { useState, useMemo, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { KPICard } from '@/components/ui/kpi-card';
-import { logger } from '@/utils/logger';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ResponsiveTable } from '@/components/ui/responsive-table';
-import { Download, ShoppingBag, Filter, AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
-import { LazyLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from '@/components/charts/LazyLineChart';
+import { ShoppingBag, AlertCircle, RefreshCw } from 'lucide-react';
 import { getVentasColumns } from '@/config/tableColumns';
-import { User, KPIData, ChartDataPoint, Warehouse } from '../types';
+import { User, KPIData, Warehouse } from '../types';
 import { format, subDays } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { downloadSalesReport } from '@/services/salesReportService';
 import type { SaleListItem } from '@/types/sales';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
-import { ChartSkeleton } from '@/components/ui/chart-skeleton';
 import { KPISkeleton } from '@/components/ui/kpi-skeleton';
-import { showSuccessToast, showErrorToast, showInfoToast } from '@/utils/toastHelpers';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSales } from '@/hooks/useSales';
 import { useVentasKPIs } from '@/hooks/useVentasKPIs';
 import { SaleDetailModal } from '@/components/modals/SaleDetailModal';
-import { toNumber, formatCurrency } from '@/utils/formatters';
+import { formatCurrency } from '@/utils/formatters';
 
+// Extracted components
+import { VentasReportDownload } from '@/components/ventas/VentasReportDownload';
+import { VentasChart } from '@/components/ventas/VentasChart';
+import { VentasFilters } from '@/components/ventas/VentasFilters';
 
 interface ContextType {
   currentWarehouse: string;
@@ -45,36 +40,7 @@ export default function VentasPage() {
   // Estados para filtros
   const [dateRange, setDateRange] = useState<string>('30d');
   const [includeCancelled, setIncludeCancelled] = useState(false);
-  
-  // Estado para reporte
-  const [reportPeriod, setReportPeriod] = useState<string>('1m');
-  const [selectedMonth, setSelectedMonth] = useState<string>(() => format(new Date(), 'yyyy-MM'));
-  const [isDownloading, setIsDownloading] = useState(false);
 
-  // Generar lista de meses desde Enero 2024 hasta mes actual
-  const availableMonths = useMemo(() => {
-    const months: { value: string; label: string; isCurrent: boolean }[] = [];
-    const now = new Date();
-    const currentYM = format(now, 'yyyy-MM');
-    let cursor = new Date(2024, 0, 1); // Enero 2024
-    while (cursor <= now) {
-      const value = format(cursor, 'yyyy-MM');
-      const label = format(cursor, 'MMMM yyyy', { locale: es });
-      // Capitalize first letter
-      const capitalizedLabel = label.charAt(0).toUpperCase() + label.slice(1);
-      months.push({ value, label: capitalizedLabel, isCurrent: value === currentYM });
-      cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
-    }
-    return months.reverse(); // Most recent first
-  }, []);
-
-  // Leyenda contextual del mes seleccionado
-  const monthHint = useMemo(() => {
-    const currentYM = format(new Date(), 'yyyy-MM');
-    if (selectedMonth === currentYM) return 'Del 01 al día de hoy';
-    return 'Mes completo';
-  }, [selectedMonth]);
-  
   // Estado para modal de detalle
   const [selectedSaleId, setSelectedSaleId] = useState<number | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -83,20 +49,14 @@ export default function VentasPage() {
   const fromDate = useMemo(() => {
     const now = new Date();
     switch (dateRange) {
-      case '1d':
-        return format(now, 'yyyy-MM-dd');
-      case '7d':
-        return format(subDays(now, 7), 'yyyy-MM-dd');
-      case '30d':
-        return format(subDays(now, 30), 'yyyy-MM-dd');
-      case '90d':
-        return format(subDays(now, 90), 'yyyy-MM-dd');
-      default:
-        return format(subDays(now, 30), 'yyyy-MM-dd');
+      case '1d': return format(now, 'yyyy-MM-dd');
+      case '7d': return format(subDays(now, 7), 'yyyy-MM-dd');
+      case '30d': return format(subDays(now, 30), 'yyyy-MM-dd');
+      case '90d': return format(subDays(now, 90), 'yyyy-MM-dd');
+      default: return format(subDays(now, 30), 'yyyy-MM-dd');
     }
   }, [dateRange]);
 
-  // Helper para mostrar texto del período
   const periodLabel = useMemo(() => {
     switch (dateRange) {
       case '1d': return 'Hoy';
@@ -108,48 +68,44 @@ export default function VentasPage() {
   }, [dateRange]);
 
   // Hook para obtener ventas desde API real (para tabla)
-  const { 
-    data, 
-    fetchNextPage, 
-    hasNextPage, 
-    isFetchingNextPage, 
-    isLoading: isLoadingTable, 
-    error, 
-    refetch 
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: isLoadingTable,
+    error,
+    refetch
   } = useSales({
     from: fromDate,
     sucursal_id: currentWarehouse === 'all' ? undefined : currentWarehouse,
     include_cancelled: includeCancelled,
   });
 
-  // Hook dedicado para KPIs con más datos
-  const { 
-    data: kpisData, 
-    isLoading: isLoadingKPIs 
+  // Hook dedicado para KPIs + chart data (hasta 5000 items)
+  const {
+    data: kpisData,
+    isLoading: isLoadingKPIs
   } = useVentasKPIs({
     from: fromDate,
     sucursal_id: currentWarehouse === 'all' ? undefined : currentWarehouse,
   });
 
-  // Aplanar páginas de datos con deduplicación defensiva por venta_id
+  // Aplanar páginas de datos con deduplicación defensiva
   const salesData = useMemo(() => {
     if (!data?.pages) return [];
-    
     const all = data.pages.flatMap(page => page.items);
-    
-    // Deduplicación defensiva por venta_id
     const seen = new Set<number>();
-    const unique = all.filter(item => {
-      if (seen.has(item.venta_id)) return false;
-      seen.add(item.venta_id);
-      return true;
-    });
-    
-    // Ordenar por venta_id descendente (más recientes primero)
-    return unique.sort((a, b) => b.venta_id - a.venta_id);
+    return all
+      .filter(item => {
+        if (seen.has(item.venta_id)) return false;
+        seen.add(item.venta_id);
+        return true;
+      })
+      .sort((a, b) => b.venta_id - a.venta_id);
   }, [data]);
 
-  // KPIs desde hook dedicado
+  // KPIs
   const kpis: KPIData[] = useMemo(() => {
     if (!kpisData) {
       return [
@@ -158,54 +114,12 @@ export default function VentasPage() {
         { label: 'Transacciones', value: 0, change: 0, changeType: 'neutral' as const }
       ];
     }
-
     return [
-      {
-        label: 'Ventas Totales',
-        value: kpisData.totalVentas,
-        change: 0,
-        changeType: 'neutral' as const,
-        format: 'currency' as const
-      },
-      {
-        label: 'Ticket Promedio',
-        value: kpisData.ticketPromedio,
-        change: 0,
-        changeType: 'neutral' as const,
-        format: 'currency' as const
-      },
-      {
-        label: 'Transacciones',
-        value: kpisData.transacciones,
-        change: 0,
-        changeType: 'neutral' as const,
-      }
+      { label: 'Ventas Totales', value: kpisData.totalVentas, change: 0, changeType: 'neutral' as const, format: 'currency' as const },
+      { label: 'Ticket Promedio', value: kpisData.ticketPromedio, change: 0, changeType: 'neutral' as const, format: 'currency' as const },
+      { label: 'Transacciones', value: kpisData.transacciones, change: 0, changeType: 'neutral' as const }
     ];
   }, [kpisData]);
-
-  // Generar datos para gráfico
-  const chartData: ChartDataPoint[] = useMemo(() => {
-    if (salesData.length === 0) return [];
-    
-    const salesByDay: Record<string, number> = {};
-    
-    salesData.forEach(sale => {
-      if (!sale.cancelada && sale.usu_fecha) {
-        const day = sale.usu_fecha.split('T')[0];
-        salesByDay[day] = (salesByDay[day] || 0) + toNumber(sale.total);
-      }
-    });
-
-    return Object.entries(salesByDay)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, value]) => {
-        const [, month, day] = date.split('-');
-        return {
-          date: `${day}/${month}`,
-          value
-        };
-      });
-  }, [salesData]);
 
   // Handlers
   const handleViewDetail = useCallback((ventaId: number) => {
@@ -213,64 +127,20 @@ export default function VentasPage() {
     setDetailOpen(true);
   }, []);
 
-  const handleDownloadReport = useCallback(async () => {
-    setIsDownloading(true);
-    try {
-      const token = localStorage.getItem('moncar_token');
-      if (!token) {
-        showErrorToast("Error", "Sesión no válida. Inicia sesión nuevamente.");
-        return;
-      }
-
-      const sucursal_id = currentWarehouse === 'all' ? undefined : currentWarehouse;
-
-      if (reportPeriod === 'month') {
-        await downloadSalesReport(token, { month: selectedMonth, sucursal_id });
-      } else {
-        const now = new Date();
-        let reportFrom: string;
-        switch (reportPeriod) {
-          case '7d': reportFrom = format(subDays(now, 7), 'yyyy-MM-dd'); break;
-          case '1m': reportFrom = format(subDays(now, 30), 'yyyy-MM-dd'); break;
-          case '3m': reportFrom = format(subDays(now, 90), 'yyyy-MM-dd'); break;
-          case 'all': reportFrom = '2020-01-01'; break;
-          default: reportFrom = format(subDays(now, 30), 'yyyy-MM-dd');
-        }
-        await downloadSalesReport(token, { from: reportFrom, sucursal_id });
-      }
-
-      showSuccessToast("Reporte descargado", "El archivo Excel se descargó correctamente.");
-      logger.info('Reporte de ventas descargado', { period: reportPeriod, month: selectedMonth });
-    } catch (err: any) {
-      showErrorToast("Error al descargar", err?.message || "No se pudo generar el reporte.");
-      logger.error('Error descargando reporte de ventas', err);
-    } finally {
-      setIsDownloading(false);
-    }
-  }, [reportPeriod, selectedMonth, currentWarehouse]);
-
-  // Columnas de tabla
   const columns = useMemo(() => getVentasColumns(handleViewDetail), [handleViewDetail]);
 
-  // Helper para badge de estado
-  const getEstadoBadge = useCallback((estado: string) => {
-    switch (estado?.toUpperCase()) {
-      case 'CO':
-        return <Badge variant="default">Completada</Badge>;
-      case 'CA':
-        return <Badge variant="destructive">Cancelada</Badge>;
-      default:
-        return <Badge variant="outline">{estado || 'N/A'}</Badge>;
-    }
-  }, []);
-
-  // Render de card móvil
+  // Mobile card render — reuse badge logic from tableColumns
   const mobileCardRender = useCallback((sale: SaleListItem) => {
-    // Formatear fecha de YYYY-MM-DD a DD-MM-YYYY
-    const formattedDate = sale.usu_fecha 
-      ? sale.usu_fecha.split('-').reverse().join('-') 
+    const formattedDate = sale.usu_fecha
+      ? sale.usu_fecha.split('-').reverse().join('-')
       : '';
-    
+    const estadoLabel = sale.estado_origen?.toUpperCase() === 'CO' ? 'Completada'
+      : sale.estado_origen?.toUpperCase() === 'CA' ? 'Cancelada'
+      : sale.estado_origen || 'N/A';
+    const estadoVariant = sale.estado_origen?.toUpperCase() === 'CO' ? 'default' as const
+      : sale.estado_origen?.toUpperCase() === 'CA' ? 'destructive' as const
+      : 'outline' as const;
+
     return (
       <div className="space-y-2" onClick={() => handleViewDetail(sale.venta_id)}>
         <div className="flex justify-between items-start">
@@ -278,7 +148,7 @@ export default function VentasPage() {
             <p className="font-mono text-xs text-muted-foreground">#{sale.venta_id}</p>
             <p className="font-medium text-lg">{formatCurrency(sale.total)}</p>
           </div>
-          {getEstadoBadge(sale.estado_origen)}
+          <Badge variant={estadoVariant}>{estadoLabel}</Badge>
         </div>
         <div className="text-sm text-muted-foreground space-y-1">
           <p>{formattedDate} {sale.usu_hora}</p>
@@ -286,7 +156,7 @@ export default function VentasPage() {
         </div>
       </div>
     );
-  }, [handleViewDetail, getEstadoBadge]);
+  }, [handleViewDetail]);
 
   return (
     <div className="space-y-6">
@@ -296,59 +166,13 @@ export default function VentasPage() {
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Ventas</h1>
           <p className="text-sm text-muted-foreground">
             Registro de ventas en {
-              currentWarehouse === 'all' 
-                ? 'Todas las Sucursales' 
+              currentWarehouse === 'all'
+                ? 'Todas las Sucursales'
                 : warehouses.find(w => w.id === currentWarehouse)?.nombre?.trim() || currentWarehouse
             }
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 self-end sm:self-auto">
-          <Select value={reportPeriod} onValueChange={setReportPeriod}>
-            <SelectTrigger className="w-[160px] h-9 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7d">1 Semana</SelectItem>
-              <SelectItem value="1m">1 Mes</SelectItem>
-              <SelectItem value="3m">3 Meses</SelectItem>
-              <SelectItem value="all">Histórico</SelectItem>
-              <div className="my-1 border-t border-border" />
-              <SelectItem value="month">Mes específico</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {reportPeriod === 'month' && (
-            <div className="flex flex-col gap-0.5">
-              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger className="w-[180px] h-9 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="max-h-[260px]">
-                  {availableMonths.map(m => (
-                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <span className="text-[11px] text-muted-foreground pl-1">{monthHint}</span>
-            </div>
-          )}
-
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleDownloadReport} 
-            disabled={isDownloading}
-            className="btn-hover touch-target" 
-            aria-label="Descargar reporte de ventas"
-          >
-            {isDownloading ? (
-              <Loader2 className="w-4 h-4 sm:mr-2 animate-spin" />
-            ) : (
-              <Download className="w-4 h-4 sm:mr-2" />
-            )}
-            <span className="hidden sm:inline">Descargar Reporte</span>
-          </Button>
-        </div>
+        <VentasReportDownload currentWarehouse={currentWarehouse} />
       </div>
 
       {/* Error state */}
@@ -365,7 +189,7 @@ export default function VentasPage() {
         </Alert>
       )}
 
-      {/* Selector de período global */}
+      {/* Period selector */}
       <div className="flex items-center gap-3">
         <span className="text-sm font-medium text-muted-foreground">Período:</span>
         <Select value={dateRange} onValueChange={setDateRange}>
@@ -384,11 +208,7 @@ export default function VentasPage() {
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {isLoadingKPIs ? (
-          <>
-            <KPISkeleton />
-            <KPISkeleton />
-            <KPISkeleton />
-          </>
+          <><KPISkeleton /><KPISkeleton /><KPISkeleton /></>
         ) : (
           kpis.map((kpi, index) => (
             <KPICard key={index} data={kpi} className="animate-fade-in" />
@@ -401,110 +221,21 @@ export default function VentasPage() {
         </p>
       )}
 
-      {/* Chart */}
-      {isLoadingTable ? (
-        <ChartSkeleton />
-      ) : (
-        <Card className="chart-card animate-scale-in card-hover">
-          <CardHeader>
-            <CardTitle>Tendencia de Ventas</CardTitle>
-            <CardDescription>
-              Ventas diarias {dateRange === '1d' ? 'de hoy' : `en los últimos ${periodLabel}`}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {chartData.length > 0 ? (
-              <LazyLineChart data={chartData} height={320}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip 
-                  formatter={(value: number) => [formatCurrency(value), 'Ventas']}
-                  labelFormatter={(label) => `Fecha: ${label}`}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--primary))' }}
-                />
-              </LazyLineChart>
-            ) : (
-              <div className="h-[320px] flex items-center justify-center text-muted-foreground">
-                No hay datos para mostrar
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {/* Chart — uses KPI data source (up to 5000 items) for consistency */}
+      <VentasChart
+        chartData={kpisData?.chartData ?? []}
+        isLoading={isLoadingKPIs}
+        periodLabel={periodLabel}
+        isToday={dateRange === '1d'}
+      />
 
       {/* Filters */}
-      {isMobile ? (
-        <Accordion type="single" collapsible defaultValue="filtros">
-          <AccordionItem value="filtros">
-            <AccordionTrigger className="px-4">
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4" />
-                <span>Filtros</span>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="px-4 pb-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="include-cancelled-mobile" className="text-base font-medium">
-                    Incluir canceladas
-                  </Label>
-                  <Switch 
-                    id="include-cancelled-mobile"
-                    checked={includeCancelled} 
-                    onCheckedChange={setIncludeCancelled} 
-                  />
-                </div>
-
-                <Button 
-                  onClick={() => {
-                    setIncludeCancelled(false);
-                    setDateRange('30d');
-                  }} 
-                  variant="outline"
-                  className="w-full mobile-button"
-                >
-                  Limpiar filtros
-                </Button>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Filtros Adicionales</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Switch 
-                  id="include-cancelled"
-                  checked={includeCancelled} 
-                  onCheckedChange={setIncludeCancelled} 
-                />
-                <Label htmlFor="include-cancelled">Incluir ventas canceladas</Label>
-              </div>
-
-              {includeCancelled && (
-                <Button 
-                  onClick={() => setIncludeCancelled(false)} 
-                  variant="ghost"
-                  size="sm"
-                >
-                  Limpiar
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <VentasFilters
+        isMobile={isMobile}
+        includeCancelled={includeCancelled}
+        setIncludeCancelled={setIncludeCancelled}
+        setDateRange={setDateRange}
+      />
 
       {/* Sales Table */}
       <Card className="data-table">
@@ -536,20 +267,15 @@ export default function VentasPage() {
                 mobileCardRender={mobileCardRender}
                 getRowKey={(item) => item.venta_id}
               />
-              
-              {/* Load more button */}
               {hasNextPage && (
                 <div className="p-4 text-center border-t">
-                  <Button 
-                    onClick={() => fetchNextPage()} 
+                  <Button
+                    onClick={() => fetchNextPage()}
                     disabled={isFetchingNextPage}
                     variant="outline"
                   >
                     {isFetchingNextPage ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                        Cargando...
-                      </>
+                      <><RefreshCw className="w-4 h-4 mr-2 animate-spin" />Cargando...</>
                     ) : (
                       'Cargar más ventas'
                     )}
@@ -561,8 +287,8 @@ export default function VentasPage() {
         </CardContent>
       </Card>
 
-      {/* Modal de detalle */}
-      <SaleDetailModal 
+      {/* Detail modal */}
+      <SaleDetailModal
         ventaId={selectedSaleId}
         open={detailOpen}
         onOpenChange={setDetailOpen}
