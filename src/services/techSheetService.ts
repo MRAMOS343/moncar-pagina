@@ -59,7 +59,7 @@ export async function upsertTechSheetAttribute(
   data: TechSheetAttributeRequest
 ): Promise<TechSheetAttributeResponse> {
   return apiRequest<TechSheetAttributeResponse>(
-    `/tech-sheets/${encodeURIComponent(sku)}/attributes`,
+    `/api/v1/tech-sheets/${encodeURIComponent(sku)}/attributes`,
     { method: 'POST', token, body: data }
   );
 }
