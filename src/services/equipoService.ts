@@ -18,7 +18,7 @@ export async function fetchEquipos(
   if (params.cursor) searchParams.set("cursor", params.cursor);
   if (params.q?.trim()) searchParams.set("q", params.q.trim());
 
-  return apiRequest<EquiposListResponse>(`/equipos?${searchParams}`, { token });
+  return apiRequest<EquiposListResponse>(`/api/v1/equipos?${searchParams}`, { token });
 }
 
 // GET /equipos/:id
