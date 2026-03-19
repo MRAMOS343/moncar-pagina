@@ -29,7 +29,7 @@ export async function fetchSales(
     searchParams.set("cursor_venta_id", String(params.cursor_venta_id));
   }
 
-  const url = `/sales?${searchParams.toString()}`;
+  const url = `/api/v1/sales?${searchParams.toString()}`;
   
   // Logging de desarrollo
   if (import.meta.env.DEV) {
@@ -52,5 +52,5 @@ export async function fetchSaleDetail(
   token: string,
   ventaId: number
 ): Promise<SaleDetailResponse> {
-  return apiRequest<SaleDetailResponse>(`/sales/${ventaId}`, { token });
+  return apiRequest<SaleDetailResponse>(`/api/v1/sales/${ventaId}`, { token });
 }

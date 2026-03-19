@@ -31,11 +31,11 @@ export async function initUpload(data: {
   etiquetas?: string;
   referencia?: string;
 }): Promise<InitUploadResponse> {
-  return apiRequest<InitUploadResponse>('/archivos/init', { method: 'POST', token: getToken(), body: data });
+  return apiRequest<InitUploadResponse>('/api/v1/archivos/init', { method: 'POST', token: getToken(), body: data });
 }
 
 export async function getPartUrl(archivoId: string, numeroParte: number): Promise<string> {
-  const res = await apiRequest<PartUrlResponse>(`/archivos/${archivoId}/parte-url`, {
+  const res = await apiRequest<PartUrlResponse>(`/api/v1/archivos/${archivoId}/parte-url`, {
     method: 'POST', token: getToken(), body: { numero_parte: numeroParte },
   });
   return res.url;
@@ -76,11 +76,11 @@ export async function uploadPartToUrl(url: string, chunk: Blob): Promise<string>
 }
 
 export async function completeUpload(archivoId: string, partes: CompletePart[]): Promise<void> {
-  await apiRequest(`/archivos/${archivoId}/completar`, { method: 'POST', token: getToken(), body: { partes } });
+  await apiRequest(`/api/v1/archivos/${archivoId}/completar`, { method: 'POST', token: getToken(), body: { partes } });
 }
 
 export async function getDownloadUrl(archivoId: string): Promise<string> {
-  const res = await apiRequest<{ url: string }>(`/archivos/${archivoId}/descargar`, { token: getToken() });
+  const res = await apiRequest<{ url: string }>(`/api/v1/archivos/${archivoId}/descargar`, { token: getToken() });
   return res.url;
 }
 

@@ -21,14 +21,14 @@ export async function fetchProducts(
     searchParams.set("q", params.q.trim());
   }
 
-  return apiRequest<ProductsListResponse>(`/products?${searchParams}`, { token });
+  return apiRequest<ProductsListResponse>(`/api/v1/products?${searchParams}`, { token });
 }
 
 export async function fetchProductBySku(
   token: string,
   sku: string
 ): Promise<ProductDetailResponse> {
-  return apiRequest<ProductDetailResponse>(`/products/${encodeURIComponent(sku)}`, { token });
+  return apiRequest<ProductDetailResponse>(`/api/v1/products/${encodeURIComponent(sku)}`, { token });
 }
 
 export async function updateProduct(
@@ -37,7 +37,7 @@ export async function updateProduct(
   data: ProductUpdateRequest
 ): Promise<ProductUpdateResponse> {
   return apiRequest<ProductUpdateResponse>(
-    `/products/${encodeURIComponent(sku)}`,
+    `/api/v1/products/${encodeURIComponent(sku)}`,
     { method: 'PATCH', token, body: data }
   );
 }

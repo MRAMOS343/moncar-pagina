@@ -12,14 +12,14 @@ import type {
 
 // === Preferencias del usuario ===
 export async function fetchUserPreferences(token: string): Promise<UserPreferencesResponse> {
-  return apiRequest<UserPreferencesResponse>("/users/me/preferences", { token });
+  return apiRequest<UserPreferencesResponse>("/api/v1/users/me/preferences", { token });
 }
 
 export async function patchUserPreferences(
   token: string, 
   data: Partial<UserPreferences>
 ): Promise<UserPreferencesResponse> {
-  return apiRequest<UserPreferencesResponse>("/users/me/preferences", {
+  return apiRequest<UserPreferencesResponse>("/api/v1/users/me/preferences", {
     method: "PATCH",
     token,
     body: data,
@@ -31,7 +31,7 @@ export async function patchUserProfile(
   token: string, 
   data: UserProfileUpdate
 ): Promise<UserProfileResponse> {
-  return apiRequest<UserProfileResponse>("/users/me/profile", {
+  return apiRequest<UserProfileResponse>("/api/v1/users/me/profile", {
     method: "PATCH",
     token,
     body: data,
@@ -40,14 +40,14 @@ export async function patchUserProfile(
 
 // === Settings de empresa (admin/gerente) ===
 export async function fetchCompanySettings(token: string): Promise<CompanySettingsResponse> {
-  return apiRequest<CompanySettingsResponse>("/settings/company", { token });
+  return apiRequest<CompanySettingsResponse>("/api/v1/settings/company", { token });
 }
 
 export async function patchCompanySettings(
   token: string, 
   data: Partial<CompanySettings>
 ): Promise<CompanySettingsResponse> {
-  return apiRequest<CompanySettingsResponse>("/settings/company", {
+  return apiRequest<CompanySettingsResponse>("/api/v1/settings/company", {
     method: "PATCH",
     token,
     body: data,
@@ -56,14 +56,14 @@ export async function patchCompanySettings(
 
 // === Settings de inventario (admin/gerente) ===
 export async function fetchInventorySettings(token: string): Promise<InventorySettingsResponse> {
-  return apiRequest<InventorySettingsResponse>("/settings/inventory", { token });
+  return apiRequest<InventorySettingsResponse>("/api/v1/settings/inventory", { token });
 }
 
 export async function patchInventorySettings(
   token: string, 
   data: Partial<InventorySettings>
 ): Promise<InventorySettingsResponse> {
-  return apiRequest<InventorySettingsResponse>("/settings/inventory", {
+  return apiRequest<InventorySettingsResponse>("/api/v1/settings/inventory", {
     method: "PATCH",
     token,
     body: data,

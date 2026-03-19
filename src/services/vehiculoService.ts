@@ -73,32 +73,32 @@ function getToken() {
 /* ── Rutas ── */
 
 export async function fetchRutas(): Promise<Ruta[]> {
-  const res = await apiRequest<{ items: Record<string, unknown>[] }>('/vehiculos/rutas', { token: getToken() });
+  const res = await apiRequest<{ items: Record<string, unknown>[] }>('/api/v1/vehiculos/rutas', { token: getToken() });
   return res.items.map(mapRuta);
 }
 
 export async function createRuta(data: { nombre: string; descripcion?: string; activa?: boolean }): Promise<string> {
-  const res = await apiRequest<{ ok: boolean; ruta_id: string }>('/vehiculos/rutas', { method: 'POST', token: getToken(), body: data });
+  const res = await apiRequest<{ ok: boolean; ruta_id: string }>('/api/v1/vehiculos/rutas', { method: 'POST', token: getToken(), body: data });
   return res.ruta_id;
 }
 
 export async function updateRuta(id: string, data: Partial<{ nombre: string; descripcion: string; activa: boolean }>): Promise<void> {
-  await apiRequest(`/vehiculos/rutas/${id}`, { method: 'PATCH', token: getToken(), body: data });
+  await apiRequest(`/api/v1/vehiculos/rutas/${id}`, { method: 'PATCH', token: getToken(), body: data });
 }
 
 export async function deleteRuta(id: string): Promise<void> {
-  await apiRequest(`/vehiculos/rutas/${id}`, { method: 'DELETE', token: getToken() });
+  await apiRequest(`/api/v1/vehiculos/rutas/${id}`, { method: 'DELETE', token: getToken() });
 }
 
 /* ── Unidades ── */
 
 export async function fetchUnidades(rutaId: string): Promise<Unidad[]> {
-  const res = await apiRequest<{ items: Record<string, unknown>[] }>(`/vehiculos/rutas/${rutaId}/unidades`, { token: getToken() });
+  const res = await apiRequest<{ items: Record<string, unknown>[] }>(`/api/v1/vehiculos/rutas/${rutaId}/unidades`, { token: getToken() });
   return res.items.map(mapUnidad);
 }
 
 export async function fetchUnidad(id: string): Promise<Unidad> {
-  const res = await apiRequest<{ item: Record<string, unknown> }>(`/vehiculos/unidades/${id}`, { token: getToken() });
+  const res = await apiRequest<{ item: Record<string, unknown> }>(`/api/v1/vehiculos/unidades/${id}`, { token: getToken() });
   return mapUnidad(res.item);
 }
 
@@ -106,7 +106,7 @@ export async function createUnidad(rutaId: string, data: {
   numero: string; placa: string; marca?: string; modelo?: string;
   anio?: number; color?: string; km?: number; estado?: string; descripcion?: string;
 }): Promise<string> {
-  const res = await apiRequest<{ ok: boolean; unidad_id: string }>(`/vehiculos/rutas/${rutaId}/unidades`, { method: 'POST', token: getToken(), body: data });
+  const res = await apiRequest<{ ok: boolean; unidad_id: string }>(`/api/v1/vehiculos/rutas/${rutaId}/unidades`, { method: 'POST', token: getToken(), body: data });
   return res.unidad_id;
 }
 
@@ -114,56 +114,56 @@ export async function updateUnidad(id: string, data: Partial<{
   numero: string; placa: string; marca: string; modelo: string;
   anio: number; color: string; km: number; estado: string; descripcion: string;
 }>): Promise<void> {
-  await apiRequest(`/vehiculos/unidades/${id}`, { method: 'PATCH', token: getToken(), body: data });
+  await apiRequest(`/api/v1/vehiculos/unidades/${id}`, { method: 'PATCH', token: getToken(), body: data });
 }
 
 export async function deleteUnidad(id: string): Promise<void> {
-  await apiRequest(`/vehiculos/unidades/${id}`, { method: 'DELETE', token: getToken() });
+  await apiRequest(`/api/v1/vehiculos/unidades/${id}`, { method: 'DELETE', token: getToken() });
 }
 
 /* ── Documentos ── */
 
 export async function fetchDocumentos(unidadId: string): Promise<DocumentoUnidad[]> {
-  const res = await apiRequest<{ items: Record<string, unknown>[] }>(`/vehiculos/unidades/${unidadId}/documentos`, { token: getToken() });
+  const res = await apiRequest<{ items: Record<string, unknown>[] }>(`/api/v1/vehiculos/unidades/${unidadId}/documentos`, { token: getToken() });
   return res.items.map(mapDocumento);
 }
 
 export async function createDocumento(unidadId: string, data: {
   tipo: string; nombre: string; notas?: string; fecha_documento?: string; vigencia_hasta?: string; archivo_id?: string;
 }): Promise<string> {
-  const res = await apiRequest<{ ok: boolean; documento_id: string }>(`/vehiculos/unidades/${unidadId}/documentos`, { method: 'POST', token: getToken(), body: data });
+  const res = await apiRequest<{ ok: boolean; documento_id: string }>(`/api/v1/vehiculos/unidades/${unidadId}/documentos`, { method: 'POST', token: getToken(), body: data });
   return res.documento_id;
 }
 
 export async function updateDocumento(id: string, data: Partial<{
   tipo: string; nombre: string; notas: string; fecha_documento: string; vigencia_hasta: string;
 }>): Promise<void> {
-  await apiRequest(`/vehiculos/documentos/${id}`, { method: 'PATCH', token: getToken(), body: data });
+  await apiRequest(`/api/v1/vehiculos/documentos/${id}`, { method: 'PATCH', token: getToken(), body: data });
 }
 
 export async function deleteDocumento(id: string): Promise<void> {
-  await apiRequest(`/vehiculos/documentos/${id}`, { method: 'DELETE', token: getToken() });
+  await apiRequest(`/api/v1/vehiculos/documentos/${id}`, { method: 'DELETE', token: getToken() });
 }
 
 /* ── Alertas ── */
 
 export async function fetchAlertas(unidadId: string): Promise<AlertaDocumento[]> {
-  const res = await apiRequest<{ items: Record<string, unknown>[] }>(`/vehiculos/unidades/${unidadId}/alertas`, { token: getToken() });
+  const res = await apiRequest<{ items: Record<string, unknown>[] }>(`/api/v1/vehiculos/unidades/${unidadId}/alertas`, { token: getToken() });
   return res.items.map(mapAlerta);
 }
 
 export async function upsertAlerta(unidadId: string, tipoDocumento: string, data: { dias_antes: number; activa: boolean }): Promise<void> {
-  await apiRequest(`/vehiculos/unidades/${unidadId}/alertas/${tipoDocumento}`, { method: 'PUT', token: getToken(), body: data });
+  await apiRequest(`/api/v1/vehiculos/unidades/${unidadId}/alertas/${tipoDocumento}`, { method: 'PUT', token: getToken(), body: data });
 }
 
 /* ── Bulk import ── */
 
 export async function checkDuplicados(rutaId: string, numeros: string): Promise<{ duplicados: string[] }> {
-  return apiRequest<{ duplicados: string[] }>(`/vehiculos/rutas/${rutaId}/unidades/check?numeros=${numeros}`, { token: getToken() });
+  return apiRequest<{ duplicados: string[] }>(`/api/v1/vehiculos/rutas/${rutaId}/unidades/check?numeros=${numeros}`, { token: getToken() });
 }
 
 export async function importarBulk(rutaId: string, body: import('@/types/vehiculos').ImportarBulkBody): Promise<import('@/types/vehiculos').ImportarBulkResultado> {
-  return apiRequest<import('@/types/vehiculos').ImportarBulkResultado>(`/vehiculos/rutas/${rutaId}/importar`, { method: 'POST', token: getToken(), body });
+  return apiRequest<import('@/types/vehiculos').ImportarBulkResultado>(`/api/v1/vehiculos/rutas/${rutaId}/importar`, { method: 'POST', token: getToken(), body });
 }
 
 /* ── KPI por vencer ── */
@@ -174,6 +174,6 @@ export interface DocPorVencer {
 }
 
 export async function fetchDocsPorVencer(dias: number): Promise<DocPorVencer> {
-  const res = await apiRequest<{ items: Record<string, unknown>[]; dias: number }>(`/vehiculos/documentos/por-vencer?dias=${dias}`, { token: getToken() });
+  const res = await apiRequest<{ items: Record<string, unknown>[]; dias: number }>(`/api/v1/vehiculos/documentos/por-vencer?dias=${dias}`, { token: getToken() });
   return { items: res.items.map(mapDocumento), dias: res.dias };
 }

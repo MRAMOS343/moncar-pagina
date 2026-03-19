@@ -18,7 +18,7 @@ export async function fetchEquipos(
   if (params.cursor) searchParams.set("cursor", params.cursor);
   if (params.q?.trim()) searchParams.set("q", params.q.trim());
 
-  return apiRequest<EquiposListResponse>(`/equipos?${searchParams}`, { token });
+  return apiRequest<EquiposListResponse>(`/api/v1/equipos?${searchParams}`, { token });
 }
 
 // GET /equipos/:id
@@ -26,7 +26,7 @@ export async function fetchEquipoById(
   token: string,
   id: string
 ): Promise<EquipoDetailResponse> {
-  return apiRequest<EquipoDetailResponse>(`/equipos/${id}`, { token });
+  return apiRequest<EquipoDetailResponse>(`/api/v1/equipos/${id}`, { token });
 }
 
 // POST /equipos
@@ -34,7 +34,7 @@ export async function createEquipo(
   token: string,
   data: CreateEquipoRequest
 ): Promise<{ ok: true; equipo: { equipo_id: string } }> {
-  return apiRequest(`/equipos`, { method: "POST", token, body: data });
+  return apiRequest(`/api/v1/equipos`, { method: "POST", token, body: data });
 }
 
 // PATCH /equipos/:id
@@ -43,7 +43,7 @@ export async function updateEquipo(
   id: string,
   data: UpdateEquipoRequest
 ): Promise<{ ok: true }> {
-  return apiRequest(`/equipos/${id}`, { method: "PATCH", token, body: data });
+  return apiRequest(`/api/v1/equipos/${id}`, { method: "PATCH", token, body: data });
 }
 
 // DELETE /equipos/:id (soft delete)
@@ -51,7 +51,7 @@ export async function deleteEquipo(
   token: string,
   id: string
 ): Promise<{ ok: true }> {
-  return apiRequest(`/equipos/${id}`, { method: "DELETE", token });
+  return apiRequest(`/api/v1/equipos/${id}`, { method: "DELETE", token });
 }
 
 // POST /equipos/:id/miembros
@@ -60,7 +60,7 @@ export async function addMiembro(
   equipoId: string,
   data: AddMiembroRequest
 ): Promise<{ ok: true }> {
-  return apiRequest(`/equipos/${equipoId}/miembros`, {
+  return apiRequest(`/api/v1/equipos/${equipoId}/miembros`, {
     method: "POST",
     token,
     body: data,
@@ -73,7 +73,7 @@ export async function removeMiembro(
   equipoId: string,
   usuarioId: string
 ): Promise<{ ok: true }> {
-  return apiRequest(`/equipos/${equipoId}/miembros/${usuarioId}`, {
+  return apiRequest(`/api/v1/equipos/${equipoId}/miembros/${usuarioId}`, {
     method: "DELETE",
     token,
   });

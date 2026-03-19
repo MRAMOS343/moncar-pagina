@@ -15,7 +15,7 @@ export async function fetchTechSheetBySku(
 ): Promise<TechSheetDetailResponse | null> {
   try {
     return await apiRequest<TechSheetDetailResponse>(
-      `/tech-sheets/${encodeURIComponent(sku)}`, 
+      `/api/v1/tech-sheets/${encodeURIComponent(sku)}`, 
       { token }
     );
   } catch (error) {
@@ -39,7 +39,7 @@ export async function fetchTechSheets(
     searchParams.set("sku", params.sku);
   }
 
-  return apiRequest<TechSheetListResponse>(`/tech-sheets?${searchParams}`, { token });
+  return apiRequest<TechSheetListResponse>(`/api/v1/tech-sheets?${searchParams}`, { token });
 }
 
 export async function updateTechSheet(
@@ -48,7 +48,7 @@ export async function updateTechSheet(
   data: TechSheetUpdateRequest
 ): Promise<TechSheetDetailResponse> {
   return apiRequest<TechSheetDetailResponse>(
-    `/tech-sheets/${encodeURIComponent(sku)}`,
+    `/api/v1/tech-sheets/${encodeURIComponent(sku)}`,
     { method: 'PATCH', token, body: data }
   );
 }
@@ -59,7 +59,7 @@ export async function upsertTechSheetAttribute(
   data: TechSheetAttributeRequest
 ): Promise<TechSheetAttributeResponse> {
   return apiRequest<TechSheetAttributeResponse>(
-    `/tech-sheets/${encodeURIComponent(sku)}/attributes`,
+    `/api/v1/tech-sheets/${encodeURIComponent(sku)}/attributes`,
     { method: 'POST', token, body: data }
   );
 }
@@ -70,7 +70,7 @@ export async function bulkUpsertTechSheetAttributes(
   data: TechSheetBulkAttributesRequest
 ): Promise<TechSheetBulkAttributesResponse> {
   return apiRequest<TechSheetBulkAttributesResponse>(
-    `/tech-sheets/${encodeURIComponent(sku)}/attributes`,
+    `/api/v1/tech-sheets/${encodeURIComponent(sku)}/attributes`,
     { method: 'PUT', token, body: data }
   );
 }
@@ -81,7 +81,7 @@ export async function deleteTechSheetAttribute(
   attributeId: number
 ): Promise<{ ok: boolean }> {
   return apiRequest<{ ok: boolean }>(
-    `/tech-sheets/${encodeURIComponent(sku)}/attributes/${attributeId}`,
+    `/api/v1/tech-sheets/${encodeURIComponent(sku)}/attributes/${attributeId}`,
     { method: 'DELETE', token }
   );
 }

@@ -25,11 +25,11 @@ export interface CreateUsuarioResponse {
 }
 
 export async function validateInvitation(token: string): Promise<InvitationValidation> {
-  return apiRequest<InvitationValidation>(`/auth/invitation/${encodeURIComponent(token)}`);
+  return apiRequest<InvitationValidation>(`/api/v1/auth/invitation/${encodeURIComponent(token)}`);
 }
 
 export async function setPassword(token: string, password: string): Promise<SetPasswordResponse> {
-  return apiRequest<SetPasswordResponse>("/auth/set-password", {
+  return apiRequest<SetPasswordResponse>("/api/v1/auth/set-password", {
     method: "POST",
     body: { token, password },
   });
@@ -39,7 +39,7 @@ export async function createUsuario(
   data: CreateUsuarioPayload,
   authToken: string
 ): Promise<CreateUsuarioResponse> {
-  return apiRequest<CreateUsuarioResponse>("/admin/usuarios", {
+  return apiRequest<CreateUsuarioResponse>("/api/v1/admin/usuarios", {
     method: "POST",
     token: authToken,
     body: data,
