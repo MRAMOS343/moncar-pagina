@@ -60,7 +60,7 @@ export async function addMiembro(
   equipoId: string,
   data: AddMiembroRequest
 ): Promise<{ ok: true }> {
-  return apiRequest(`/equipos/${equipoId}/miembros`, {
+  return apiRequest(`/api/v1/equipos/${equipoId}/miembros`, {
     method: "POST",
     token,
     body: data,
