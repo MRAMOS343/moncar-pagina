@@ -25,7 +25,7 @@ export interface CreateUsuarioResponse {
 }
 
 export async function validateInvitation(token: string): Promise<InvitationValidation> {
-  return apiRequest<InvitationValidation>(`/auth/invitation/${encodeURIComponent(token)}`);
+  return apiRequest<InvitationValidation>(`/api/v1/auth/invitation/${encodeURIComponent(token)}`);
 }
 
 export async function setPassword(token: string, password: string): Promise<SetPasswordResponse> {
