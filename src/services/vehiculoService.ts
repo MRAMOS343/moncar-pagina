@@ -131,7 +131,7 @@ export async function fetchDocumentos(unidadId: string): Promise<DocumentoUnidad
 export async function createDocumento(unidadId: string, data: {
   tipo: string; nombre: string; notas?: string; fecha_documento?: string; vigencia_hasta?: string; archivo_id?: string;
 }): Promise<string> {
-  const res = await apiRequest<{ ok: boolean; documento_id: string }>(`/vehiculos/unidades/${unidadId}/documentos`, { method: 'POST', token: getToken(), body: data });
+  const res = await apiRequest<{ ok: boolean; documento_id: string }>(`/api/v1/vehiculos/unidades/${unidadId}/documentos`, { method: 'POST', token: getToken(), body: data });
   return res.documento_id;
 }
 
