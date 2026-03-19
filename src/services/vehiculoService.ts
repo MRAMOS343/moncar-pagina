@@ -98,7 +98,7 @@ export async function fetchUnidades(rutaId: string): Promise<Unidad[]> {
 }
 
 export async function fetchUnidad(id: string): Promise<Unidad> {
-  const res = await apiRequest<{ item: Record<string, unknown> }>(`/vehiculos/unidades/${id}`, { token: getToken() });
+  const res = await apiRequest<{ item: Record<string, unknown> }>(`/api/v1/vehiculos/unidades/${id}`, { token: getToken() });
   return mapUnidad(res.item);
 }
 
