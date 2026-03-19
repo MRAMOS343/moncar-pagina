@@ -31,7 +31,7 @@ export async function initUpload(data: {
   etiquetas?: string;
   referencia?: string;
 }): Promise<InitUploadResponse> {
-  return apiRequest<InitUploadResponse>('/archivos/init', { method: 'POST', token: getToken(), body: data });
+  return apiRequest<InitUploadResponse>('/api/v1/archivos/init', { method: 'POST', token: getToken(), body: data });
 }
 
 export async function getPartUrl(archivoId: string, numeroParte: number): Promise<string> {
