@@ -70,7 +70,7 @@ export async function bulkUpsertTechSheetAttributes(
   data: TechSheetBulkAttributesRequest
 ): Promise<TechSheetBulkAttributesResponse> {
   return apiRequest<TechSheetBulkAttributesResponse>(
-    `/tech-sheets/${encodeURIComponent(sku)}/attributes`,
+    `/api/v1/tech-sheets/${encodeURIComponent(sku)}/attributes`,
     { method: 'PUT', token, body: data }
   );
 }
