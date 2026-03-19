@@ -28,7 +28,7 @@ export async function fetchProductBySku(
   token: string,
   sku: string
 ): Promise<ProductDetailResponse> {
-  return apiRequest<ProductDetailResponse>(`/products/${encodeURIComponent(sku)}`, { token });
+  return apiRequest<ProductDetailResponse>(`/api/v1/products/${encodeURIComponent(sku)}`, { token });
 }
 
 export async function updateProduct(
