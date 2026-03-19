@@ -22,7 +22,7 @@ export function VentasReportDownload({ currentWarehouse }: Props) {
     const months: { value: string; label: string; isCurrent: boolean }[] = [];
     const now = new Date();
     const currentYM = format(now, 'yyyy-MM');
-    let cursor = new Date(2024, 0, 1);
+    let cursor = new Date(2026, 0, 1);
     while (cursor <= now) {
       const value = format(cursor, 'yyyy-MM');
       const label = format(cursor, 'MMMM yyyy', { locale: es });
