@@ -222,30 +222,32 @@ export default function VentasPage() {
         return;
       }
 
-      const now = new Date();
-      let reportFrom: string;
-      switch (reportPeriod) {
-        case '7d': reportFrom = format(subDays(now, 7), 'yyyy-MM-dd'); break;
-        case '1m': reportFrom = format(subDays(now, 30), 'yyyy-MM-dd'); break;
-        case '3m': reportFrom = format(subDays(now, 90), 'yyyy-MM-dd'); break;
-        case 'all': reportFrom = '2020-01-01'; break;
-        default: reportFrom = format(subDays(now, 30), 'yyyy-MM-dd');
+      const sucursal_id = currentWarehouse === 'all' ? undefined : currentWarehouse;
+
+      if (reportPeriod === 'month') {
+        await downloadSalesReport(token, { month: selectedMonth, sucursal_id });
+      } else {
+        const now = new Date();
+        let reportFrom: string;
+        switch (reportPeriod) {
+          case '7d': reportFrom = format(subDays(now, 7), 'yyyy-MM-dd'); break;
+          case '1m': reportFrom = format(subDays(now, 30), 'yyyy-MM-dd'); break;
+          case '3m': reportFrom = format(subDays(now, 90), 'yyyy-MM-dd'); break;
+          case 'all': reportFrom = '2020-01-01'; break;
+          default: reportFrom = format(subDays(now, 30), 'yyyy-MM-dd');
+        }
+        await downloadSalesReport(token, { from: reportFrom, sucursal_id });
       }
 
-      await downloadSalesReport(token, {
-        from: reportFrom,
-        sucursal_id: currentWarehouse === 'all' ? undefined : currentWarehouse,
-      });
-
       showSuccessToast("Reporte descargado", "El archivo Excel se descargó correctamente.");
-      logger.info('Reporte de ventas descargado', { period: reportPeriod });
+      logger.info('Reporte de ventas descargado', { period: reportPeriod, month: selectedMonth });
     } catch (err: any) {
       showErrorToast("Error al descargar", err?.message || "No se pudo generar el reporte.");
       logger.error('Error descargando reporte de ventas', err);
     } finally {
       setIsDownloading(false);
     }
-  }, [reportPeriod, currentWarehouse]);
+  }, [reportPeriod, selectedMonth, currentWarehouse]);
 
   // Columnas de tabla
   const columns = useMemo(() => getVentasColumns(handleViewDetail), [handleViewDetail]);
