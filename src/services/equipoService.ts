@@ -26,7 +26,7 @@ export async function fetchEquipoById(
   token: string,
   id: string
 ): Promise<EquipoDetailResponse> {
-  return apiRequest<EquipoDetailResponse>(`/equipos/${id}`, { token });
+  return apiRequest<EquipoDetailResponse>(`/api/v1/equipos/${id}`, { token });
 }
 
 // POST /equipos
