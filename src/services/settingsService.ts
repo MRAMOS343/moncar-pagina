@@ -56,7 +56,7 @@ export async function patchCompanySettings(
 
 // === Settings de inventario (admin/gerente) ===
 export async function fetchInventorySettings(token: string): Promise<InventorySettingsResponse> {
-  return apiRequest<InventorySettingsResponse>("/settings/inventory", { token });
+  return apiRequest<InventorySettingsResponse>("/api/v1/settings/inventory", { token });
 }
 
 export async function patchInventorySettings(
