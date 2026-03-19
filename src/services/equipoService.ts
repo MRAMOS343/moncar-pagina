@@ -34,7 +34,7 @@ export async function createEquipo(
   token: string,
   data: CreateEquipoRequest
 ): Promise<{ ok: true; equipo: { equipo_id: string } }> {
-  return apiRequest(`/equipos`, { method: "POST", token, body: data });
+  return apiRequest(`/api/v1/equipos`, { method: "POST", token, body: data });
 }
 
 // PATCH /equipos/:id
