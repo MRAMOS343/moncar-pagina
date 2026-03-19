@@ -138,7 +138,7 @@ export async function createDocumento(unidadId: string, data: {
 export async function updateDocumento(id: string, data: Partial<{
   tipo: string; nombre: string; notas: string; fecha_documento: string; vigencia_hasta: string;
 }>): Promise<void> {
-  await apiRequest(`/vehiculos/documentos/${id}`, { method: 'PATCH', token: getToken(), body: data });
+  await apiRequest(`/api/v1/vehiculos/documentos/${id}`, { method: 'PATCH', token: getToken(), body: data });
 }
 
 export async function deleteDocumento(id: string): Promise<void> {
