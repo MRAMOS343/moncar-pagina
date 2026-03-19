@@ -159,7 +159,7 @@ export async function upsertAlerta(unidadId: string, tipoDocumento: string, data
 /* ── Bulk import ── */
 
 export async function checkDuplicados(rutaId: string, numeros: string): Promise<{ duplicados: string[] }> {
-  return apiRequest<{ duplicados: string[] }>(`/vehiculos/rutas/${rutaId}/unidades/check?numeros=${numeros}`, { token: getToken() });
+  return apiRequest<{ duplicados: string[] }>(`/api/v1/vehiculos/rutas/${rutaId}/unidades/check?numeros=${numeros}`, { token: getToken() });
 }
 
 export async function importarBulk(rutaId: string, body: import('@/types/vehiculos').ImportarBulkBody): Promise<import('@/types/vehiculos').ImportarBulkResultado> {
