@@ -163,7 +163,7 @@ export async function checkDuplicados(rutaId: string, numeros: string): Promise<
 }
 
 export async function importarBulk(rutaId: string, body: import('@/types/vehiculos').ImportarBulkBody): Promise<import('@/types/vehiculos').ImportarBulkResultado> {
-  return apiRequest<import('@/types/vehiculos').ImportarBulkResultado>(`/vehiculos/rutas/${rutaId}/importar`, { method: 'POST', token: getToken(), body });
+  return apiRequest<import('@/types/vehiculos').ImportarBulkResultado>(`/api/v1/vehiculos/rutas/${rutaId}/importar`, { method: 'POST', token: getToken(), body });
 }
 
 /* ── KPI por vencer ── */
