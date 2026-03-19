@@ -39,7 +39,7 @@ export async function fetchTechSheets(
     searchParams.set("sku", params.sku);
   }
 
-  return apiRequest<TechSheetListResponse>(`/tech-sheets?${searchParams}`, { token });
+  return apiRequest<TechSheetListResponse>(`/api/v1/tech-sheets?${searchParams}`, { token });
 }
 
 export async function updateTechSheet(
