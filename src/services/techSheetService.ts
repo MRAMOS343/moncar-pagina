@@ -15,7 +15,7 @@ export async function fetchTechSheetBySku(
 ): Promise<TechSheetDetailResponse | null> {
   try {
     return await apiRequest<TechSheetDetailResponse>(
-      `/tech-sheets/${encodeURIComponent(sku)}`, 
+      `/api/v1/tech-sheets/${encodeURIComponent(sku)}`, 
       { token }
     );
   } catch (error) {
