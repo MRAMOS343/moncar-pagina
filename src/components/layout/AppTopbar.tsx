@@ -91,7 +91,7 @@ export function AppTopbar({
   };
 
   return (
-    <header className="h-14 md:h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+    <header className="h-14 md:h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 print:hidden">
       <div className="flex h-full items-center gap-1.5 md:gap-4 px-2 md:px-4">
         <SidebarTrigger className="flex-shrink-0" />
 
