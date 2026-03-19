@@ -106,7 +106,7 @@ export async function createUnidad(rutaId: string, data: {
   numero: string; placa: string; marca?: string; modelo?: string;
   anio?: number; color?: string; km?: number; estado?: string; descripcion?: string;
 }): Promise<string> {
-  const res = await apiRequest<{ ok: boolean; unidad_id: string }>(`/vehiculos/rutas/${rutaId}/unidades`, { method: 'POST', token: getToken(), body: data });
+  const res = await apiRequest<{ ok: boolean; unidad_id: string }>(`/api/v1/vehiculos/rutas/${rutaId}/unidades`, { method: 'POST', token: getToken(), body: data });
   return res.unidad_id;
 }
 
