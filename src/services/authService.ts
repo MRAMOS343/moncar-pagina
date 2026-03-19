@@ -7,7 +7,7 @@ export type LoginResponse = {
 };
 
 export async function loginWithPassword(email: string, password: string): Promise<LoginResponse> {
-  return apiRequest<LoginResponse>("/auth/login", {
+  return apiRequest<LoginResponse>("/api/v1/auth/login", {
     method: "POST",
     body: { email, password },
   });
