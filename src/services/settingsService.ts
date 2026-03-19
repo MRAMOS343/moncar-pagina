@@ -31,7 +31,7 @@ export async function patchUserProfile(
   token: string, 
   data: UserProfileUpdate
 ): Promise<UserProfileResponse> {
-  return apiRequest<UserProfileResponse>("/users/me/profile", {
+  return apiRequest<UserProfileResponse>("/api/v1/users/me/profile", {
     method: "PATCH",
     token,
     body: data,
