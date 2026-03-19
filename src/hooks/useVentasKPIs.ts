@@ -13,17 +13,25 @@ interface VentasKPIsParams {
   sucursal_id?: string;
 }
 
-interface VentasKPIsResult {
+export interface ChartDayPoint {
+  date: string;   // "DD/MM"
+  value: number;
+}
+
+export interface VentasKPIsResult {
   totalVentas: number;
   ticketPromedio: number;
   transacciones: number;
   truncated: boolean;
   totalItems: number;
+  /** Ventas diarias agregadas (solo activas), ordenadas cronológicamente */
+  chartData: ChartDayPoint[];
 }
 
 /**
  * Hook dedicado para calcular KPIs de ventas con múltiples páginas.
  * Carga hasta 5000 ventas (10 páginas x 500) para tener datos precisos.
+ * También genera datos de chart agregados por día para evitar inconsistencia con la tabla parcial.
  */
 export function useVentasKPIs(params: VentasKPIsParams) {
   const { token } = useAuth();
@@ -40,7 +48,7 @@ export function useVentasKPIs(params: VentasKPIsParams) {
         const response = await fetchSales(token!, {
           from: params.from,
           sucursal_id: params.sucursal_id,
-          include_cancelled: true, // Necesitamos todas para calcular ratio si se requiere
+          include_cancelled: true,
           limit: PAGE_SIZE,
           cursor_fecha: cursor?.cursor_fecha,
           cursor_venta_id: cursor?.cursor_venta_id,
@@ -58,17 +66,34 @@ export function useVentasKPIs(params: VentasKPIsParams) {
         ? totalVentas / ventasActivas.length 
         : 0;
 
+      // Agregar ventas por día para chart (solo activas)
+      const salesByDay: Record<string, number> = {};
+      ventasActivas.forEach(sale => {
+        if (sale.usu_fecha) {
+          const day = sale.usu_fecha.split('T')[0];
+          salesByDay[day] = (salesByDay[day] || 0) + toNumber(sale.total);
+        }
+      });
+
+      const chartData: ChartDayPoint[] = Object.entries(salesByDay)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date]) => {
+          const [, month, day] = date.split('-');
+          return { date: `${day}/${month}`, value: salesByDay[date] };
+        });
+
       return {
         totalVentas,
         ticketPromedio,
         transacciones: ventasActivas.length,
-        truncated: pageCount >= MAX_PAGES && cursor !== null,
-        totalItems: allItems.length
+        truncated: pageCount >= MAX_PAGES && !!cursor,
+        totalItems: allItems.length,
+        chartData,
       };
     },
-    staleTime: 0, // Siempre refetch al cambiar período
+    staleTime: 0,
     enabled: !!token,
-    placeholderData: undefined, // No usar datos previos como placeholder
+    placeholderData: undefined,
     refetchOnMount: true,
   });
 }
