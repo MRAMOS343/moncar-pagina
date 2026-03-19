@@ -1,14 +1,22 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
 
 interface ReportParams {
-  from: string;
+  from?: string;
   to?: string;
+  month?: string;        // YYYY-MM — mutually exclusive with from/to
   sucursal_id?: string;
 }
 
 export async function downloadSalesReport(token: string, params: ReportParams): Promise<void> {
-  const query = new URLSearchParams({ from: params.from });
-  if (params.to) query.set("to", params.to);
+  const query = new URLSearchParams();
+
+  if (params.month) {
+    query.set("month", params.month);
+  } else if (params.from) {
+    query.set("from", params.from);
+    if (params.to) query.set("to", params.to);
+  }
+
   if (params.sucursal_id) query.set("sucursal_id", params.sucursal_id);
 
   const url = `${API_BASE_URL}/api/v1/sales/report?${query}`;
