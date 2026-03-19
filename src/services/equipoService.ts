@@ -51,7 +51,7 @@ export async function deleteEquipo(
   token: string,
   id: string
 ): Promise<{ ok: true }> {
-  return apiRequest(`/equipos/${id}`, { method: "DELETE", token });
+  return apiRequest(`/api/v1/equipos/${id}`, { method: "DELETE", token });
 }
 
 // POST /equipos/:id/miembros
