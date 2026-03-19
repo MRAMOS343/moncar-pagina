@@ -29,7 +29,7 @@ export async function validateInvitation(token: string): Promise<InvitationValid
 }
 
 export async function setPassword(token: string, password: string): Promise<SetPasswordResponse> {
-  return apiRequest<SetPasswordResponse>("/auth/set-password", {
+  return apiRequest<SetPasswordResponse>("/api/v1/auth/set-password", {
     method: "POST",
     body: { token, password },
   });
