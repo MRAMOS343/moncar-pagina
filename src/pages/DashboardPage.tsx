@@ -273,7 +273,7 @@ export default function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <LazyLineChart data={tendenciaChartData} height={320}>
+              <LazyLineChart data={tendenciaChartData} height={320} margin={{ top: 24, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis
                   dataKey="date"
@@ -284,7 +284,7 @@ export default function DashboardPage() {
                   textAnchor="end"
                   height={60}
                 />
-                <YAxis className="text-muted-foreground" />
+                <YAxis className="text-muted-foreground" domain={[0, yAxisMax]} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "hsl(var(--card))",
@@ -300,7 +300,7 @@ export default function DashboardPage() {
                   }}
                 />
                 <Line
-                  type="monotone"
+                  type="linear"
                   dataKey="value"
                   stroke="hsl(var(--primary))"
                   strokeWidth={3}
