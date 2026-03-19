@@ -47,7 +47,7 @@ export async function patchCompanySettings(
   token: string, 
   data: Partial<CompanySettings>
 ): Promise<CompanySettingsResponse> {
-  return apiRequest<CompanySettingsResponse>("/settings/company", {
+  return apiRequest<CompanySettingsResponse>("/api/v1/settings/company", {
     method: "PATCH",
     token,
     body: data,
