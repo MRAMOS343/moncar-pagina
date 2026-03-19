@@ -124,7 +124,7 @@ export async function deleteUnidad(id: string): Promise<void> {
 /* ── Documentos ── */
 
 export async function fetchDocumentos(unidadId: string): Promise<DocumentoUnidad[]> {
-  const res = await apiRequest<{ items: Record<string, unknown>[] }>(`/vehiculos/unidades/${unidadId}/documentos`, { token: getToken() });
+  const res = await apiRequest<{ items: Record<string, unknown>[] }>(`/api/v1/vehiculos/unidades/${unidadId}/documentos`, { token: getToken() });
   return res.items.map(mapDocumento);
 }
 
