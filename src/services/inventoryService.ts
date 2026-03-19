@@ -25,7 +25,7 @@ export async function fetchInventory(
     searchParams.set("cursor_almacen", params.cursor_almacen);
   }
 
-  return apiRequest<InventoryResponse>(`/inventario?${searchParams}`, { token });
+  return apiRequest<InventoryResponse>(`/api/v1/inventario?${searchParams}`, { token });
 }
 
 export async function adjustInventory(
