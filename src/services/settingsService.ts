@@ -40,7 +40,7 @@ export async function patchUserProfile(
 
 // === Settings de empresa (admin/gerente) ===
 export async function fetchCompanySettings(token: string): Promise<CompanySettingsResponse> {
-  return apiRequest<CompanySettingsResponse>("/settings/company", { token });
+  return apiRequest<CompanySettingsResponse>("/api/v1/settings/company", { token });
 }
 
 export async function patchCompanySettings(
