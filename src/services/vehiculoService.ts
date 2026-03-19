@@ -148,7 +148,7 @@ export async function deleteDocumento(id: string): Promise<void> {
 /* ── Alertas ── */
 
 export async function fetchAlertas(unidadId: string): Promise<AlertaDocumento[]> {
-  const res = await apiRequest<{ items: Record<string, unknown>[] }>(`/vehiculos/unidades/${unidadId}/alertas`, { token: getToken() });
+  const res = await apiRequest<{ items: Record<string, unknown>[] }>(`/api/v1/vehiculos/unidades/${unidadId}/alertas`, { token: getToken() });
   return res.items.map(mapAlerta);
 }
 
