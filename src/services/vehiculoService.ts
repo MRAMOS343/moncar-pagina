@@ -153,7 +153,7 @@ export async function fetchAlertas(unidadId: string): Promise<AlertaDocumento[]>
 }
 
 export async function upsertAlerta(unidadId: string, tipoDocumento: string, data: { dias_antes: number; activa: boolean }): Promise<void> {
-  await apiRequest(`/vehiculos/unidades/${unidadId}/alertas/${tipoDocumento}`, { method: 'PUT', token: getToken(), body: data });
+  await apiRequest(`/api/v1/vehiculos/unidades/${unidadId}/alertas/${tipoDocumento}`, { method: 'PUT', token: getToken(), body: data });
 }
 
 /* ── Bulk import ── */
