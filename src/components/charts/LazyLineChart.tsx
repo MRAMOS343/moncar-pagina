@@ -28,17 +28,19 @@ ChartPlaceholder.displayName = 'ChartPlaceholder';
 export const LazyLineChart = memo(function LazyLineChart({ 
   children, 
   data, 
-  height = 320, 
+  height = 320,
+  margin,
   ...rest 
 }: LazyLineChartProps) {
-  // Validación de datos
   if (!data || !Array.isArray(data)) {
     return <ChartPlaceholder height={height} />;
   }
 
+  const chartMargin = margin ?? { top: 10, right: 10, left: 0, bottom: 0 };
+
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} {...rest}>
+      <LineChart data={data} margin={chartMargin} {...rest}>
         {children}
       </LineChart>
     </ResponsiveContainer>
