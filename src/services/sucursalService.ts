@@ -10,7 +10,7 @@ interface WarehouseResponse {
 
 export async function fetchSucursales(token: string): Promise<SucursalesListResponse> {
   // Usar el endpoint /warehouses que SÍ existe en el backend
-  const warehouses = await apiRequest<WarehouseResponse[]>("/warehouses?activo=true", { token });
+  const warehouses = await apiRequest<WarehouseResponse[]>("/api/v1/warehouses?activo=true", { token });
   
   // Mapear id -> codigo para alinear con el formato de equipos
   const items: Sucursal[] = warehouses.map(w => ({

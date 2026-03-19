@@ -37,7 +37,7 @@ export async function updateProduct(
   data: ProductUpdateRequest
 ): Promise<ProductUpdateResponse> {
   return apiRequest<ProductUpdateResponse>(
-    `/products/${encodeURIComponent(sku)}`,
+    `/api/v1/products/${encodeURIComponent(sku)}`,
     { method: 'PATCH', token, body: data }
   );
 }

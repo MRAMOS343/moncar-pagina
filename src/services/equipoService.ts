@@ -73,7 +73,7 @@ export async function removeMiembro(
   equipoId: string,
   usuarioId: string
 ): Promise<{ ok: true }> {
-  return apiRequest(`/equipos/${equipoId}/miembros/${usuarioId}`, {
+  return apiRequest(`/api/v1/equipos/${equipoId}/miembros/${usuarioId}`, {
     method: "DELETE",
     token,
   });

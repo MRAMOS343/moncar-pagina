@@ -63,7 +63,7 @@ export async function patchInventorySettings(
   token: string, 
   data: Partial<InventorySettings>
 ): Promise<InventorySettingsResponse> {
-  return apiRequest<InventorySettingsResponse>("/settings/inventory", {
+  return apiRequest<InventorySettingsResponse>("/api/v1/settings/inventory", {
     method: "PATCH",
     token,
     body: data,

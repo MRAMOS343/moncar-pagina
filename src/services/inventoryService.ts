@@ -32,7 +32,7 @@ export async function adjustInventory(
   token: string,
   data: InventoryAdjustRequest
 ): Promise<InventoryAdjustResponse> {
-  return apiRequest<InventoryAdjustResponse>('/inventario/adjust', {
+  return apiRequest<InventoryAdjustResponse>('/api/v1/inventario/adjust', {
     method: 'POST',
     token,
     body: data,
