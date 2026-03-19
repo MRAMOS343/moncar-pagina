@@ -83,7 +83,7 @@ export async function createRuta(data: { nombre: string; descripcion?: string; a
 }
 
 export async function updateRuta(id: string, data: Partial<{ nombre: string; descripcion: string; activa: boolean }>): Promise<void> {
-  await apiRequest(`/vehiculos/rutas/${id}`, { method: 'PATCH', token: getToken(), body: data });
+  await apiRequest(`/api/v1/vehiculos/rutas/${id}`, { method: 'PATCH', token: getToken(), body: data });
 }
 
 export async function deleteRuta(id: string): Promise<void> {
