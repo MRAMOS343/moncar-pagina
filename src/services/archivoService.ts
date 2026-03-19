@@ -76,7 +76,7 @@ export async function uploadPartToUrl(url: string, chunk: Blob): Promise<string>
 }
 
 export async function completeUpload(archivoId: string, partes: CompletePart[]): Promise<void> {
-  await apiRequest(`/archivos/${archivoId}/completar`, { method: 'POST', token: getToken(), body: { partes } });
+  await apiRequest(`/api/v1/archivos/${archivoId}/completar`, { method: 'POST', token: getToken(), body: { partes } });
 }
 
 export async function getDownloadUrl(archivoId: string): Promise<string> {
