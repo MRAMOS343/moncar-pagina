@@ -302,9 +302,9 @@ export default function VentasPage() {
             }
           </p>
         </div>
-        <div className="flex items-center gap-2 self-end sm:self-auto">
+        <div className="flex flex-wrap items-center gap-2 self-end sm:self-auto">
           <Select value={reportPeriod} onValueChange={setReportPeriod}>
-            <SelectTrigger className="w-[140px] h-9 text-sm">
+            <SelectTrigger className="w-[160px] h-9 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -312,8 +312,27 @@ export default function VentasPage() {
               <SelectItem value="1m">1 Mes</SelectItem>
               <SelectItem value="3m">3 Meses</SelectItem>
               <SelectItem value="all">Histórico</SelectItem>
+              <div className="my-1 border-t border-border" />
+              <SelectItem value="month">Mes específico</SelectItem>
             </SelectContent>
           </Select>
+
+          {reportPeriod === 'month' && (
+            <div className="flex flex-col gap-0.5">
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger className="w-[180px] h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="max-h-[260px]">
+                  {availableMonths.map(m => (
+                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="text-[11px] text-muted-foreground pl-1">{monthHint}</span>
+            </div>
+          )}
+
           <Button 
             variant="outline" 
             size="sm" 
