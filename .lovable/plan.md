@@ -1,48 +1,28 @@
 
+Objetivo: corregir el recorte de la gráfica “Tendencia de Ventas” en Dashboard para que los picos altos se vean completos.
 
-# Complementar descarga de reportes: Presets + Mes específico
+Diagnóstico (según código + captura):
+1) En `src/pages/DashboardPage.tsx` la línea usa `type="monotone"`. Con saltos bruscos (ej. 0 → pico alto → 0), esa interpolación puede generar curvas que “se pasan” del rango visible y terminan recortadas arriba.
+2) El eje Y está en auto (`<YAxis />`) sin margen superior explícito. Cuando hay picos cercanos al tope, el dominio puede quedar muy justo.
+3) `LazyLineChart` ya tiene `margin.top = 10` (`src/components/charts/LazyLineChart.tsx`), pero eso no corrige recortes por dominio/interpolación.
 
-## Resumen
+Plan de implementación:
+1) Endurecer los datos numéricos del chart en Dashboard:
+   - En `tendenciaChartData`, convertir `existing.total` y `existing.num_ventas` con `Number(...)` para evitar comportamientos raros si llegan strings del backend.
+2) Definir dominio Y con “headroom”:
+   - Calcular `maxValue` desde `tendenciaChartData`.
+   - Calcular `yDomainMax` con buffer (p. ej. +12% y redondeo a cientos/miles).
+   - Aplicar en `YAxis` como `domain={[0, yDomainMax]}`.
+3) Evitar overshoot visual:
+   - Cambiar la línea en Dashboard de `type="monotone"` a `type="linear"` (o alternativa segura equivalente sin overshoot).
+4) Ajuste fino de espacio superior:
+   - Pasar `margin` al `LazyLineChart` desde Dashboard para aumentar top padding en ese gráfico (ej. `top: 20–24`) sin afectar otros charts.
+5) Verificación funcional:
+   - Probar selector de `7 / 15 / 30 días`.
+   - Probar con sucursal específica y “Todas las sucursales”.
+   - Confirmar: no se corta arriba, los puntos/tooltip siguen correctos y el eje Y refleja correctamente el máximo.
 
-Agregar al selector de descarga de reportes un modo dual: los **presets rápidos existentes** (1 Semana, 1 Mes, 3 Meses, Histórico) se mantienen y siguen usando `from/to`, y se agrega una nueva opción **"Mes específico"** que usa el parámetro `month` del backend.
-
-## Cambios
-
-### 1. `src/services/salesReportService.ts`
-- Ampliar `ReportParams`: agregar `month?: string` (YYYY-MM)
-- Si `month` está presente, enviar solo `month` (sin `from`/`to`)
-- Si no, mantener lógica actual con `from`/`to`
-
-### 2. `src/pages/VentasPage.tsx` — UI del selector (líneas 278-305)
-- Agregar al Select existente un separador visual y la opción `"month"` → "Mes específico"
-- Cuando `reportPeriod === 'month'`, mostrar un segundo Select con la lista de meses (desde Enero 2024 hasta el mes actual), formato visual "Marzo 2026", valor interno "2026-03"
-- Agregar leyenda contextual:
-  - Mes actual → "Del 01 al día de hoy"
-  - Mes cerrado → "Mes completo"
-
-### 3. `src/pages/VentasPage.tsx` — Handler (líneas 191-223)
-- Si `reportPeriod === 'month'`, llamar `downloadSalesReport` con `{ month: selectedMonth }`
-- Si es preset (7d, 1m, 3m, all), mantener lógica actual con `from`
-
-### 4. Estado nuevo
-- `selectedMonth: string` — inicializado al mes actual en formato YYYY-MM
-
-### Flujo del selector
-```text
-┌─────────────────────┐  ┌──────────────────┐
-│ [1 Semana       ▾]  │  │ [Descargar]      │
-│  1 Semana           │  └──────────────────┘
-│  1 Mes              │
-│  3 Meses            │
-│  Histórico          │
-│  ────────────────   │
-│  Mes específico     │
-└─────────────────────┘
-
-Si "Mes específico":
-┌─────────────────────┐  ┌──────────────────┐  ┌──────────────┐
-│ [Mes específico ▾]  │  │ [Marzo 2026  ▾]  │  │ [Descargar]  │
-└─────────────────────┘  └──────────────────┘  └──────────────┘
-                          "Del 01 al día de hoy"
-```
-
+Resultado esperado:
+- La curva ya no se “corta” en la parte superior.
+- Los picos quedan totalmente visibles incluso con días de venta muy altos.
+- Se mantiene el diseño actual del dashboard, solo mejorando legibilidad y estabilidad visual.
