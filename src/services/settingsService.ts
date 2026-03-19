@@ -12,7 +12,7 @@ import type {
 
 // === Preferencias del usuario ===
 export async function fetchUserPreferences(token: string): Promise<UserPreferencesResponse> {
-  return apiRequest<UserPreferencesResponse>("/users/me/preferences", { token });
+  return apiRequest<UserPreferencesResponse>("/api/v1/users/me/preferences", { token });
 }
 
 export async function patchUserPreferences(
