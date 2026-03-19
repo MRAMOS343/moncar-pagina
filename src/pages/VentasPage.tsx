@@ -48,7 +48,32 @@ export default function VentasPage() {
   
   // Estado para reporte
   const [reportPeriod, setReportPeriod] = useState<string>('1m');
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => format(new Date(), 'yyyy-MM'));
   const [isDownloading, setIsDownloading] = useState(false);
+
+  // Generar lista de meses desde Enero 2024 hasta mes actual
+  const availableMonths = useMemo(() => {
+    const months: { value: string; label: string; isCurrent: boolean }[] = [];
+    const now = new Date();
+    const currentYM = format(now, 'yyyy-MM');
+    let cursor = new Date(2024, 0, 1); // Enero 2024
+    while (cursor <= now) {
+      const value = format(cursor, 'yyyy-MM');
+      const label = format(cursor, 'MMMM yyyy', { locale: es });
+      // Capitalize first letter
+      const capitalizedLabel = label.charAt(0).toUpperCase() + label.slice(1);
+      months.push({ value, label: capitalizedLabel, isCurrent: value === currentYM });
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+    }
+    return months.reverse(); // Most recent first
+  }, []);
+
+  // Leyenda contextual del mes seleccionado
+  const monthHint = useMemo(() => {
+    const currentYM = format(new Date(), 'yyyy-MM');
+    if (selectedMonth === currentYM) return 'Del 01 al día de hoy';
+    return 'Mes completo';
+  }, [selectedMonth]);
   
   // Estado para modal de detalle
   const [selectedSaleId, setSelectedSaleId] = useState<number | null>(null);
