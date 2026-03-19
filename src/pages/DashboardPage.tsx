@@ -98,16 +98,37 @@ export default function DashboardPage() {
       ]
     : [];
 
-  // Datos de tendencia formateados para el chart
-  const tendenciaChartData = (tendencia.data?.data ?? []).map((item) => ({
-    date: (() => {
-      const [, m, d] = item.fecha.split("-");
-      return `${d}/${m}`;
-    })(),
-    value: item.total,
-    num_ventas: item.num_ventas,
-    fullDate: item.fecha,
-  }));
+  // Datos de tendencia formateados para el chart — rellenar días sin ventas con 0
+  const tendenciaChartData = useMemo(() => {
+    const raw = tendencia.data?.data ?? [];
+    if (raw.length === 0) return [];
+
+    // Crear mapa de datos existentes
+    const dataMap = new Map(raw.map((item) => [item.fecha, item]));
+
+    // Generar rango completo de días
+    const today = new Date();
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - tendenciaDias + 1);
+
+    const result: { date: string; value: number; num_ventas: number; fullDate: string }[] = [];
+    const cursor = new Date(startDate);
+
+    while (cursor <= today) {
+      const iso = cursor.toISOString().split("T")[0]; // YYYY-MM-DD
+      const [, m, d] = iso.split("-");
+      const existing = dataMap.get(iso);
+      result.push({
+        date: `${d}/${m}`,
+        value: existing ? existing.total : 0,
+        num_ventas: existing ? existing.num_ventas : 0,
+        fullDate: iso,
+      });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return result;
+  }, [tendencia.data?.data, tendenciaDias]);
 
   // Datos del pie chart (métodos de pago)
   const pieChartData = (metodosPago.data?.data ?? []).map((item) => ({
