@@ -103,10 +103,8 @@ export default function DashboardPage() {
     const raw = tendencia.data?.data ?? [];
     if (raw.length === 0) return [];
 
-    // Crear mapa de datos existentes
     const dataMap = new Map(raw.map((item) => [item.fecha, item]));
 
-    // Generar rango completo de días
     const today = new Date();
     const startDate = new Date(today);
     startDate.setDate(today.getDate() - tendenciaDias + 1);
@@ -115,13 +113,13 @@ export default function DashboardPage() {
     const cursor = new Date(startDate);
 
     while (cursor <= today) {
-      const iso = cursor.toISOString().split("T")[0]; // YYYY-MM-DD
+      const iso = cursor.toISOString().split("T")[0];
       const [, m, d] = iso.split("-");
       const existing = dataMap.get(iso);
       result.push({
         date: `${d}/${m}`,
-        value: existing ? existing.total : 0,
-        num_ventas: existing ? existing.num_ventas : 0,
+        value: existing ? Number(existing.total) : 0,
+        num_ventas: existing ? Number(existing.num_ventas) : 0,
         fullDate: iso,
       });
       cursor.setDate(cursor.getDate() + 1);
@@ -129,6 +127,14 @@ export default function DashboardPage() {
 
     return result;
   }, [tendencia.data?.data, tendenciaDias]);
+
+  // Dominio Y con headroom para evitar recorte de picos
+  const yAxisMax = useMemo(() => {
+    if (tendenciaChartData.length === 0) return 1000;
+    const maxVal = Math.max(...tendenciaChartData.map((d) => d.value));
+    if (maxVal === 0) return 1000;
+    return Math.ceil((maxVal * 1.15) / 100) * 100;
+  }, [tendenciaChartData]);
 
   // Datos del pie chart (métodos de pago)
   const pieChartData = (metodosPago.data?.data ?? []).map((item) => ({
@@ -267,7 +273,7 @@ export default function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <LazyLineChart data={tendenciaChartData} height={320}>
+              <LazyLineChart data={tendenciaChartData} height={320} margin={{ top: 24, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis
                   dataKey="date"
@@ -278,7 +284,7 @@ export default function DashboardPage() {
                   textAnchor="end"
                   height={60}
                 />
-                <YAxis className="text-muted-foreground" />
+                <YAxis className="text-muted-foreground" domain={[0, yAxisMax]} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "hsl(var(--card))",
@@ -294,7 +300,7 @@ export default function DashboardPage() {
                   }}
                 />
                 <Line
-                  type="monotone"
+                  type="linear"
                   dataKey="value"
                   stroke="hsl(var(--primary))"
                   strokeWidth={3}
