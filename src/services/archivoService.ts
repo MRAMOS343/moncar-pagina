@@ -35,7 +35,7 @@ export async function initUpload(data: {
 }
 
 export async function getPartUrl(archivoId: string, numeroParte: number): Promise<string> {
-  const res = await apiRequest<PartUrlResponse>(`/archivos/${archivoId}/parte-url`, {
+  const res = await apiRequest<PartUrlResponse>(`/api/v1/archivos/${archivoId}/parte-url`, {
     method: 'POST', token: getToken(), body: { numero_parte: numeroParte },
   });
   return res.url;
