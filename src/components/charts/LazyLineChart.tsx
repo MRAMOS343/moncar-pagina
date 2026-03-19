@@ -37,7 +37,7 @@ export const LazyLineChart = memo(function LazyLineChart({
 
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <LineChart data={data} {...rest}>
+      <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} {...rest}>
         {children}
       </LineChart>
     </ResponsiveContainer>
