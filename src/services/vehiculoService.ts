@@ -78,7 +78,7 @@ export async function fetchRutas(): Promise<Ruta[]> {
 }
 
 export async function createRuta(data: { nombre: string; descripcion?: string; activa?: boolean }): Promise<string> {
-  const res = await apiRequest<{ ok: boolean; ruta_id: string }>('/vehiculos/rutas', { method: 'POST', token: getToken(), body: data });
+  const res = await apiRequest<{ ok: boolean; ruta_id: string }>('/api/v1/vehiculos/rutas', { method: 'POST', token: getToken(), body: data });
   return res.ruta_id;
 }
 
