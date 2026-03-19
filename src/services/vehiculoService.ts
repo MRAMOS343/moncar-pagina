@@ -118,7 +118,7 @@ export async function updateUnidad(id: string, data: Partial<{
 }
 
 export async function deleteUnidad(id: string): Promise<void> {
-  await apiRequest(`/vehiculos/unidades/${id}`, { method: 'DELETE', token: getToken() });
+  await apiRequest(`/api/v1/vehiculos/unidades/${id}`, { method: 'DELETE', token: getToken() });
 }
 
 /* ── Documentos ── */
