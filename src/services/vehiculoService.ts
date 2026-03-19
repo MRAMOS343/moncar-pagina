@@ -174,6 +174,6 @@ export interface DocPorVencer {
 }
 
 export async function fetchDocsPorVencer(dias: number): Promise<DocPorVencer> {
-  const res = await apiRequest<{ items: Record<string, unknown>[]; dias: number }>(`/vehiculos/documentos/por-vencer?dias=${dias}`, { token: getToken() });
+  const res = await apiRequest<{ items: Record<string, unknown>[]; dias: number }>(`/api/v1/vehiculos/documentos/por-vencer?dias=${dias}`, { token: getToken() });
   return { items: res.items.map(mapDocumento), dias: res.dias };
 }

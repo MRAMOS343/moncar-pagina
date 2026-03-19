@@ -80,7 +80,7 @@ export async function completeUpload(archivoId: string, partes: CompletePart[]):
 }
 
 export async function getDownloadUrl(archivoId: string): Promise<string> {
-  const res = await apiRequest<{ url: string }>(`/archivos/${archivoId}/descargar`, { token: getToken() });
+  const res = await apiRequest<{ url: string }>(`/api/v1/archivos/${archivoId}/descargar`, { token: getToken() });
   return res.url;
 }
 

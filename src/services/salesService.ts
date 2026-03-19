@@ -52,5 +52,5 @@ export async function fetchSaleDetail(
   token: string,
   ventaId: number
 ): Promise<SaleDetailResponse> {
-  return apiRequest<SaleDetailResponse>(`/sales/${ventaId}`, { token });
+  return apiRequest<SaleDetailResponse>(`/api/v1/sales/${ventaId}`, { token });
 }

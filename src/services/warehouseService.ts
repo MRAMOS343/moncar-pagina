@@ -7,5 +7,5 @@ import type { Warehouse } from "@/types";
  * @returns Promise<Warehouse[]> - List of active warehouses
  */
 export async function fetchActiveWarehouses(token: string): Promise<Warehouse[]> {
-  return apiRequest<Warehouse[]>("/warehouses?activo=true", { token });
+  return apiRequest<Warehouse[]>("/api/v1/warehouses?activo=true", { token });
 }

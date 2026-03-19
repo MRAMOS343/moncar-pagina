@@ -14,5 +14,5 @@ export async function loginWithPassword(email: string, password: string): Promis
 }
 
 export async function fetchMe(token: string): Promise<{ user: User }> {
-  return apiRequest<{ user: User }>("/auth/me", { token });
+  return apiRequest<{ user: User }>("/api/v1/auth/me", { token });
 }

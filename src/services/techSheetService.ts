@@ -81,7 +81,7 @@ export async function deleteTechSheetAttribute(
   attributeId: number
 ): Promise<{ ok: boolean }> {
   return apiRequest<{ ok: boolean }>(
-    `/tech-sheets/${encodeURIComponent(sku)}/attributes/${attributeId}`,
+    `/api/v1/tech-sheets/${encodeURIComponent(sku)}/attributes/${attributeId}`,
     { method: 'DELETE', token }
   );
 }

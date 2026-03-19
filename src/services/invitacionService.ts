@@ -39,7 +39,7 @@ export async function createUsuario(
   data: CreateUsuarioPayload,
   authToken: string
 ): Promise<CreateUsuarioResponse> {
-  return apiRequest<CreateUsuarioResponse>("/admin/usuarios", {
+  return apiRequest<CreateUsuarioResponse>("/api/v1/admin/usuarios", {
     method: "POST",
     token: authToken,
     body: data,
