@@ -87,7 +87,7 @@ export async function updateRuta(id: string, data: Partial<{ nombre: string; des
 }
 
 export async function deleteRuta(id: string): Promise<void> {
-  await apiRequest(`/vehiculos/rutas/${id}`, { method: 'DELETE', token: getToken() });
+  await apiRequest(`/api/v1/vehiculos/rutas/${id}`, { method: 'DELETE', token: getToken() });
 }
 
 /* ── Unidades ── */
