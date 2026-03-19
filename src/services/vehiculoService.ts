@@ -93,7 +93,7 @@ export async function deleteRuta(id: string): Promise<void> {
 /* ── Unidades ── */
 
 export async function fetchUnidades(rutaId: string): Promise<Unidad[]> {
-  const res = await apiRequest<{ items: Record<string, unknown>[] }>(`/vehiculos/rutas/${rutaId}/unidades`, { token: getToken() });
+  const res = await apiRequest<{ items: Record<string, unknown>[] }>(`/api/v1/vehiculos/rutas/${rutaId}/unidades`, { token: getToken() });
   return res.items.map(mapUnidad);
 }
 
