@@ -43,7 +43,7 @@ export async function updateEquipo(
   id: string,
   data: UpdateEquipoRequest
 ): Promise<{ ok: true }> {
-  return apiRequest(`/equipos/${id}`, { method: "PATCH", token, body: data });
+  return apiRequest(`/api/v1/equipos/${id}`, { method: "PATCH", token, body: data });
 }
 
 // DELETE /equipos/:id (soft delete)
