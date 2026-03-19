@@ -21,7 +21,7 @@ export async function fetchProducts(
     searchParams.set("q", params.q.trim());
   }
 
-  return apiRequest<ProductsListResponse>(`/products?${searchParams}`, { token });
+  return apiRequest<ProductsListResponse>(`/api/v1/products?${searchParams}`, { token });
 }
 
 export async function fetchProductBySku(
