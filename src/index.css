@@ -281,3 +281,43 @@
   }
 }
 
+/* ===== Print styles for cotización PDF ===== */
+@media print {
+  /* Hide everything by default */
+  body > * {
+    visibility: hidden;
+  }
+
+  /* Hide sidebar, topbar, toasts, and navigation */
+  [data-sidebar],
+  nav,
+  header,
+  .toaster,
+  [data-sonner-toaster],
+  [role="status"],
+  .print\\:hidden {
+    display: none !important;
+  }
+
+  /* Show only the cotización preview */
+  #root {
+    visibility: visible;
+  }
+
+  #root * {
+    visibility: visible;
+  }
+
+  /* Remove layout constraints */
+  body, #root, main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Remove shadows and rounded corners for clean print */
+  .shadow-lg, .shadow-md, .shadow-sm {
+    box-shadow: none !important;
+  }
+}
