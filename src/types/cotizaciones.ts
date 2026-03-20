@@ -9,9 +9,17 @@ export interface CotizacionItem {
 
 export type CotizacionEstado = 'pendiente' | 'concretada' | 'cancelada';
 
-export interface Cotizacion {
+export interface CotizacionCliente {
+  cliente_nombre: string | null;
+  cliente_telefono: string | null;
+  cliente_email: string | null;
+  cliente_empresa: string | null;
+}
+
+export interface Cotizacion extends CotizacionCliente {
   id: string;
   folio: string;
+  /** @deprecated use cliente_nombre */
   cliente: string;
   sucursal: string;
   vendedorId: string;
