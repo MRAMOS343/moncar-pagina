@@ -180,7 +180,7 @@ export default function CotizacionesPage() {
               items={items}
               clienteData={clienteData}
               sucursal={sucursal}
-              clienteErrors={clienteErrors}
+              clienteErrors={clienteErrors as Record<string, string | undefined>}
               onItemsChange={setItems}
               onClienteChange={handleClienteChange}
               onSucursalChange={setSucursal}
