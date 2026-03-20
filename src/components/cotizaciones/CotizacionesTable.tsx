@@ -98,7 +98,7 @@ export function CotizacionesTable({ cotizaciones, onView, onDuplicate, onUpdateE
                   <td className="py-2.5 px-3">{c.cliente}</td>
                   <td className="py-2.5 px-3 hidden md:table-cell text-muted-foreground">{c.fecha}</td>
                   <td className="py-2.5 px-3 hidden lg:table-cell">{c.vendedorNombre}</td>
-                  <td className="py-2.5 px-3 text-right font-semibold">{fmt(c.total)}</td>
+                  <td className="py-2.5 px-3 text-right font-semibold">{fmt(Number(c.total) || 0)}</td>
                   <td className="py-2.5 px-3 text-center">
                     <Badge variant={badge.variant}>{badge.label}</Badge>
                   </td>
