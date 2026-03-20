@@ -30,7 +30,7 @@ export function CotizacionesTable({ cotizaciones, onView, onDuplicate, onUpdateE
   const kpis = useMemo(() => {
     const total = cotizaciones.length;
     const concretadas = cotizaciones.filter(c => c.estado === 'concretada').length;
-    const montoTotal = cotizaciones.reduce((s, c) => s + c.total, 0);
+    const montoTotal = cotizaciones.reduce((s, c) => s + (Number(c.total) || 0), 0);
     const vendedores = new Set(cotizaciones.map(c => c.vendedorNombre)).size;
     return { total, concretadas, tasa: total ? Math.round((concretadas / total) * 100) : 0, montoTotal, vendedores };
   }, [cotizaciones]);
