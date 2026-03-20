@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Cotizacion, CotizacionEstado } from '@/types/cotizaciones';
-import { Eye, Copy, CheckCircle2, XCircle, FileText, TrendingUp, DollarSign, Users } from 'lucide-react';
+import { Eye, Copy, CheckCircle2, XCircle, FileText, TrendingUp, DollarSign, Users, Search } from 'lucide-react';
 
 interface Props {
   cotizaciones: Cotizacion[];
@@ -21,11 +22,29 @@ const estadoBadge: Record<CotizacionEstado, { variant: 'default' | 'success' | '
 
 export function CotizacionesTable({ cotizaciones, onView, onDuplicate, onUpdateEstado }: Props) {
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');
+  const [busqueda, setBusqueda] = useState('');
 
   const filtered = useMemo(() => {
-    if (filtroEstado === 'todos') return cotizaciones;
-    return cotizaciones.filter(c => c.estado === filtroEstado);
-  }, [cotizaciones, filtroEstado]);
+    let list = cotizaciones;
+    if (filtroEstado !== 'todos') {
+      list = list.filter(c => c.estado === filtroEstado);
+    }
+    const q = busqueda.trim().toLowerCase();
+    if (q) {
+      list = list.filter(c => {
+        const haystack = [
+          c.cliente,
+          c.cliente_nombre,
+          c.cliente_empresa,
+          c.cliente_telefono,
+          c.cliente_email,
+          c.folio,
+        ].filter(Boolean).join(' ').toLowerCase();
+        return haystack.includes(q);
+      });
+    }
+    return list;
+  }, [cotizaciones, filtroEstado, busqueda]);
 
   const kpis = useMemo(() => {
     const total = cotizaciones.length;
@@ -59,8 +78,17 @@ export function CotizacionesTable({ cotizaciones, onView, onDuplicate, onUpdateE
         </CardContent></Card>
       </div>
 
-      {/* Filter */}
-      <div className="flex items-center gap-3">
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <div className="relative flex-1 w-full sm:max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+            placeholder="Buscar por nombre, empresa, tel, email..."
+            className="pl-9"
+          />
+        </div>
         <Select value={filtroEstado} onValueChange={setFiltroEstado}>
           <SelectTrigger className="w-44"><SelectValue placeholder="Filtrar por estado" /></SelectTrigger>
           <SelectContent>
@@ -80,8 +108,10 @@ export function CotizacionesTable({ cotizaciones, onView, onDuplicate, onUpdateE
             <tr className="bg-muted/50 text-muted-foreground">
               <th className="py-2.5 px-3 text-left">Folio</th>
               <th className="py-2.5 px-3 text-left">Cliente</th>
+              <th className="py-2.5 px-3 text-left hidden lg:table-cell">Empresa</th>
               <th className="py-2.5 px-3 text-left hidden md:table-cell">Fecha</th>
-              <th className="py-2.5 px-3 text-left hidden lg:table-cell">Vendedor</th>
+              <th className="py-2.5 px-3 text-left hidden xl:table-cell">Teléfono</th>
+              <th className="py-2.5 px-3 text-left hidden xl:table-cell">Email</th>
               <th className="py-2.5 px-3 text-right">Total</th>
               <th className="py-2.5 px-3 text-center">Estado</th>
               <th className="py-2.5 px-3 text-center">Acciones</th>
@@ -89,15 +119,17 @@ export function CotizacionesTable({ cotizaciones, onView, onDuplicate, onUpdateE
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={7} className="py-12 text-center text-muted-foreground">No hay cotizaciones</td></tr>
+              <tr><td colSpan={9} className="py-12 text-center text-muted-foreground">No hay cotizaciones</td></tr>
             ) : filtered.map(c => {
               const badge = estadoBadge[c.estado];
               return (
                 <tr key={c.id} className="border-t hover:bg-muted/30 transition-colors">
                   <td className="py-2.5 px-3 font-mono font-medium">{c.folio}</td>
-                  <td className="py-2.5 px-3">{c.cliente}</td>
+                  <td className="py-2.5 px-3">{c.cliente_nombre || c.cliente || '—'}</td>
+                  <td className="py-2.5 px-3 hidden lg:table-cell text-muted-foreground">{c.cliente_empresa || '—'}</td>
                   <td className="py-2.5 px-3 hidden md:table-cell text-muted-foreground">{c.fecha}</td>
-                  <td className="py-2.5 px-3 hidden lg:table-cell">{c.vendedorNombre}</td>
+                  <td className="py-2.5 px-3 hidden xl:table-cell text-muted-foreground">{c.cliente_telefono || '—'}</td>
+                  <td className="py-2.5 px-3 hidden xl:table-cell text-muted-foreground">{c.cliente_email || '—'}</td>
                   <td className="py-2.5 px-3 text-right font-semibold">{fmt(Number(c.total) || 0)}</td>
                   <td className="py-2.5 px-3 text-center">
                     <Badge variant={badge.variant}>{badge.label}</Badge>

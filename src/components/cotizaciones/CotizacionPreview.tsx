@@ -10,6 +10,8 @@ export const CotizacionPreview = forwardRef<HTMLDivElement, Props>(({ cotizacion
   const fmt = (n: number) =>
     n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
 
+  const clienteLabel = cotizacion.cliente_nombre || cotizacion.cliente || '—';
+
   return (
     <div ref={ref} className="bg-white text-foreground p-8 max-w-[800px] mx-auto print:p-4 print:max-w-none print:shadow-none shadow-lg rounded-lg print:text-black">
       {/* Header */}
@@ -21,12 +23,21 @@ export const CotizacionPreview = forwardRef<HTMLDivElement, Props>(({ cotizacion
         </div>
       </div>
 
-      {/* Info grid */}
+      {/* Client data block */}
       <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm mb-6">
-        <div><span className="font-semibold">Cliente:</span> {cotizacion.cliente}</div>
+        <div><span className="font-semibold">Cliente:</span> {clienteLabel}</div>
         <div><span className="font-semibold">Vendedor:</span> {cotizacion.vendedorNombre}</div>
+        {cotizacion.cliente_empresa && (
+          <div><span className="font-semibold">Empresa:</span> {cotizacion.cliente_empresa}</div>
+        )}
         <div><span className="font-semibold">Fecha:</span> {cotizacion.fecha}</div>
+        {cotizacion.cliente_telefono && (
+          <div><span className="font-semibold">Teléfono:</span> {cotizacion.cliente_telefono}</div>
+        )}
         <div><span className="font-semibold">No. Cotización:</span> {cotizacion.folio}</div>
+        {cotizacion.cliente_email && (
+          <div><span className="font-semibold">Email:</span> {cotizacion.cliente_email}</div>
+        )}
         <div><span className="font-semibold">Sucursal:</span> {cotizacion.sucursal}</div>
       </div>
 
@@ -51,7 +62,6 @@ export const CotizacionPreview = forwardRef<HTMLDivElement, Props>(({ cotizacion
               <td className="py-2 px-3 text-right font-medium">{fmt(item.total)}</td>
             </tr>
           ))}
-          {/* Empty rows to fill space */}
           {cotizacion.items.length < 8 &&
             Array.from({ length: 8 - cotizacion.items.length }).map((_, i) => (
               <tr key={`empty-${i}`} className={((cotizacion.items.length + i) % 2 === 0) ? 'bg-muted/40' : 'bg-background'}>
