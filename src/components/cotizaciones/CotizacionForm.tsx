@@ -46,8 +46,8 @@ export function CotizacionForm({ items, cliente, sucursal, onItemsChange, onClie
   }, [products, skuSearch]);
 
   const calcPrecioConIva = (product: ApiProduct) => {
-    const base = product.precio1 ?? 0;
-    const impRaw = product.impuesto ?? 0;
+    const base = Number(product.precio1) || 0;
+    const impRaw = Number(product.impuesto) || 0;
     const imp = impRaw > 1 ? impRaw / 100 : impRaw;
     return base * (1 + imp);
   };
@@ -61,7 +61,7 @@ export function CotizacionForm({ items, cliente, sucursal, onItemsChange, onClie
           : i
       ));
     } else {
-      const precio = product.precio1 ?? 0;
+      const precio = Number(product.precio1) || 0;
       onItemsChange([...items, {
         sku: product.sku,
         descripcion: product.descrip ?? product.sku,

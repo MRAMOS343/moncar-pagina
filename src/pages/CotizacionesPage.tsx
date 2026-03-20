@@ -44,7 +44,7 @@ export default function CotizacionesPage() {
       return;
     }
 
-    const subtotal = items.reduce((s, i) => s + i.total, 0);
+    const subtotal = items.reduce((s, i) => s + (Number(i.total) || 0), 0);
     const iva = subtotal * 0.16;
 
     createMut.mutate({

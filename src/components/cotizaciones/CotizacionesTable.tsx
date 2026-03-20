@@ -30,7 +30,7 @@ export function CotizacionesTable({ cotizaciones, onView, onDuplicate, onUpdateE
   const kpis = useMemo(() => {
     const total = cotizaciones.length;
     const concretadas = cotizaciones.filter(c => c.estado === 'concretada').length;
-    const montoTotal = cotizaciones.reduce((s, c) => s + c.total, 0);
+    const montoTotal = cotizaciones.reduce((s, c) => s + (Number(c.total) || 0), 0);
     const vendedores = new Set(cotizaciones.map(c => c.vendedorNombre)).size;
     return { total, concretadas, tasa: total ? Math.round((concretadas / total) * 100) : 0, montoTotal, vendedores };
   }, [cotizaciones]);
@@ -98,7 +98,7 @@ export function CotizacionesTable({ cotizaciones, onView, onDuplicate, onUpdateE
                   <td className="py-2.5 px-3">{c.cliente}</td>
                   <td className="py-2.5 px-3 hidden md:table-cell text-muted-foreground">{c.fecha}</td>
                   <td className="py-2.5 px-3 hidden lg:table-cell">{c.vendedorNombre}</td>
-                  <td className="py-2.5 px-3 text-right font-semibold">{fmt(c.total)}</td>
+                  <td className="py-2.5 px-3 text-right font-semibold">{fmt(Number(c.total) || 0)}</td>
                   <td className="py-2.5 px-3 text-center">
                     <Badge variant={badge.variant}>{badge.label}</Badge>
                   </td>
