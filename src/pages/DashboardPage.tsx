@@ -38,7 +38,7 @@ interface ContextType {
 
 export default function DashboardPage() {
   const { currentWarehouse, currentUser, warehouses } = useOutletContext<ContextType>();
-  const navigate = useNavigate();
+  
   const queryClient = useQueryClient();
   const [dateRange, setDateRange] = useState<string>("30d");
   const [tendenciaDias, setTendenciaDias] = useState<number>(15);
