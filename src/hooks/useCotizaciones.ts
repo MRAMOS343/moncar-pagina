@@ -3,25 +3,25 @@ import {
   fetchCotizaciones,
   createCotizacion,
   updateCotizacionEstado,
+  deleteCotizacion,
   duplicateCotizacion,
 } from '@/services/cotizacionService';
-import type { Cotizacion, CotizacionEstado } from '@/types/cotizaciones';
+import type { CotizacionEstado, CreateCotizacionPayload } from '@/types/cotizaciones';
 
 const KEY = ['cotizaciones'];
 
 export function useCotizaciones() {
   return useQuery({
     queryKey: KEY,
-    queryFn: fetchCotizaciones,
-    staleTime: 0, // localStorage, always fresh
+    queryFn: () => fetchCotizaciones({ limit: 100 }),
+    staleTime: 30 * 1000,
   });
 }
 
 export function useCreateCotizacion() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Omit<Cotizacion, 'id' | 'folio' | 'creadaEn'>) => 
-      Promise.resolve(createCotizacion(data)),
+    mutationFn: (data: CreateCotizacionPayload) => createCotizacion(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   });
 }
@@ -30,7 +30,15 @@ export function useUpdateCotizacionEstado() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, estado }: { id: string; estado: CotizacionEstado }) =>
-      Promise.resolve(updateCotizacionEstado(id, estado)),
+      updateCotizacionEstado(id, estado),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+}
+
+export function useDeleteCotizacion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteCotizacion(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   });
 }
@@ -38,7 +46,7 @@ export function useUpdateCotizacionEstado() {
 export function useDuplicateCotizacion() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => Promise.resolve(duplicateCotizacion(id)),
+    mutationFn: (id: string) => duplicateCotizacion(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
   });
 }
