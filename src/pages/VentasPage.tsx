@@ -35,7 +35,7 @@ interface ContextType {
 
 export default function VentasPage() {
   const { currentWarehouse, currentUser, warehouses } = useOutletContext<ContextType>();
-  const isMobile = useIsMobile();
+  
 
   // Estados para filtros
   const [dateRange, setDateRange] = useState<string>('30d');
