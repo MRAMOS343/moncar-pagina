@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useOutletContext, useNavigate } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { KPICard } from "@/components/ui/kpi-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,8 +14,6 @@ import { User, KPIData, Warehouse } from "@/types";
 import { COLORES_GRAFICOS } from "@/constants";
 import { KPISkeleton } from "@/components/ui/kpi-skeleton";
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
-import { SUCCESS_MESSAGES } from "@/constants/messages";
-import { toast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/utils/formatters";
 import { format, subDays } from "date-fns";
 import {
