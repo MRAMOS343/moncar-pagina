@@ -4,9 +4,9 @@ import { fetchSales } from "@/services/salesService";
 import { toNumber } from "@/utils/formatters";
 import type { SaleListItem, SalesCursor } from "@/types/sales";
 
-const MAX_PAGES = 10;
+const MAX_PAGES = 20;
 const PAGE_SIZE = 500;
-const MAX_ITEMS = 5000;
+const MAX_ITEMS = 10000;
 
 interface VentasKPIsParams {
   from: string;
