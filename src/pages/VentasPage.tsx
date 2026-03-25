@@ -211,6 +211,30 @@ export default function VentasPage() {
         />
       </div>
 
+      {/* KPIs */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {isLoadingKPIs ? (
+          <><KPISkeleton /><KPISkeleton /><KPISkeleton /></>
+        ) : (
+          kpis.map((kpi, index) => (
+            <KPICard key={index} data={kpi} className="animate-fade-in" />
+          ))
+        )}
+      </div>
+      {kpisData?.truncated && (
+        <p className="text-xs text-muted-foreground text-center -mt-2">
+          * KPIs basados en {kpisData.transacciones.toLocaleString()} ventas activas de un total de {kpisData.totalItems.toLocaleString()} registros
+        </p>
+      )}
+
+      {/* Chart */}
+      <VentasChart
+        chartData={kpisData?.chartData ?? []}
+        isLoading={isLoadingKPIs}
+        periodLabel={periodLabel}
+        isToday={dateRange === '1d'}
+      />
+
       {/* Sales Table */}
       <Card className="data-table">
         <CardHeader>
