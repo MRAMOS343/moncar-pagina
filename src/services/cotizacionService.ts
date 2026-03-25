@@ -1,67 +1,52 @@
-import type { Cotizacion, CotizacionEstado } from '@/types/cotizaciones';
+import { apiRequest } from './apiClient';
+import type { Cotizacion, CotizacionEstado, CreateCotizacionPayload } from '@/types/cotizaciones';
 
-const STORAGE_KEY = 'moncar_cotizaciones';
-
-function readAll(): Cotizacion[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+interface ListResponse {
+  items: Cotizacion[];
+  total: number;
 }
 
-function writeAll(data: Cotizacion[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+export async function fetchCotizaciones(params?: {
+  estado?: CotizacionEstado;
+  q?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<Cotizacion[]> {
+  const sp = new URLSearchParams();
+  if (params?.estado) sp.set('estado', params.estado);
+  if (params?.q) sp.set('q', params.q);
+  if (params?.limit) sp.set('limit', String(params.limit));
+  if (params?.offset) sp.set('offset', String(params.offset));
+  const url = `/api/v1/cotizaciones${sp.toString() ? `?${sp}` : ''}`;
+  const res = await apiRequest<ListResponse>(url);
+  return res.items;
 }
 
-function nextFolio(existing: Cotizacion[]): string {
-  const max = existing.reduce((m, c) => {
-    const num = parseInt(c.folio.replace('MC-', ''), 10);
-    return isNaN(num) ? m : Math.max(m, num);
-  }, 0);
-  return `MC-${String(max + 1).padStart(4, '0')}`;
+export async function createCotizacion(data: CreateCotizacionPayload): Promise<Cotizacion> {
+  return apiRequest<Cotizacion>('/api/v1/cotizaciones', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }
 
-export function fetchCotizaciones(): Cotizacion[] {
-  return readAll().sort((a, b) => new Date(b.creadaEn).getTime() - new Date(a.creadaEn).getTime());
+export async function updateCotizacionEstado(
+  id: string,
+  estado: CotizacionEstado
+): Promise<Cotizacion> {
+  return apiRequest<Cotizacion>(`/api/v1/cotizaciones/${id}/estado`, {
+    method: 'PATCH',
+    body: JSON.stringify({ estado }),
+  });
 }
 
-export function createCotizacion(data: Omit<Cotizacion, 'id' | 'folio' | 'creadaEn'>): Cotizacion {
-  const all = readAll();
-  const cotizacion: Cotizacion = {
-    ...data,
-    id: crypto.randomUUID(),
-    folio: nextFolio(all),
-    creadaEn: new Date().toISOString(),
-  };
-  all.push(cotizacion);
-  writeAll(all);
-  return cotizacion;
+export async function deleteCotizacion(id: string): Promise<void> {
+  await apiRequest<{ ok: boolean }>(`/api/v1/cotizaciones/${id}`, {
+    method: 'DELETE',
+  });
 }
 
-export function updateCotizacionEstado(id: string, estado: CotizacionEstado): Cotizacion | null {
-  const all = readAll();
-  const idx = all.findIndex(c => c.id === id);
-  if (idx === -1) return null;
-  all[idx].estado = estado;
-  writeAll(all);
-  return all[idx];
-}
-
-export function duplicateCotizacion(id: string): Cotizacion | null {
-  const all = readAll();
-  const original = all.find(c => c.id === id);
-  if (!original) return null;
-  const copy: Cotizacion = {
-    ...original,
-    id: crypto.randomUUID(),
-    folio: nextFolio(all),
-    estado: 'pendiente',
-    fecha: new Date().toISOString().split('T')[0],
-    creadaEn: new Date().toISOString(),
-  };
-  all.push(copy);
-  writeAll(all);
-  return copy;
+export async function duplicateCotizacion(id: string): Promise<Cotizacion> {
+  return apiRequest<Cotizacion>(`/api/v1/cotizaciones/${id}/duplicar`, {
+    method: 'POST',
+  });
 }

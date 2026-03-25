@@ -63,6 +63,7 @@ export function ProductSearch({ items, onItemsChange }: Props) {
         descripcion: product.descrip ?? product.sku,
         pieza: product.unidad ?? 'PZA',
         precioUnitario: precio,
+        precioOriginal: precio,
         cantidad: 1,
         total: precio,
       }]);

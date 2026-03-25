@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CotizacionForm } from '@/components/cotizaciones/CotizacionForm';
 import { CotizacionPreview } from '@/components/cotizaciones/CotizacionPreview';
 import { CotizacionesTable } from '@/components/cotizaciones/CotizacionesTable';
-import { useCotizaciones, useCreateCotizacion, useUpdateCotizacionEstado, useDuplicateCotizacion } from '@/hooks/useCotizaciones';
+import { useCotizaciones, useCreateCotizacion, useUpdateCotizacionEstado, useDuplicateCotizacion, useDeleteCotizacion } from '@/hooks/useCotizaciones';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOutletContext } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
@@ -46,6 +46,7 @@ export default function CotizacionesPage() {
   const createMut = useCreateCotizacion();
   const updateEstadoMut = useUpdateCotizacionEstado();
   const duplicateMut = useDuplicateCotizacion();
+  const deleteMut = useDeleteCotizacion();
 
   const [view, setView] = useState<View>('list');
   const [items, setItems] = useState<CotizacionItem[]>([]);
@@ -88,24 +89,25 @@ export default function CotizacionesPage() {
     if (items.length === 0) return;
 
     const subtotal = items.reduce((s, i) => s + (Number(i.total) || 0), 0);
-    const iva = subtotal * 0.16;
-    const clienteNombre = trimOrNull(clienteData.nombre);
 
     createMut.mutate({
-      cliente: clienteNombre ?? trimOrNull(clienteData.empresa) ?? 'Cliente',
-      cliente_nombre: clienteNombre,
+      sucursal: sucursal.trim() || 'Principal',
+      cliente_nombre: trimOrNull(clienteData.nombre),
+      cliente_empresa: trimOrNull(clienteData.empresa),
       cliente_telefono: trimOrNull(clienteData.telefono),
       cliente_email: trimOrNull(clienteData.email),
-      cliente_empresa: trimOrNull(clienteData.empresa),
-      sucursal: sucursal.trim() || 'Principal',
-      vendedorId: currentUser?.id ?? '',
-      vendedorNombre: currentUser?.nombre ?? currentUser?.email ?? 'Vendedor',
-      fecha: new Date().toISOString().split('T')[0],
-      items,
       subtotal,
-      iva,
-      total: subtotal + iva,
-      estado: 'pendiente',
+      impuesto: subtotal * 0.16,
+      total: subtotal + subtotal * 0.16,
+      lineas: items.map(item => ({
+        articulo: item.sku,
+        descripcion: item.descripcion,
+        pieza: item.pieza,
+        cantidad: item.cantidad,
+        precio_unitario: item.precioUnitario,
+        precio_original: item.precioOriginal,
+        importe_linea: item.total,
+      })),
     }, {
       onSuccess: (data) => {
         toast({ title: 'Cotización guardada', description: `Folio: ${data.folio}` });
@@ -128,6 +130,13 @@ export default function CotizacionesPage() {
       onSuccess: (data) => {
         if (data) toast({ title: 'Cotización duplicada', description: `Nuevo folio: ${data.folio}` });
       },
+    });
+  };
+
+  const handleDelete = (id: string) => {
+    if (!confirm('¿Eliminar esta cotización? Esta acción no se puede deshacer.')) return;
+    deleteMut.mutate(id, {
+      onSuccess: () => toast({ title: 'Cotización eliminada' }),
     });
   };
 
@@ -204,6 +213,7 @@ export default function CotizacionesPage() {
         onView={handleView}
         onDuplicate={handleDuplicate}
         onUpdateEstado={handleUpdateEstado}
+        onDelete={handleDelete}
       />
     </div>
   );

@@ -5,22 +5,22 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Cotizacion, CotizacionEstado } from '@/types/cotizaciones';
-import { Eye, Copy, CheckCircle2, XCircle, FileText, TrendingUp, DollarSign, Users, Search } from 'lucide-react';
+import { Eye, Copy, CheckCircle2, XCircle, FileText, TrendingUp, DollarSign, Users, Search, Trash2 } from 'lucide-react';
 
 interface Props {
   cotizaciones: Cotizacion[];
   onView: (c: Cotizacion) => void;
   onDuplicate: (id: string) => void;
   onUpdateEstado: (id: string, estado: CotizacionEstado) => void;
+  onDelete: (id: string) => void;
 }
-
 const estadoBadge: Record<CotizacionEstado, { variant: 'default' | 'success' | 'destructive'; label: string }> = {
   pendiente: { variant: 'default', label: 'Pendiente' },
   concretada: { variant: 'success', label: 'Concretada' },
   cancelada: { variant: 'destructive', label: 'Cancelada' },
 };
 
-export function CotizacionesTable({ cotizaciones, onView, onDuplicate, onUpdateEstado }: Props) {
+export function CotizacionesTable({ cotizaciones, onView, onDuplicate, onUpdateEstado, onDelete }: Props) {
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');
   const [busqueda, setBusqueda] = useState('');
 
@@ -141,6 +141,9 @@ export function CotizacionesTable({ cotizaciones, onView, onDuplicate, onUpdateE
                       </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDuplicate(c.id)} title="Duplicar">
                         <Copy className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => onDelete(c.id)} title="Eliminar">
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                       {c.estado === 'pendiente' && (
                         <>
