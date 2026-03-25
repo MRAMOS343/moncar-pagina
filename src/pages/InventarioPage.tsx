@@ -341,14 +341,6 @@ export default function InventarioPage() {
             <Download className="w-4 h-4 sm:mr-2" />
             <span className="hidden sm:inline">Exportar CSV</span>
           </Button>
-          <Button variant="outline" onClick={handleImportCSV} size="sm" className="btn-hover touch-target">
-            <Upload className="w-4 h-4 sm:mr-2" />
-            <span className="hidden sm:inline">Importar CSV</span>
-          </Button>
-          <Button onClick={handleCreateProduct} size="sm" className="btn-hover touch-target">
-            <Plus className="w-4 h-4 sm:mr-2" />
-            <span className="hidden sm:inline">Nuevo Producto</span>
-          </Button>
         </div>
       </div>
 

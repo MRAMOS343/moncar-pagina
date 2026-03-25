@@ -15,7 +15,7 @@ import type { SaleListItem } from '@/types/sales';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { KPISkeleton } from '@/components/ui/kpi-skeleton';
-import { useIsMobile } from '@/hooks/use-mobile';
+
 import { useSales } from '@/hooks/useSales';
 import { useVentasKPIs } from '@/hooks/useVentasKPIs';
 import { SaleDetailModal } from '@/components/modals/SaleDetailModal';
@@ -35,11 +35,11 @@ interface ContextType {
 
 export default function VentasPage() {
   const { currentWarehouse, currentUser, warehouses } = useOutletContext<ContextType>();
-  const isMobile = useIsMobile();
+  
 
   // Estados para filtros
   const [dateRange, setDateRange] = useState<string>('30d');
-  const [includeCancelled, setIncludeCancelled] = useState(false);
+  const [showOnlyCancelled, setShowOnlyCancelled] = useState(false);
 
   // Estado para modal de detalle
   const [selectedSaleId, setSelectedSaleId] = useState<number | null>(null);
@@ -79,7 +79,7 @@ export default function VentasPage() {
   } = useSales({
     from: fromDate,
     sucursal_id: currentWarehouse === 'all' ? undefined : currentWarehouse,
-    include_cancelled: includeCancelled,
+    include_cancelled: showOnlyCancelled ? true : false,
   });
 
   // Hook dedicado para KPIs + chart data (hasta 5000 items)
@@ -189,20 +189,26 @@ export default function VentasPage() {
         </Alert>
       )}
 
-      {/* Period selector */}
-      <div className="flex items-center gap-3">
-        <span className="text-sm font-medium text-muted-foreground">Período:</span>
-        <Select value={dateRange} onValueChange={setDateRange}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="1d">Hoy</SelectItem>
-            <SelectItem value="7d">Últimos 7 días</SelectItem>
-            <SelectItem value="30d">Últimos 30 días</SelectItem>
-            <SelectItem value="90d">Últimos 90 días</SelectItem>
-          </SelectContent>
-        </Select>
+      {/* Period selector + filters */}
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-muted-foreground">Período:</span>
+          <Select value={dateRange} onValueChange={setDateRange}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1d">Hoy</SelectItem>
+              <SelectItem value="7d">Últimos 7 días</SelectItem>
+              <SelectItem value="30d">Últimos 30 días</SelectItem>
+              <SelectItem value="90d">Últimos 90 días</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <VentasFilters
+          showOnlyCancelled={showOnlyCancelled}
+          setShowOnlyCancelled={setShowOnlyCancelled}
+        />
       </div>
 
       {/* KPIs */}
@@ -221,20 +227,12 @@ export default function VentasPage() {
         </p>
       )}
 
-      {/* Chart — uses KPI data source (up to 5000 items) for consistency */}
+      {/* Chart */}
       <VentasChart
         chartData={kpisData?.chartData ?? []}
         isLoading={isLoadingKPIs}
         periodLabel={periodLabel}
         isToday={dateRange === '1d'}
-      />
-
-      {/* Filters */}
-      <VentasFilters
-        isMobile={isMobile}
-        includeCancelled={includeCancelled}
-        setIncludeCancelled={setIncludeCancelled}
-        setDateRange={setDateRange}
       />
 
       {/* Sales Table */}

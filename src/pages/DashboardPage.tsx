@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useOutletContext, useNavigate } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { KPICard } from "@/components/ui/kpi-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,14 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { LazyLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from "@/components/charts/LazyLineChart";
 import { LazyPieChart, Pie, Cell } from "@/components/charts/LazyPieChart";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { TrendingUp, ShoppingCart, Package, AlertTriangle, Plus, CreditCard, RefreshCw, Trophy } from "lucide-react";
+import { TrendingUp, ShoppingCart, AlertTriangle, CreditCard, RefreshCw, Trophy } from "lucide-react";
 import { User, KPIData, Warehouse } from "@/types";
-import { ProductModal } from "@/components/modals/ProductModal";
 import { COLORES_GRAFICOS } from "@/constants";
 import { KPISkeleton } from "@/components/ui/kpi-skeleton";
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
-import { SUCCESS_MESSAGES } from "@/constants/messages";
-import { toast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/utils/formatters";
 import { format, subDays } from "date-fns";
 import {
@@ -41,9 +38,8 @@ interface ContextType {
 
 export default function DashboardPage() {
   const { currentWarehouse, currentUser, warehouses } = useOutletContext<ContextType>();
-  const navigate = useNavigate();
+  
   const queryClient = useQueryClient();
-  const [productModalOpen, setProductModalOpen] = useState(false);
   const [dateRange, setDateRange] = useState<string>("30d");
   const [tendenciaDias, setTendenciaDias] = useState<number>(15);
 
@@ -148,18 +144,6 @@ export default function DashboardPage() {
     queryClient.invalidateQueries({ queryKey: ["dashboard"] });
   };
 
-  const handleNewSale = () => navigate("/refaccionarias/ventas");
-  const handleAddProduct = () => setProductModalOpen(true);
-
-  const handleSaveProduct = async (productData: any) => {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    toast({
-      title: "Producto creado",
-      description: SUCCESS_MESSAGES.PRODUCT_CREATED(productData.nombre),
-      className: "bg-success-light dark:bg-success-light border-success dark:border-success",
-    });
-    setProductModalOpen(false);
-  };
 
   /** Sección con manejo de error inline */
   const ErrorBadge = ({ label }: { label: string }) => (
@@ -208,14 +192,6 @@ export default function DashboardPage() {
           <Button variant="outline" onClick={handleRefresh} disabled={isFetching} className="btn-hover">
             <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? "animate-spin" : ""}`} />
             {isFetching ? "Actualizando..." : "Actualizar"}
-          </Button>
-          <Button onClick={handleNewSale} className="btn-hover">
-            <Plus className="w-4 h-4 mr-2" />
-            Nueva Venta
-          </Button>
-          <Button variant="outline" onClick={handleAddProduct} className="btn-hover">
-            <Package className="w-4 h-4 mr-2" />
-            Agregar Producto
           </Button>
         </div>
       </div>
@@ -493,7 +469,7 @@ export default function DashboardPage() {
                       {kpis.data.num_transacciones} ventas activas en {periodLabel}
                     </p>
                   </div>
-                  <Badge variant="info">Good</Badge>
+                  <Badge variant="info">Bien</Badge>
                 </div>
               )}
 
@@ -505,13 +481,6 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Product Modal */}
-      <ProductModal
-        open={productModalOpen}
-        onOpenChange={setProductModalOpen}
-        product={null}
-        onSave={handleSaveProduct}
-      />
     </div>
   );
 }
