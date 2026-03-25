@@ -15,7 +15,7 @@ import type { SaleListItem } from '@/types/sales';
 import { EmptyState } from '@/components/ui/empty-state';
 import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { KPISkeleton } from '@/components/ui/kpi-skeleton';
-import { useIsMobile } from '@/hooks/use-mobile';
+
 import { useSales } from '@/hooks/useSales';
 import { useVentasKPIs } from '@/hooks/useVentasKPIs';
 import { SaleDetailModal } from '@/components/modals/SaleDetailModal';
