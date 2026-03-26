@@ -1,45 +1,24 @@
 
 
-# Migrar Cotizaciones a API REST + mejoras
+# Fix: Cotizaciones redirige al login por falta de token
 
-## Resumen
-Migrar el módulo de cotizaciones de localStorage a endpoints REST del backend, agregar edición de precio por renglón con reset al original, y agregar funcionalidad de eliminar cotización.
+## Causa raíz
 
-## Cambios
+`cotizacionService.ts` no envía el token JWT en ninguna de sus llamadas a `apiRequest`. Cuando la página de cotizaciones carga y llama a `fetchCotizaciones`, el backend responde con 401. El `apiClient` detecta el 401, dispara el evento `auth:expired`, que limpia la sesión y redirige al login.
 
-### 1. Reemplazar `src/types/cotizaciones.ts`
-- Agregar `precioOriginal` a `CotizacionItem`
-- Eliminar `CotizacionCliente` interface (campos ahora directos en `Cotizacion`)
-- Agregar `CreateCotizacionPayload` con formato backend (`lineas`, `impuesto`, `articulo`)
+## Solución
 
-### 2. Reemplazar `src/services/cotizacionService.ts`
-- Eliminar toda lógica localStorage
-- Usar `apiRequest` para GET/POST/PATCH/DELETE contra `/api/v1/cotizaciones`
-- Agregar `deleteCotizacion` y endpoint `/duplicar`
+Agregar una función `getToken()` (igual que en `vehiculoService.ts`) y pasar el token en todas las llamadas de `cotizacionService.ts`.
 
-### 3. Reemplazar `src/hooks/useCotizaciones.ts`
-- `useCotizaciones` ahora usa `staleTime: 30s` (no 0)
-- `useCreateCotizacion` acepta `CreateCotizacionPayload`
-- Agregar `useDeleteCotizacion`
+### Cambio en `src/services/cotizacionService.ts`
 
-### 4. Reemplazar `src/components/cotizaciones/ItemsTable.tsx`
-- Agregar input editable para precio unitario por renglón
-- Resaltar precio modificado con borde amber
-- Botón reset para restablecer al `precioOriginal`
-- Mostrar texto "Original: $X" cuando el precio fue modificado
+1. Agregar helper `getToken()` que lee de `localStorage.getItem('moncar_token')`
+2. Pasar `token: getToken()` en las 5 llamadas a `apiRequest`:
+   - `fetchCotizaciones` → GET
+   - `createCotizacion` → POST
+   - `updateCotizacionEstado` → PATCH
+   - `deleteCotizacion` → DELETE
+   - `duplicateCotizacion` → POST
 
-### 5. Modificar `src/components/cotizaciones/CotizacionesTable.tsx`
-- Agregar `Trash2` al import de lucide
-- Agregar `onDelete` a Props e interface
-- Agregar botón eliminar (icono basura) en columna acciones
-
-### 6. Modificar `src/pages/CotizacionesPage.tsx`
-- Importar `useDeleteCotizacion`
-- Instanciar `deleteMut`
-- Agregar `handleDelete` con confirmación
-- Pasar `onDelete` a `CotizacionesTable`
-- Actualizar `handleSave` para usar `CreateCotizacionPayload` (campos `lineas`, `impuesto`, `articulo`)
-
-### 7. Modificar `src/components/cotizaciones/ProductSearch.tsx`
-- Agregar `precioOriginal: precio` al crear nuevo item en `addProduct`
+3. **Nota adicional**: `createCotizacion` actualmente pasa `body: JSON.stringify(data)` — esto es incorrecto porque `apiRequest` ya hace `JSON.stringify(body)` internamente, resultando en doble serialización. Cambiar a `body: data`. Lo mismo para `updateCotizacionEstado`.
 
