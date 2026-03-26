@@ -6,6 +6,10 @@ interface ListResponse {
   total: number;
 }
 
+function getToken() {
+  return localStorage.getItem('moncar_token');
+}
+
 export async function fetchCotizaciones(params?: {
   estado?: CotizacionEstado;
   q?: string;
@@ -18,14 +22,15 @@ export async function fetchCotizaciones(params?: {
   if (params?.limit) sp.set('limit', String(params.limit));
   if (params?.offset) sp.set('offset', String(params.offset));
   const url = `/api/v1/cotizaciones${sp.toString() ? `?${sp}` : ''}`;
-  const res = await apiRequest<ListResponse>(url);
+  const res = await apiRequest<ListResponse>(url, { token: getToken() });
   return res.items;
 }
 
 export async function createCotizacion(data: CreateCotizacionPayload): Promise<Cotizacion> {
   return apiRequest<Cotizacion>('/api/v1/cotizaciones', {
     method: 'POST',
-    body: JSON.stringify(data),
+    token: getToken(),
+    body: data,
   });
 }
 
@@ -35,18 +40,21 @@ export async function updateCotizacionEstado(
 ): Promise<Cotizacion> {
   return apiRequest<Cotizacion>(`/api/v1/cotizaciones/${id}/estado`, {
     method: 'PATCH',
-    body: JSON.stringify({ estado }),
+    token: getToken(),
+    body: { estado },
   });
 }
 
 export async function deleteCotizacion(id: string): Promise<void> {
   await apiRequest<{ ok: boolean }>(`/api/v1/cotizaciones/${id}`, {
     method: 'DELETE',
+    token: getToken(),
   });
 }
 
 export async function duplicateCotizacion(id: string): Promise<Cotizacion> {
   return apiRequest<Cotizacion>(`/api/v1/cotizaciones/${id}/duplicar`, {
     method: 'POST',
+    token: getToken(),
   });
 }
