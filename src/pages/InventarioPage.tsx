@@ -120,7 +120,7 @@ export default function InventarioPage() {
     isFetching,
   } = useProducts({ 
     q: debouncedSearchQuery,
-    limit: 100,
+    limit: 500,
   });
 
   // Hook dedicado para KPIs con carga completa del catálogo
