@@ -128,7 +128,7 @@ export function CotizacionesTable({ cotizaciones, onView, onDuplicate, onUpdateE
                   <td className="py-2.5 px-3 font-mono font-medium">{c.folio}</td>
                   <td className="py-2.5 px-3">{c.cliente_nombre || c.cliente || '—'}</td>
                   <td className="py-2.5 px-3 hidden lg:table-cell text-muted-foreground">{c.cliente_empresa || '—'}</td>
-                  <td className="py-2.5 px-3 hidden md:table-cell text-muted-foreground">{c.fecha}</td>
+                  <td className="py-2.5 px-3 hidden md:table-cell text-muted-foreground">{formatDateFromISO(c.fecha)}</td>
                   <td className="py-2.5 px-3 hidden xl:table-cell text-muted-foreground">{c.cliente_telefono || '—'}</td>
                   <td className="py-2.5 px-3 hidden xl:table-cell text-muted-foreground">{c.cliente_email || '—'}</td>
                   <td className="py-2.5 px-3 text-right font-semibold">{fmt(Number(c.total) || 0)}</td>
