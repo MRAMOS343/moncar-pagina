@@ -32,6 +32,7 @@ export function useUpdateCotizacionEstado() {
     mutationFn: ({ id, estado }: { id: string; estado: CotizacionEstado }) =>
       updateCotizacionEstado(id, estado),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    onError: (err) => console.error('[updateCotizacionEstado]', err),
   });
 }
 
@@ -40,6 +41,7 @@ export function useDeleteCotizacion() {
   return useMutation({
     mutationFn: (id: string) => deleteCotizacion(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    onError: (err) => console.error('[deleteCotizacion]', err),
   });
 }
 
@@ -48,5 +50,6 @@ export function useDuplicateCotizacion() {
   return useMutation({
     mutationFn: (id: string) => duplicateCotizacion(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    onError: (err) => console.error('[duplicateCotizacion]', err),
   });
 }
