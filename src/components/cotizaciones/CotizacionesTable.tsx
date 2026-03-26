@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Cotizacion, CotizacionEstado } from '@/types/cotizaciones';
 import { Eye, Copy, CheckCircle2, XCircle, FileText, TrendingUp, DollarSign, Users, Search, Trash2 } from 'lucide-react';
+import { formatDateFromISO } from '@/utils/formatters';
 
 interface Props {
   cotizaciones: Cotizacion[];
