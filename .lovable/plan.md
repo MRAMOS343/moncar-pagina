@@ -1,24 +1,24 @@
 
 
-# Fix: Cotizaciones redirige al login por falta de token
+# Aumentar cantidad de productos por carga en Inventario
 
-## Causa raíz
-
-`cotizacionService.ts` no envía el token JWT en ninguna de sus llamadas a `apiRequest`. Cuando la página de cotizaciones carga y llama a `fetchCotizaciones`, el backend responde con 401. El `apiClient` detecta el 401, dispara el evento `auth:expired`, que limpia la sesión y redirige al login.
+## Problema
+Cada vez que se presiona "Cargar más productos", la API solo trae 100 items (`limit: 100`). Con un catálogo de 700+ productos, se necesitan 7+ clics para ver todo.
 
 ## Solución
+Aumentar el `limit` de 100 a 500 en la llamada de `useProducts` dentro de `InventarioPage.tsx`. Esto reduce las cargas necesarias a 1-2 clics máximo.
 
-Agregar una función `getToken()` (igual que en `vehiculoService.ts`) y pasar el token en todas las llamadas de `cotizacionService.ts`.
+## Cambio
 
-### Cambio en `src/services/cotizacionService.ts`
+### `src/pages/InventarioPage.tsx` (línea 123)
+Cambiar `limit: 100` → `limit: 500`
 
-1. Agregar helper `getToken()` que lee de `localStorage.getItem('moncar_token')`
-2. Pasar `token: getToken()` en las 5 llamadas a `apiRequest`:
-   - `fetchCotizaciones` → GET
-   - `createCotizacion` → POST
-   - `updateCotizacionEstado` → PATCH
-   - `deleteCotizacion` → DELETE
-   - `duplicateCotizacion` → POST
+```typescript
+} = useProducts({ 
+  q: debouncedSearchQuery,
+  limit: 500,  // antes: 100
+});
+```
 
-3. **Nota adicional**: `createCotizacion` actualmente pasa `body: JSON.stringify(data)` — esto es incorrecto porque `apiRequest` ya hace `JSON.stringify(body)` internamente, resultando en doble serialización. Cambiar a `body: data`. Lo mismo para `updateCotizacionEstado`.
+Solo se modifica una línea. El backend ya soporta límites mayores y el hook `useProducts` ya acepta el parámetro `limit`.
 
