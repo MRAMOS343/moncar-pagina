@@ -9,7 +9,7 @@ export function useInventoryBySku(sku: string | null, enabled: boolean = true) {
 
   const query = useQuery({
     queryKey: ["inventory", sku],
-    queryFn: () => fetchInventory(token!, { sku: sku!, limit: 200 }),
+    queryFn: () => fetchInventory(token!, { sku: sku!, limit: 500 }),
     enabled: !!token && !!sku && enabled,
     staleTime: 60 * 1000, // 1 minuto
   });

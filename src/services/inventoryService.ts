@@ -13,7 +13,7 @@ export async function fetchInventory(
   params: FetchInventoryParams = {}
 ): Promise<InventoryResponse> {
   const searchParams = new URLSearchParams();
-  searchParams.set("limit", String(params.limit ?? 200));
+  searchParams.set("limit", String(params.limit ?? 500));
   
   if (params.sku) {
     searchParams.set("sku", params.sku);

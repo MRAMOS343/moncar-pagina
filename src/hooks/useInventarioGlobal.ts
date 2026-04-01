@@ -7,7 +7,7 @@ import { useSucursales } from "./useSucursales";
 import type { ApiInventoryItem, InventoryCursor } from "@/types/products";
 
 const MAX_PAGES = 50;
-const PAGE_SIZE = 200;
+const PAGE_SIZE = 500;
 const MAX_ITEMS = 10000;
 
 interface WarehouseData {
