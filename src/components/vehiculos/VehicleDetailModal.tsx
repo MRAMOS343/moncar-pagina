@@ -17,6 +17,13 @@ import type { Unidad, TipoDocUnidad } from '@/types/vehiculos';
 import { TIPO_DOC_LABELS } from '@/types/vehiculos';
 import { useDocumentos, useDeleteDocumento, useUpdateDocumento, getDownloadUrl } from '@/hooks/useVehiculosAPI';
 
+function formatVigencia(v: string | null): string {
+  if (!v) return '—';
+  const d = new Date(v + 'T00:00:00');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${dd}-${mm}-${d.getFullYear()}`;
+}
 function isExpired(v: string | null) { return v ? new Date(v).getTime() < Date.now() : false; }
 function isExpiringSoon(v: string | null, dias = 30) {
   if (!v) return false;
