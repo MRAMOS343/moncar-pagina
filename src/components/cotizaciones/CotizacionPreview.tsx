@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, useEffect } from 'react';
 import type { Cotizacion } from '@/types/cotizaciones';
 import logoMoncar from '@/assets/logo-moncar.jpeg';
 
@@ -10,10 +10,36 @@ export const CotizacionPreview = forwardRef<HTMLDivElement, Props>(({ cotizacion
   const fmt = (n: number) =>
     n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
 
+  const formatFecha = (fecha: string) => {
+    try {
+      return new Date(fecha).toLocaleDateString('es-MX', {
+        day: '2-digit', month: '2-digit', year: 'numeric'
+      });
+    } catch {
+      return fecha;
+    }
+  };
+
   const clienteLabel = cotizacion.cliente_nombre || cotizacion.cliente || '—';
 
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.id = 'print-cotizacion-style';
+    style.textContent = `
+      @media print {
+        @page { margin: 10mm; }
+        body > *:not(#cotizacion-print-root) { display: none !important; }
+        header, nav, aside, footer, .sidebar { display: none !important; }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.getElementById('print-cotizacion-style')?.remove();
+    };
+  }, []);
+
   return (
-    <div ref={ref} className="bg-white text-foreground p-8 max-w-[800px] mx-auto print:p-4 print:max-w-none print:shadow-none shadow-lg rounded-lg print:text-black">
+    <div ref={ref} id="cotizacion-print-root" className="bg-white text-foreground p-8 max-w-[800px] mx-auto print:p-4 print:max-w-none print:shadow-none shadow-lg rounded-lg print:text-black">
       {/* Header */}
       <div className="flex items-center justify-between border-b-2 border-primary pb-4 mb-6">
         <img src={logoMoncar} alt="Grupo Moncar" className="h-16 object-contain" />
@@ -30,7 +56,7 @@ export const CotizacionPreview = forwardRef<HTMLDivElement, Props>(({ cotizacion
         {cotizacion.cliente_empresa && (
           <div><span className="font-semibold">Empresa:</span> {cotizacion.cliente_empresa}</div>
         )}
-        <div><span className="font-semibold">Fecha:</span> {cotizacion.fecha}</div>
+        <div><span className="font-semibold">Fecha:</span> {formatFecha(cotizacion.fecha)}</div>
         {cotizacion.cliente_telefono && (
           <div><span className="font-semibold">Teléfono:</span> {cotizacion.cliente_telefono}</div>
         )}

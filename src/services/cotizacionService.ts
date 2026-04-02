@@ -58,3 +58,14 @@ export async function duplicateCotizacion(id: string): Promise<Cotizacion> {
     token: getToken(),
   });
 }
+
+export async function updateCotizacion(
+  id: string,
+  data: CreateCotizacionPayload
+): Promise<Cotizacion> {
+  return apiRequest<Cotizacion>(`/api/v1/cotizaciones/${id}`, {
+    method: 'PUT',
+    token: getToken(),
+    body: data,
+  });
+}
