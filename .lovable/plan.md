@@ -1,24 +1,44 @@
 
 
-# Aumentar cantidad de productos por carga en Inventario
+# Correcciones y mejoras al módulo de Cotizaciones
 
-## Problema
-Cada vez que se presiona "Cargar más productos", la API solo trae 100 items (`limit: 100`). Con un catálogo de 700+ productos, se necesitan 7+ clics para ver todo.
+5 cambios solicitados por el usuario con instrucciones exactas de implementación.
 
-## Solución
-Aumentar el `limit` de 100 a 500 en la llamada de `useProducts` dentro de `InventarioPage.tsx`. Esto reduce las cargas necesarias a 1-2 clics máximo.
+## Cambios
 
-## Cambio
+### 1. Agregar `updateCotizacion` al servicio y hook
+- **`src/services/cotizacionService.ts`**: Agregar función `updateCotizacion` con `PUT /api/v1/cotizaciones/:id`
+- **`src/hooks/useCotizaciones.ts`**: Importar `updateCotizacion`, agregar hook `useUpdateCotizacion`
 
-### `src/pages/InventarioPage.tsx` (línea 123)
-Cambiar `limit: 100` → `limit: 500`
+### 2. Botones de estado para todos los estados
+- **`src/components/cotizaciones/CotizacionesTable.tsx`**: Reemplazar el bloque condicional `{c.estado === 'pendiente'}` (lineas 149-158) por tres botones condicionales que permitan cambiar a cualquier estado desde cualquier otro. Agregar `RotateCcw` y `Pencil` a imports de lucide-react.
 
-```typescript
-} = useProducts({ 
-  q: debouncedSearchQuery,
-  limit: 500,  // antes: 100
-});
-```
+### 3. Fix delete con feedback de error
+- **`src/pages/CotizacionesPage.tsx`**: Agregar `onError` al `deleteMut.mutate` con toast destructivo.
 
-Solo se modifica una línea. El backend ya soporta límites mayores y el hook `useProducts` ya acepta el parámetro `limit`.
+### 4. Modo edición completo
+- **`src/pages/CotizacionesPage.tsx`**:
+  - Tipo `View` → agregar `'edit'`
+  - Estado `editingCotizacion` + importar `useUpdateCotizacion`
+  - Funciones `handleEdit` y `handleUpdate`
+  - Bloque `if (view === 'edit')` con formulario igual al de crear pero con título "Editar Cotización" y botón que llama `handleUpdate`
+  - Pasar `onEdit={handleEdit}` a `CotizacionesTable`
+- **`src/components/cotizaciones/CotizacionesTable.tsx`**:
+  - Agregar `onEdit` a Props
+  - Agregar botón con icono `Pencil` en acciones
+
+### 5. Fix del PDF
+- **`src/components/cotizaciones/CotizacionPreview.tsx`**:
+  - Agregar `formatFecha` para mostrar solo DD/MM/YYYY
+  - Agregar `useEffect` que inyecta `<style>` para print (ocultar todo menos el documento)
+  - Agregar `id="cotizacion-print-root"` al div raíz
+- **`src/pages/CotizacionesPage.tsx`**:
+  - Reemplazar `handlePrint` para cambiar `document.title` temporalmente con folio + nombre del cliente, generando nombres de archivo PDF correctos
+
+## Archivos modificados
+1. `src/services/cotizacionService.ts`
+2. `src/hooks/useCotizaciones.ts`
+3. `src/components/cotizaciones/CotizacionesTable.tsx`
+4. `src/pages/CotizacionesPage.tsx`
+5. `src/components/cotizaciones/CotizacionPreview.tsx`
 
