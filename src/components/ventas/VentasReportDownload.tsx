@@ -12,9 +12,31 @@ interface Props {
   currentWarehouse: string;
 }
 
+const QUARTERS = [
+  { q: 1, label: 'Q1 — Ene · Feb · Mar', from: '01-01', to: '03-31' },
+  { q: 2, label: 'Q2 — Abr · May · Jun', from: '04-01', to: '06-30' },
+  { q: 3, label: 'Q3 — Jul · Ago · Sep', from: '07-01', to: '09-30' },
+  { q: 4, label: 'Q4 — Oct · Nov · Dic', from: '10-01', to: '12-31' },
+];
+
+function getCompletedQuarters(): { value: string; label: string }[] {
+  const today = new Date();
+  const results: { value: string; label: string }[] = [];
+  for (let year = 2026; year <= today.getFullYear(); year++) {
+    for (const q of QUARTERS) {
+      const qEnd = new Date(`${year}-${q.to}`);
+      if (qEnd < today) {
+        results.push({ value: `${year}-Q${q.q}`, label: `Q${q.q} ${year} — ${q.label.split('—')[1].trim()}` });
+      }
+    }
+  }
+  return results.reverse();
+}
+
 export function VentasReportDownload({ currentWarehouse }: Props) {
   const [reportPeriod, setReportPeriod] = useState<string>('1m');
   const [selectedMonth, setSelectedMonth] = useState<string>(() => format(new Date(), 'yyyy-MM'));
+  const [selectedQuarter, setSelectedQuarter] = useState<string>('');
   const [isDownloading, setIsDownloading] = useState(false);
 
   // Generar lista de meses desde Enero 2024 hasta mes actual
@@ -32,6 +54,8 @@ export function VentasReportDownload({ currentWarehouse }: Props) {
     }
     return months.reverse();
   }, []);
+
+  const availableQuarters = useMemo(() => getCompletedQuarters(), []);
 
   // Leyenda contextual del mes seleccionado
   const monthHint = useMemo(() => {
@@ -53,6 +77,15 @@ export function VentasReportDownload({ currentWarehouse }: Props) {
 
       if (reportPeriod === 'month') {
         await downloadSalesReport(token, { month: selectedMonth, sucursal_id });
+      } else if (reportPeriod === 'quarter') {
+        const [yearStr, qStr] = selectedQuarter.split('-Q');
+        const qNum = parseInt(qStr, 10);
+        const qDef = QUARTERS[qNum - 1];
+        await downloadSalesReport(token, {
+          from: `${yearStr}-${qDef.from}`,
+          to: `${yearStr}-${qDef.to}`,
+          sucursal_id,
+        });
       } else {
         const now = new Date();
         let reportFrom: string;
@@ -74,7 +107,7 @@ export function VentasReportDownload({ currentWarehouse }: Props) {
     } finally {
       setIsDownloading(false);
     }
-  }, [reportPeriod, selectedMonth, currentWarehouse]);
+  }, [reportPeriod, selectedMonth, selectedQuarter, currentWarehouse]);
 
   return (
     <div className="flex flex-wrap items-center gap-2 self-end sm:self-auto">
@@ -89,6 +122,7 @@ export function VentasReportDownload({ currentWarehouse }: Props) {
           <SelectItem value="all">Histórico</SelectItem>
           <SelectSeparator />
           <SelectItem value="month">Mes específico</SelectItem>
+          <SelectItem value="quarter">Trimestre</SelectItem>
         </SelectContent>
       </Select>
 
@@ -108,11 +142,27 @@ export function VentasReportDownload({ currentWarehouse }: Props) {
         </div>
       )}
 
+      {reportPeriod === 'quarter' && (
+        <Select
+          value={selectedQuarter}
+          onValueChange={setSelectedQuarter}
+        >
+          <SelectTrigger className="w-[220px] h-9 text-sm">
+            <SelectValue placeholder="Selecciona trimestre" />
+          </SelectTrigger>
+          <SelectContent>
+            {availableQuarters.map(q => (
+              <SelectItem key={q.value} value={q.value}>{q.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
       <Button
         variant="outline"
         size="sm"
         onClick={handleDownloadReport}
-        disabled={isDownloading}
+        disabled={isDownloading || (reportPeriod === 'quarter' && !selectedQuarter)}
         className="btn-hover touch-target"
         aria-label="Descargar reporte de ventas"
       >
