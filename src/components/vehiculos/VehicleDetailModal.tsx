@@ -17,6 +17,13 @@ import type { Unidad, TipoDocUnidad } from '@/types/vehiculos';
 import { TIPO_DOC_LABELS } from '@/types/vehiculos';
 import { useDocumentos, useDeleteDocumento, useUpdateDocumento, getDownloadUrl } from '@/hooks/useVehiculosAPI';
 
+function formatVigencia(v: string | null): string {
+  if (!v) return '—';
+  const d = new Date(v + 'T00:00:00');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${dd}-${mm}-${d.getFullYear()}`;
+}
 function isExpired(v: string | null) { return v ? new Date(v).getTime() < Date.now() : false; }
 function isExpiringSoon(v: string | null, dias = 30) {
   if (!v) return false;
@@ -190,6 +197,9 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
                             <PopoverContent className="w-auto p-0" align="end">
                               <Calendar
                                 mode="single"
+                                captionLayout="dropdown-buttons"
+                                fromYear={2020}
+                                toYear={2035}
                                 selected={d.vigenciaHasta ? new Date(d.vigenciaHasta + 'T00:00:00') : undefined}
                                 onSelect={(date) => handleUpdateVigencia(d.id, date)}
                                 initialFocus
@@ -209,7 +219,7 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
                         {d.vigenciaHasta ? (
                           <span className={`flex items-center gap-1 ${expired ? 'text-destructive font-medium' : expiring ? 'text-amber-600 font-medium' : ''}`}>
                             {(expired || expiring) && <AlertTriangle className="w-3 h-3" />}
-                            Vigencia: {d.vigenciaHasta}
+                            Vigencia: {formatVigencia(d.vigenciaHasta)}
                           </span>
                         ) : (
                           <span>Sin vigencia</span>
@@ -247,7 +257,7 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
                             {d.vigenciaHasta ? (
                               <span className={`flex items-center gap-1 ${expired ? 'text-destructive font-medium' : expiring ? 'text-amber-600 font-medium' : 'text-muted-foreground'}`}>
                                 {(expired || expiring) && <AlertTriangle className="w-3 h-3" />}
-                                {d.vigenciaHasta}
+                                {formatVigencia(d.vigenciaHasta)}
                               </span>
                             ) : (
                               <span className="text-muted-foreground">—</span>
@@ -265,6 +275,9 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
                                 <PopoverContent className="w-auto p-0" align="end">
                                   <Calendar
                                     mode="single"
+                                    captionLayout="dropdown-buttons"
+                                    fromYear={2020}
+                                    toYear={2035}
                                     selected={d.vigenciaHasta ? new Date(d.vigenciaHasta + 'T00:00:00') : undefined}
                                     onSelect={(date) => handleUpdateVigencia(d.id, date)}
                                     initialFocus
