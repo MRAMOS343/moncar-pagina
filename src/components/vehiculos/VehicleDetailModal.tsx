@@ -275,6 +275,9 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
                                 <PopoverContent className="w-auto p-0" align="end">
                                   <Calendar
                                     mode="single"
+                                    captionLayout="dropdown-buttons"
+                                    fromYear={2020}
+                                    toYear={2035}
                                     selected={d.vigenciaHasta ? new Date(d.vigenciaHasta + 'T00:00:00') : undefined}
                                     onSelect={(date) => handleUpdateVigencia(d.id, date)}
                                     initialFocus
