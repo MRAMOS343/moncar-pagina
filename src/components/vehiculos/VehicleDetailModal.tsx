@@ -189,7 +189,7 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
             ) : isMobile ? (
               /* Mobile: stacked cards */
               <div className="space-y-2">
-                {documentos.map(d => {
+                {sortedDocs.map(d => {
                   const expired = isExpired(d.vigenciaHasta);
                   const expiring = isExpiringSoon(d.vigenciaHasta);
                   return (
