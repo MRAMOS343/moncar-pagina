@@ -7,9 +7,26 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { toast } from '@/hooks/use-toast';
 import { Truck } from 'lucide-react';
+import { useDocsPorVencer } from '@/hooks/useVehiculosAPI';
+import { Badge } from '@/components/ui/badge';
+
+function FlotillaIcon({ className }: { className?: string }) {
+  const { data } = useDocsPorVencer(7);
+  const count = data?.items?.length ?? 0;
+  return (
+    <span className="relative inline-flex">
+      <Truck className={className} />
+      {count > 0 && (
+        <Badge variant="destructive" className="absolute -top-2 -right-3 h-4 min-w-[16px] px-1 text-[10px] leading-none flex items-center justify-center">
+          {count}
+        </Badge>
+      )}
+    </span>
+  );
+}
 
 const navItems: SidebarNavItem[] = [
-  { title: "Flotilla", url: "/vehiculos", icon: Truck, description: "Gestión de vehículos de transporte" },
+  { title: "Flotilla", url: "/vehiculos", icon: FlotillaIcon as any, description: "Gestión de vehículos de transporte" },
 ];
 
 export function VehiculosLayout() {

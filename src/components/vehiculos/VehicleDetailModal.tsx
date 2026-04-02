@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import type { DocumentoUnidad } from '@/types/vehiculos';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -9,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Bus, Plus, Bell, Download, Trash, AlertTriangle, FileText, Pencil, CalendarIcon } from 'lucide-react';
+import { Bus, Plus, Bell, Download, Trash, AlertTriangle, FileText, Pencil, CalendarIcon, MailCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -73,13 +74,26 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
     );
   };
 
-  const alertCounts = useMemo(() => {
+  const { alertCounts, sortedDocs } = useMemo(() => {
     let expired = 0, expiring = 0;
     for (const d of documentos) {
       if (isExpired(d.vigenciaHasta)) expired++;
       else if (isExpiringSoon(d.vigenciaHasta)) expiring++;
     }
-    return { expired, expiring };
+    // Sort: expired first, then expiring soon, then by vigencia asc, nulls last
+    const sorted = [...documentos].sort((a, b) => {
+      const urgency = (d: DocumentoUnidad) => {
+        if (isExpired(d.vigenciaHasta)) return 0;
+        if (isExpiringSoon(d.vigenciaHasta)) return 1;
+        if (d.vigenciaHasta) return 2;
+        return 3;
+      };
+      const ua = urgency(a), ub = urgency(b);
+      if (ua !== ub) return ua - ub;
+      if (a.vigenciaHasta && b.vigenciaHasta) return new Date(a.vigenciaHasta).getTime() - new Date(b.vigenciaHasta).getTime();
+      return 0;
+    });
+    return { alertCounts: { expired, expiring }, sortedDocs: sorted };
   }, [documentos]);
 
   if (!unidad) return null;
@@ -175,7 +189,7 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
             ) : isMobile ? (
               /* Mobile: stacked cards */
               <div className="space-y-2">
-                {documentos.map(d => {
+                {sortedDocs.map(d => {
                   const expired = isExpired(d.vigenciaHasta);
                   const expiring = isExpiringSoon(d.vigenciaHasta);
                   return (
@@ -225,6 +239,11 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
                         ) : (
                           <span>Sin vigencia</span>
                         )}
+                        {d.alertasEnviadas.length > 0 && (
+                          <Badge variant="outline" className="text-[10px] gap-1 text-emerald-600 border-emerald-300">
+                            <MailCheck className="w-3 h-3" />Alerta enviada
+                          </Badge>
+                        )}
                         <span>{formatBytes(d.archivoBytes)}</span>
                       </div>
                     </div>
@@ -245,7 +264,7 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {documentos.map(d => {
+                    {sortedDocs.map(d => {
                       const expired = isExpired(d.vigenciaHasta);
                       const expiring = isExpiringSoon(d.vigenciaHasta);
                       return (
@@ -255,14 +274,21 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
                             <Badge variant="outline" className="text-[10px]">{TIPO_DOC_LABELS[d.tipo]}</Badge>
                           </TableCell>
                           <TableCell className="text-sm">
-                            {d.vigenciaHasta ? (
-                              <span className={`flex items-center gap-1 ${expired ? 'text-destructive font-medium' : expiring ? 'text-amber-600 font-medium' : 'text-muted-foreground'}`}>
-                                {(expired || expiring) && <AlertTriangle className="w-3 h-3" />}
-                                {formatVigencia(d.vigenciaHasta)}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
+                            <div className="flex flex-col gap-0.5">
+                              {d.vigenciaHasta ? (
+                                <span className={`flex items-center gap-1 ${expired ? 'text-destructive font-medium' : expiring ? 'text-amber-600 font-medium' : 'text-muted-foreground'}`}>
+                                  {(expired || expiring) && <AlertTriangle className="w-3 h-3" />}
+                                  {formatVigencia(d.vigenciaHasta)}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                              {d.alertasEnviadas.length > 0 && (
+                                <span className="flex items-center gap-1 text-[10px] text-emerald-600">
+                                  <MailCheck className="w-3 h-3" />Alerta enviada
+                                </span>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="text-sm text-right text-muted-foreground">{formatBytes(d.archivoBytes)}</TableCell>
                           <TableCell>

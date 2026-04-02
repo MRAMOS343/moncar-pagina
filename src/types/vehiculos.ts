@@ -45,6 +45,7 @@ export interface DocumentoUnidad {
   archivoMime: string | null;
   archivoBytes: number | null;
   archivoEstado: string | null;
+  alertasEnviadas: string[];
 }
 
 /* ── Alerta de Documento ── */
