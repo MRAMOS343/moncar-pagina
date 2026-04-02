@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -6,12 +7,15 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Bus, Plus, Bell, Download, Trash, AlertTriangle, FileText, Pencil } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Bus, Plus, Bell, Download, Trash, AlertTriangle, FileText, Pencil, CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { Unidad, TipoDocUnidad } from '@/types/vehiculos';
 import { TIPO_DOC_LABELS } from '@/types/vehiculos';
-import { useDocumentos, useDeleteDocumento, getDownloadUrl } from '@/hooks/useVehiculosAPI';
+import { useDocumentos, useDeleteDocumento, useUpdateDocumento, getDownloadUrl } from '@/hooks/useVehiculosAPI';
 
 function isExpired(v: string | null) { return v ? new Date(v).getTime() < Date.now() : false; }
 function isExpiringSoon(v: string | null, dias = 30) {
@@ -45,7 +49,21 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
   const unidadId = unidad?.id ?? null;
   const { data: documentos = [], isLoading: docsLoading } = useDocumentos(unidadId);
   const deleteDoc = useDeleteDocumento();
+  const updateDoc = useUpdateDocumento();
   const isMobile = useIsMobile();
+  const [editingVigencia, setEditingVigencia] = useState<string | null>(null);
+
+  const handleUpdateVigencia = (docId: string, date: Date | undefined) => {
+    if (!date) return;
+    const vigencia_hasta = format(date, 'yyyy-MM-dd');
+    updateDoc.mutate(
+      { id: docId, data: { vigencia_hasta } },
+      {
+        onSuccess: () => { toast.success('Vigencia actualizada'); setEditingVigencia(null); },
+        onError: () => toast.error('Error al actualizar vigencia'),
+      }
+    );
+  };
 
   const alertCounts = useMemo(() => {
     let expired = 0, expiring = 0;
@@ -163,6 +181,22 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
                           <Badge variant="outline" className="text-[10px] mt-1">{TIPO_DOC_LABELS[d.tipo]}</Badge>
                         </div>
                         <div className="flex gap-1 shrink-0">
+                          <Popover open={editingVigencia === d.id} onOpenChange={o => setEditingVigencia(o ? d.id : null)}>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-9 w-9" title="Editar vigencia">
+                                <CalendarIcon className="w-4 h-4" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="end">
+                              <Calendar
+                                mode="single"
+                                selected={d.vigenciaHasta ? new Date(d.vigenciaHasta + 'T00:00:00') : undefined}
+                                onSelect={(date) => handleUpdateVigencia(d.id, date)}
+                                initialFocus
+                                className={cn("p-3 pointer-events-auto")}
+                              />
+                            </PopoverContent>
+                          </Popover>
                           <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => handleDownload(d.archivoId)}>
                             <Download className="w-4 h-4" />
                           </Button>
@@ -222,6 +256,22 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
                           <TableCell className="text-sm text-right text-muted-foreground">{formatBytes(d.archivoBytes)}</TableCell>
                           <TableCell>
                             <div className="flex gap-1 justify-end">
+                              <Popover open={editingVigencia === d.id} onOpenChange={o => setEditingVigencia(o ? d.id : null)}>
+                                <PopoverTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" title="Editar vigencia">
+                                    <CalendarIcon className="w-3.5 h-3.5" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="end">
+                                  <Calendar
+                                    mode="single"
+                                    selected={d.vigenciaHasta ? new Date(d.vigenciaHasta + 'T00:00:00') : undefined}
+                                    onSelect={(date) => handleUpdateVigencia(d.id, date)}
+                                    initialFocus
+                                    className={cn("p-3 pointer-events-auto")}
+                                  />
+                                </PopoverContent>
+                              </Popover>
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDownload(d.archivoId)}>
                                 <Download className="w-3.5 h-3.5" />
                               </Button>
