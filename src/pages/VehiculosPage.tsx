@@ -256,7 +256,7 @@ export default function VehiculosPage() {
                   <span className="font-medium">{d.nombre}</span>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-[10px]">{TIPO_DOC_LABELS[d.tipo]}</Badge>
-                    <span className="text-amber-600 font-medium text-xs">{d.vigenciaHasta}</span>
+                    <span className="text-amber-600 font-medium text-xs">{formatVigencia(d.vigenciaHasta)}</span>
                   </div>
                 </CardContent>
               </Card>
