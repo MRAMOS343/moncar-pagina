@@ -219,7 +219,7 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
                         {d.vigenciaHasta ? (
                           <span className={`flex items-center gap-1 ${expired ? 'text-destructive font-medium' : expiring ? 'text-amber-600 font-medium' : ''}`}>
                             {(expired || expiring) && <AlertTriangle className="w-3 h-3" />}
-                            Vigencia: {d.vigenciaHasta}
+                            Vigencia: {formatVigencia(d.vigenciaHasta)}
                           </span>
                         ) : (
                           <span>Sin vigencia</span>
