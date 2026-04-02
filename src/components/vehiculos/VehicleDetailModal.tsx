@@ -74,13 +74,26 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
     );
   };
 
-  const alertCounts = useMemo(() => {
+  const { alertCounts, sortedDocs } = useMemo(() => {
     let expired = 0, expiring = 0;
     for (const d of documentos) {
       if (isExpired(d.vigenciaHasta)) expired++;
       else if (isExpiringSoon(d.vigenciaHasta)) expiring++;
     }
-    return { expired, expiring };
+    // Sort: expired first, then expiring soon, then by vigencia asc, nulls last
+    const sorted = [...documentos].sort((a, b) => {
+      const urgency = (d: DocumentoUnidad) => {
+        if (isExpired(d.vigenciaHasta)) return 0;
+        if (isExpiringSoon(d.vigenciaHasta)) return 1;
+        if (d.vigenciaHasta) return 2;
+        return 3;
+      };
+      const ua = urgency(a), ub = urgency(b);
+      if (ua !== ub) return ua - ub;
+      if (a.vigenciaHasta && b.vigenciaHasta) return new Date(a.vigenciaHasta).getTime() - new Date(b.vigenciaHasta).getTime();
+      return 0;
+    });
+    return { alertCounts: { expired, expiring }, sortedDocs: sorted };
   }, [documentos]);
 
   if (!unidad) return null;
