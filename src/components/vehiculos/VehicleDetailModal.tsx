@@ -19,10 +19,11 @@ import { useDocumentos, useDeleteDocumento, useUpdateDocumento, getDownloadUrl }
 
 function formatVigencia(v: string | null): string {
   if (!v) return '—';
-  const d = new Date(v + 'T00:00:00');
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  return `${dd}-${mm}-${d.getFullYear()}`;
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return v;
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  return `${dd}-${mm}-${d.getUTCFullYear()}`;
 }
 function isExpired(v: string | null) { return v ? new Date(v).getTime() < Date.now() : false; }
 function isExpiringSoon(v: string | null, dias = 30) {
