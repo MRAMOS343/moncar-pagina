@@ -264,7 +264,7 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {documentos.map(d => {
+                    {sortedDocs.map(d => {
                       const expired = isExpired(d.vigenciaHasta);
                       const expiring = isExpiringSoon(d.vigenciaHasta);
                       return (
@@ -274,14 +274,21 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
                             <Badge variant="outline" className="text-[10px]">{TIPO_DOC_LABELS[d.tipo]}</Badge>
                           </TableCell>
                           <TableCell className="text-sm">
-                            {d.vigenciaHasta ? (
-                              <span className={`flex items-center gap-1 ${expired ? 'text-destructive font-medium' : expiring ? 'text-amber-600 font-medium' : 'text-muted-foreground'}`}>
-                                {(expired || expiring) && <AlertTriangle className="w-3 h-3" />}
-                                {formatVigencia(d.vigenciaHasta)}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
+                            <div className="flex flex-col gap-0.5">
+                              {d.vigenciaHasta ? (
+                                <span className={`flex items-center gap-1 ${expired ? 'text-destructive font-medium' : expiring ? 'text-amber-600 font-medium' : 'text-muted-foreground'}`}>
+                                  {(expired || expiring) && <AlertTriangle className="w-3 h-3" />}
+                                  {formatVigencia(d.vigenciaHasta)}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                              {d.alertasEnviadas.length > 0 && (
+                                <span className="flex items-center gap-1 text-[10px] text-emerald-600">
+                                  <MailCheck className="w-3 h-3" />Alerta enviada
+                                </span>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="text-sm text-right text-muted-foreground">{formatBytes(d.archivoBytes)}</TableCell>
                           <TableCell>
