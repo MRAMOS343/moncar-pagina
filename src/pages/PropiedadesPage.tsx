@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Building2, Plus, FileText, DollarSign, Wrench, AlertTriangle } from 'lucide-react';
+import { Building2, Plus, FileText, Wrench, AlertTriangle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,9 +12,14 @@ import { ContractFormModal } from '@/components/propiedades/ContractFormModal';
 import { PaymentTable } from '@/components/propiedades/PaymentTable';
 import { PaymentFormModal } from '@/components/propiedades/PaymentFormModal';
 import { MaintenanceFormModal } from '@/components/propiedades/MaintenanceFormModal';
-import { DocumentFormModal } from '@/components/propiedades/DocumentFormModal';
 import { PropertyFilters } from '@/components/propiedades/PropertyFilters';
-import { usePropiedades } from '@/hooks/usePropiedades';
+import {
+  usePropiedadesAPI, useCreatePropiedad, useUpdatePropiedad, useDeletePropiedad,
+  useContratosAPI, useCreateContrato, useUpdateContrato,
+  usePagosAPI, useCreatePago, useUpdatePago,
+  useMantenimientoAPI, useCreateMantenimiento, useUpdateMantenimiento,
+} from '@/hooks/usePropiedadesAPI';
+import { toast } from '@/hooks/use-toast';
 import type { Propiedad, Contrato, Pago, SolicitudMantenimiento, TipoDocumento } from '@/types/propiedades';
 
 const prioridadBadge: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -25,14 +30,20 @@ const estadoMantLabels: Record<string, string> = {
 };
 
 export default function PropiedadesPage() {
-  const {
-    propiedades, contratos, pagos, mantenimiento, documentos,
-    addPropiedad, updatePropiedad, deletePropiedad,
-    addContrato, updateContrato,
-    addPago, updatePago,
-    addMantenimiento, updateMantenimiento,
-    addDocumento, deleteDocumento,
-  } = usePropiedades();
+  const { data: propiedades = [] } = usePropiedadesAPI();
+  const { data: contratos = [] } = useContratosAPI();
+  const { data: pagos = [] } = usePagosAPI();
+  const { data: mantenimiento = [] } = useMantenimientoAPI();
+
+  const createPropMut     = useCreatePropiedad();
+  const updatePropMut     = useUpdatePropiedad();
+  const deletePropMut     = useDeletePropiedad();
+  const createContratoMut = useCreateContrato();
+  const updateContratoMut = useUpdateContrato();
+  const createPagoMut     = useCreatePago();
+  const updatePagoMut     = useUpdatePago();
+  const createMantMut     = useCreateMantenimiento();
+  const updateMantMut     = useUpdateMantenimiento();
 
   // Filters
   const [search, setSearch] = useState('');
@@ -49,9 +60,6 @@ export default function PropiedadesPage() {
   const [editingPayment, setEditingPayment] = useState<Pago | null>(null);
   const [maintFormOpen, setMaintFormOpen] = useState(false);
   const [editingMaint, setEditingMaint] = useState<SolicitudMantenimiento | null>(null);
-  const [docFormOpen, setDocFormOpen] = useState(false);
-  const [docDefaultTipo, setDocDefaultTipo] = useState<TipoDocumento | undefined>();
-  const [docDefaultPropId, setDocDefaultPropId] = useState<string | undefined>();
 
   const filteredProps = useMemo(() => {
     return propiedades.filter(p => {
@@ -62,9 +70,8 @@ export default function PropiedadesPage() {
     });
   }, [propiedades, search, estadoFilter, tipoFilter]);
 
-  // KPIs for Pagos tab
   const pagoKpis = useMemo(() => {
-    const cobrado = pagos.filter(p => p.estado === 'pagado').reduce((s, p) => s + p.montoPagado, 0);
+    const cobrado   = pagos.filter(p => p.estado === 'pagado').reduce((s, p) => s + p.montoPagado, 0);
     const pendiente = pagos.filter(p => p.estado === 'pendiente' || p.estado === 'parcial').reduce((s, p) => s + (p.montoEsperado - p.montoPagado), 0);
     const atrasados = pagos.filter(p => p.estado === 'atrasado').length;
     const total = pagos.length;
@@ -72,33 +79,98 @@ export default function PropiedadesPage() {
     return { cobrado, pendiente, atrasados, tasa };
   }, [pagos]);
 
-  // Contratos with expiry warning
   const contratosWithWarning = useMemo(() => {
     const now = new Date();
     const in30 = new Date(now.getTime() + 30 * 86400000);
     return contratos.map(c => ({
       ...c,
-      expiringSoon: c.activo && new Date(c.fechaFin) <= in30,
+      expiringSoon: c.activo && !!c.fechaFin && new Date(c.fechaFin) <= in30,
       propDireccion: propiedades.find(p => p.id === c.propiedadId)?.direccion ?? '—',
     }));
   }, [contratos, propiedades]);
 
-  const handleAddDocFromDetail = (tipo: TipoDocumento) => {
-    setDocDefaultTipo(tipo);
-    setDocDefaultPropId(detailProp?.id);
-    setDocFormOpen(true);
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  const handleSavePropiedad = (data: Omit<Propiedad, 'id' | 'createdAt'>) => {
+    if (editingProp) {
+      updatePropMut.mutate({ id: editingProp.id, data }, {
+        onSuccess: () => toast({ title: 'Propiedad actualizada' }),
+        onError: () => toast({ title: 'Error al actualizar', variant: 'destructive' }),
+      });
+    } else {
+      createPropMut.mutate(data, {
+        onSuccess: () => toast({ title: 'Propiedad creada' }),
+        onError: () => toast({ title: 'Error al crear', variant: 'destructive' }),
+      });
+    }
   };
 
-  const detailDocs = useMemo(() => {
-    if (!detailProp) return [];
-    return documentos.filter(d => d.propiedadId === detailProp.id);
-  }, [documentos, detailProp]);
+  const handleDeletePropiedad = (id: string) => {
+    if (!confirm('¿Eliminar esta propiedad? Esta acción no se puede deshacer.')) return;
+    deletePropMut.mutate(id, {
+      onSuccess: () => {
+        toast({ title: 'Propiedad eliminada' });
+        setDetailProp(null);
+      },
+      onError: (err: any) => toast({
+        title: 'No se pudo eliminar',
+        description: err?.message?.includes('409') ? 'Tiene contratos activos.' : undefined,
+        variant: 'destructive',
+      }),
+    });
+  };
+
+  const handleSaveContrato = (data: Omit<Contrato, 'id' | 'createdAt'>) => {
+    if (editingContract) {
+      updateContratoMut.mutate({ id: editingContract.id, data }, {
+        onSuccess: () => toast({ title: 'Contrato actualizado' }),
+        onError: () => toast({ title: 'Error al actualizar contrato', variant: 'destructive' }),
+      });
+    } else {
+      createContratoMut.mutate(data, {
+        onSuccess: () => toast({ title: 'Contrato creado' }),
+        onError: () => toast({ title: 'Error al crear contrato', variant: 'destructive' }),
+      });
+    }
+  };
+
+  const handleSavePago = (data: Omit<Pago, 'id' | 'createdAt'>) => {
+    if (editingPayment) {
+      updatePagoMut.mutate({ id: editingPayment.id, data }, {
+        onSuccess: () => toast({ title: 'Pago actualizado' }),
+        onError: () => toast({ title: 'Error al actualizar pago', variant: 'destructive' }),
+      });
+    } else {
+      createPagoMut.mutate(data, {
+        onSuccess: () => toast({ title: 'Pago registrado' }),
+        onError: () => toast({ title: 'Error al registrar pago', variant: 'destructive' }),
+      });
+    }
+  };
+
+  const handleSaveMantenimiento = (data: Omit<SolicitudMantenimiento, 'id'>) => {
+    if (editingMaint) {
+      updateMantMut.mutate({ id: editingMaint.id, data }, {
+        onSuccess: () => toast({ title: 'Solicitud actualizada' }),
+        onError: () => toast({ title: 'Error al actualizar solicitud', variant: 'destructive' }),
+      });
+    } else {
+      createMantMut.mutate(data, {
+        onSuccess: () => toast({ title: 'Solicitud creada' }),
+        onError: () => toast({ title: 'Error al crear solicitud', variant: 'destructive' }),
+      });
+    }
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><Building2 className="w-6 h-6 text-primary" />Propiedades en Renta</h1>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Building2 className="w-6 h-6 text-primary" />Propiedades en Renta
+          </h1>
           <p className="text-sm text-muted-foreground">Administración de inmuebles y contratos de arrendamiento</p>
         </div>
       </div>
@@ -114,7 +186,11 @@ export default function PropiedadesPage() {
         {/* ── TAB: PROPIEDADES ── */}
         <TabsContent value="propiedades" className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-3 justify-between">
-            <PropertyFilters search={search} onSearchChange={setSearch} estadoFilter={estadoFilter} onEstadoChange={setEstadoFilter} tipoFilter={tipoFilter} onTipoChange={setTipoFilter} />
+            <PropertyFilters
+              search={search} onSearchChange={setSearch}
+              estadoFilter={estadoFilter} onEstadoChange={setEstadoFilter}
+              tipoFilter={tipoFilter} onTipoChange={setTipoFilter}
+            />
             <Button onClick={() => { setEditingProp(null); setPropFormOpen(true); }} className="shrink-0">
               <Plus className="w-4 h-4 mr-1" />Nueva Propiedad
             </Button>
@@ -152,7 +228,9 @@ export default function PropiedadesPage() {
               </TableHeader>
               <TableBody>
                 {contratosWithWarning.length === 0 && (
-                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Sin contratos</TableCell></TableRow>
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Sin contratos</TableCell>
+                  </TableRow>
                 )}
                 {contratosWithWarning.map(c => (
                   <TableRow key={c.id}>
@@ -161,11 +239,13 @@ export default function PropiedadesPage() {
                     <TableCell className="text-right text-sm font-medium">${c.montoMensual.toLocaleString()}</TableCell>
                     <TableCell className="text-sm">{c.fechaInicio}</TableCell>
                     <TableCell className="text-sm flex items-center gap-1">
-                      {c.fechaFin}
+                      {c.fechaFin || '—'}
                       {c.expiringSoon && <AlertTriangle className="w-4 h-4 text-warning" />}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={c.activo ? 'default' : 'outline'} className="text-xs">{c.activo ? 'Activo' : 'Inactivo'}</Badge>
+                      <Badge variant={c.activo ? 'default' : 'outline'} className="text-xs">
+                        {c.activo ? 'Activo' : 'Inactivo'}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" onClick={() => { setEditingContract(c); setContractFormOpen(true); }}>
@@ -192,7 +272,11 @@ export default function PropiedadesPage() {
               <Plus className="w-4 h-4 mr-1" />Registrar Pago
             </Button>
           </div>
-          <PaymentTable pagos={pagos} propiedades={propiedades} onEdit={p => { setEditingPayment(p); setPaymentFormOpen(true); }} />
+          <PaymentTable
+            pagos={pagos}
+            propiedades={propiedades}
+            onEdit={p => { setEditingPayment(p); setPaymentFormOpen(true); }}
+          />
         </TabsContent>
 
         {/* ── TAB: MANTENIMIENTO ── */}
@@ -218,13 +302,19 @@ export default function PropiedadesPage() {
               </TableHeader>
               <TableBody>
                 {mantenimiento.length === 0 && (
-                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Sin solicitudes</TableCell></TableRow>
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">Sin solicitudes</TableCell>
+                  </TableRow>
                 )}
                 {mantenimiento.map(m => (
                   <TableRow key={m.id}>
-                    <TableCell className="max-w-[160px] truncate text-sm">{propiedades.find(p => p.id === m.propiedadId)?.direccion ?? '—'}</TableCell>
+                    <TableCell className="max-w-[160px] truncate text-sm">
+                      {propiedades.find(p => p.id === m.propiedadId)?.direccion ?? '—'}
+                    </TableCell>
                     <TableCell className="text-sm">{m.titulo}</TableCell>
-                    <TableCell><Badge variant={prioridadBadge[m.prioridad]} className="text-xs capitalize">{m.prioridad}</Badge></TableCell>
+                    <TableCell>
+                      <Badge variant={prioridadBadge[m.prioridad]} className="text-xs capitalize">{m.prioridad}</Badge>
+                    </TableCell>
                     <TableCell className="text-sm">{estadoMantLabels[m.estado]}</TableCell>
                     <TableCell className="text-right text-sm">${m.costoEstimado.toLocaleString()}</TableCell>
                     <TableCell className="text-right text-sm">{m.costoReal != null ? `$${m.costoReal.toLocaleString()}` : '—'}</TableCell>
@@ -245,48 +335,40 @@ export default function PropiedadesPage() {
       {/* Modals */}
       <PropertyFormModal
         open={propFormOpen}
-        onClose={() => setPropFormOpen(false)}
+        onClose={() => { setPropFormOpen(false); setEditingProp(null); }}
         propiedad={editingProp}
-        onSave={data => editingProp ? updatePropiedad(editingProp.id, data) : addPropiedad(data)}
+        onSave={handleSavePropiedad}
       />
       <PropertyDetailModal
         open={!!detailProp}
         onClose={() => setDetailProp(null)}
         propiedad={detailProp}
         onEdit={p => { setDetailProp(null); setEditingProp(p); setPropFormOpen(true); }}
-        onDelete={deletePropiedad}
-        documentos={detailDocs}
-        onAddDocumento={handleAddDocFromDetail}
-        onDeleteDocumento={deleteDocumento}
+        onDelete={handleDeletePropiedad}
+        documentos={[]}
+        onAddDocumento={(_tipo: TipoDocumento) => {}}
+        onDeleteDocumento={() => {}}
       />
       <ContractFormModal
         open={contractFormOpen}
         onClose={() => { setContractFormOpen(false); setEditingContract(null); }}
-        onSave={data => editingContract ? updateContrato(editingContract.id, data) : addContrato(data)}
+        onSave={handleSaveContrato}
         propiedades={propiedades}
         contrato={editingContract}
       />
       <PaymentFormModal
         open={paymentFormOpen}
         onClose={() => { setPaymentFormOpen(false); setEditingPayment(null); }}
-        onSave={data => editingPayment ? updatePago(editingPayment.id, data) : addPago(data)}
+        onSave={handleSavePago}
         contratos={contratos}
         pago={editingPayment}
       />
       <MaintenanceFormModal
         open={maintFormOpen}
         onClose={() => { setMaintFormOpen(false); setEditingMaint(null); }}
-        onSave={data => editingMaint ? updateMantenimiento(editingMaint.id, data) : addMantenimiento(data)}
+        onSave={handleSaveMantenimiento}
         propiedades={propiedades}
         solicitud={editingMaint}
-      />
-      <DocumentFormModal
-        open={docFormOpen}
-        onClose={() => { setDocFormOpen(false); setDocDefaultTipo(undefined); setDocDefaultPropId(undefined); }}
-        onSave={addDocumento}
-        propiedades={propiedades}
-        defaultPropiedadId={docDefaultPropId}
-        defaultTipo={docDefaultTipo}
       />
     </div>
   );
