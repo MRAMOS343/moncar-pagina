@@ -240,6 +240,22 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
                           <TableCell className="text-sm text-right text-muted-foreground">{formatBytes(d.archivoBytes)}</TableCell>
                           <TableCell>
                             <div className="flex gap-1 justify-end">
+                              <Popover open={editingVigencia === d.id} onOpenChange={o => setEditingVigencia(o ? d.id : null)}>
+                                <PopoverTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" title="Editar vigencia">
+                                    <CalendarIcon className="w-3.5 h-3.5" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="end">
+                                  <Calendar
+                                    mode="single"
+                                    selected={d.vigenciaHasta ? new Date(d.vigenciaHasta + 'T00:00:00') : undefined}
+                                    onSelect={(date) => handleUpdateVigencia(d.id, date)}
+                                    initialFocus
+                                    className={cn("p-3 pointer-events-auto")}
+                                  />
+                                </PopoverContent>
+                              </Popover>
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDownload(d.archivoId)}>
                                 <Download className="w-3.5 h-3.5" />
                               </Button>
