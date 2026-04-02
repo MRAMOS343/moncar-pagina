@@ -51,6 +51,7 @@ function mapDocumento(d: Record<string, unknown>): DocumentoUnidad {
     archivoMime: (d.archivo_mime as string) ?? null,
     archivoBytes: (d.archivo_bytes as number) ?? null,
     archivoEstado: (d.archivo_estado as string) ?? null,
+    alertasEnviadas: Array.isArray(d.alertas_enviadas) ? (d.alertas_enviadas as string[]) : [],
   };
 }
 
