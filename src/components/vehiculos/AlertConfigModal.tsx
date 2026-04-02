@@ -28,7 +28,7 @@ export function AlertConfigModal({ open, onClose, unidadId, unidadLabel }: Props
       return {
         tipoDocumento: tipo,
         diasAntes: existing?.diasAntes ?? 30,
-        activa: existing?.activa ?? false,
+        activa: existing?.activa ?? tipo === 'poliza_seguro',
       };
     });
   }, [alertas]);
