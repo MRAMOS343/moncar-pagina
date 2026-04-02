@@ -239,6 +239,11 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
                         ) : (
                           <span>Sin vigencia</span>
                         )}
+                        {d.alertasEnviadas.length > 0 && (
+                          <Badge variant="outline" className="text-[10px] gap-1 text-emerald-600 border-emerald-300">
+                            <MailCheck className="w-3 h-3" />Alerta enviada
+                          </Badge>
+                        )}
                         <span>{formatBytes(d.archivoBytes)}</span>
                       </div>
                     </div>
