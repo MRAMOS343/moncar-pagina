@@ -11,6 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import type { Cotizacion, CotizacionItem } from '@/types/cotizaciones';
 import type { ClienteData, ClienteErrors } from '@/components/cotizaciones/ClienteFields';
 import { Plus, ArrowLeft, Printer, Save, RotateCcw } from 'lucide-react';
+import { ApiError } from '@/services/apiClient';
 
 type View = 'list' | 'create' | 'edit' | 'preview';
 
@@ -145,8 +146,11 @@ export default function CotizacionesPage() {
         setEditingCotizacion(null);
         resetForm();
       },
-      onError: () => toast({
+      onError: (err) => toast({
         title: 'Error al actualizar',
+        description: err instanceof ApiError && err.status === 409
+          ? 'No se puede editar una cotización cancelada.'
+          : undefined,
         variant: 'destructive',
       }),
     });
