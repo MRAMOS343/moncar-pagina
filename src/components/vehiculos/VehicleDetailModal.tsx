@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Bus, Plus, Bell, Download, Trash, AlertTriangle, FileText, Pencil, CalendarIcon } from 'lucide-react';
+import { Bus, Plus, Bell, Download, Trash, AlertTriangle, FileText, Pencil, CalendarIcon, MailCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
