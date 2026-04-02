@@ -49,7 +49,21 @@ export function VehicleDetailModal({ open, onClose, unidad, onAddDoc, onConfigAl
   const unidadId = unidad?.id ?? null;
   const { data: documentos = [], isLoading: docsLoading } = useDocumentos(unidadId);
   const deleteDoc = useDeleteDocumento();
+  const updateDoc = useUpdateDocumento();
   const isMobile = useIsMobile();
+  const [editingVigencia, setEditingVigencia] = useState<string | null>(null);
+
+  const handleUpdateVigencia = (docId: string, date: Date | undefined) => {
+    if (!date) return;
+    const vigencia_hasta = format(date, 'yyyy-MM-dd');
+    updateDoc.mutate(
+      { id: docId, data: { vigencia_hasta } },
+      {
+        onSuccess: () => { toast.success('Vigencia actualizada'); setEditingVigencia(null); },
+        onError: () => toast.error('Error al actualizar vigencia'),
+      }
+    );
+  };
 
   const alertCounts = useMemo(() => {
     let expired = 0, expiring = 0;
