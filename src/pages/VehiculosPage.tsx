@@ -1,4 +1,13 @@
 import { useState, useMemo, useRef } from 'react';
+
+function formatVigencia(v: string | null): string {
+  if (!v) return '—';
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return v;
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  return `${dd}-${mm}-${d.getUTCFullYear()}`;
+}
 import { Truck, Search, AlertTriangle, FileText, ChevronDown, Plus, RefreshCw } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -247,7 +256,7 @@ export default function VehiculosPage() {
                   <span className="font-medium">{d.nombre}</span>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-[10px]">{TIPO_DOC_LABELS[d.tipo]}</Badge>
-                    <span className="text-amber-600 font-medium text-xs">{d.vigenciaHasta}</span>
+                    <span className="text-amber-600 font-medium text-xs">{formatVigencia(d.vigenciaHasta)}</span>
                   </div>
                 </CardContent>
               </Card>
