@@ -5,12 +5,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Cotizacion, CotizacionEstado } from '@/types/cotizaciones';
-import { Eye, Copy, CheckCircle2, XCircle, FileText, TrendingUp, DollarSign, Users, Search, Trash2 } from 'lucide-react';
+import { Eye, Copy, CheckCircle2, XCircle, FileText, TrendingUp, DollarSign, Users, Search, Trash2, RotateCcw, Pencil } from 'lucide-react';
 import { formatDateFromISO } from '@/utils/formatters';
 
 interface Props {
   cotizaciones: Cotizacion[];
   onView: (c: Cotizacion) => void;
+  onEdit: (c: Cotizacion) => void;
   onDuplicate: (id: string) => void;
   onUpdateEstado: (id: string, estado: CotizacionEstado) => void;
   onDelete: (id: string) => void;
@@ -21,7 +22,7 @@ const estadoBadge: Record<CotizacionEstado, { variant: 'default' | 'success' | '
   cancelada: { variant: 'destructive', label: 'Cancelada' },
 };
 
-export function CotizacionesTable({ cotizaciones, onView, onDuplicate, onUpdateEstado, onDelete }: Props) {
+export function CotizacionesTable({ cotizaciones, onView, onEdit, onDuplicate, onUpdateEstado, onDelete }: Props) {
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');
   const [busqueda, setBusqueda] = useState('');
 
@@ -140,21 +141,41 @@ export function CotizacionesTable({ cotizaciones, onView, onDuplicate, onUpdateE
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onView(c)} title="Ver">
                         <Eye className="h-4 w-4" />
                       </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(c)} title="Editar">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDuplicate(c.id)} title="Duplicar">
                         <Copy className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => onDelete(c.id)} title="Eliminar">
                         <Trash2 className="h-4 w-4" />
                       </Button>
-                      {c.estado === 'pendiente' && (
-                        <>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-success" onClick={() => onUpdateEstado(c.id, 'concretada')} title="Concretar">
-                            <CheckCircle2 className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => onUpdateEstado(c.id, 'cancelada')} title="Cancelar">
-                            <XCircle className="h-4 w-4" />
-                          </Button>
-                        </>
+                      {c.estado !== 'concretada' && (
+                        <Button
+                          variant="ghost" size="icon" className="h-7 w-7 text-green-600"
+                          onClick={() => onUpdateEstado(c.id, 'concretada')}
+                          title="Marcar como concretada"
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {c.estado !== 'pendiente' && (
+                        <Button
+                          variant="ghost" size="icon" className="h-7 w-7 text-yellow-600"
+                          onClick={() => onUpdateEstado(c.id, 'pendiente')}
+                          title="Marcar como pendiente"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {c.estado !== 'cancelada' && (
+                        <Button
+                          variant="ghost" size="icon" className="h-7 w-7 text-destructive"
+                          onClick={() => onUpdateEstado(c.id, 'cancelada')}
+                          title="Cancelar"
+                        >
+                          <XCircle className="h-4 w-4" />
+                        </Button>
                       )}
                     </div>
                   </td>

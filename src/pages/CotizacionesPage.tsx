@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CotizacionForm } from '@/components/cotizaciones/CotizacionForm';
 import { CotizacionPreview } from '@/components/cotizaciones/CotizacionPreview';
 import { CotizacionesTable } from '@/components/cotizaciones/CotizacionesTable';
-import { useCotizaciones, useCreateCotizacion, useUpdateCotizacionEstado, useDuplicateCotizacion, useDeleteCotizacion } from '@/hooks/useCotizaciones';
+import { useCotizaciones, useCreateCotizacion, useUpdateCotizacion, useUpdateCotizacionEstado, useDuplicateCotizacion, useDeleteCotizacion } from '@/hooks/useCotizaciones';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOutletContext } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
@@ -12,7 +12,7 @@ import type { Cotizacion, CotizacionItem } from '@/types/cotizaciones';
 import type { ClienteData, ClienteErrors } from '@/components/cotizaciones/ClienteFields';
 import { Plus, ArrowLeft, Printer, Save, RotateCcw } from 'lucide-react';
 
-type View = 'list' | 'create' | 'preview';
+type View = 'list' | 'create' | 'edit' | 'preview';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -44,6 +44,7 @@ export default function CotizacionesPage() {
   const ctx = useOutletContext<{ currentWarehouse?: string }>();
   const { data: cotizaciones = [] } = useCotizaciones();
   const createMut = useCreateCotizacion();
+  const updateMut = useUpdateCotizacion();
   const updateEstadoMut = useUpdateCotizacionEstado();
   const duplicateMut = useDuplicateCotizacion();
   const deleteMut = useDeleteCotizacion();
@@ -54,6 +55,7 @@ export default function CotizacionesPage() {
   const [clienteErrors, setClienteErrors] = useState<ClienteErrors>({});
   const [sucursal, setSucursal] = useState('');
   const [previewCotizacion, setPreviewCotizacion] = useState<Cotizacion | null>(null);
+  const [editingCotizacion, setEditingCotizacion] = useState<Cotizacion | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
   const resetForm = useCallback(() => {
@@ -65,7 +67,6 @@ export default function CotizacionesPage() {
 
   const handleClienteChange = useCallback((field: keyof ClienteData, value: string) => {
     setClienteData(prev => ({ ...prev, [field]: value }));
-    // Clear field-level error on change
     setClienteErrors(prev => {
       const next = { ...prev };
       delete next[field];
@@ -74,23 +75,9 @@ export default function CotizacionesPage() {
     });
   }, []);
 
-  const handleSave = useCallback(() => {
-    const errors = validateCliente(clienteData);
-    if (items.length === 0) {
-      toast({ title: 'Error', description: 'Agrega al menos un producto', variant: 'destructive' });
-    }
-    if (Object.keys(errors).length > 0) {
-      setClienteErrors(errors);
-      if (items.length > 0) {
-        toast({ title: 'Datos incompletos', description: 'Revisa los datos del cliente', variant: 'destructive' });
-      }
-      return;
-    }
-    if (items.length === 0) return;
-
+  const buildPayload = useCallback(() => {
     const subtotal = items.reduce((s, i) => s + (Number(i.total) || 0), 0);
-
-    createMut.mutate({
+    return {
       sucursal: sucursal.trim() || 'Principal',
       cliente_nombre: trimOrNull(clienteData.nombre),
       cliente_empresa: trimOrNull(clienteData.empresa),
@@ -108,7 +95,24 @@ export default function CotizacionesPage() {
         precio_original: item.precioOriginal,
         importe_linea: item.total,
       })),
-    }, {
+    };
+  }, [clienteData, sucursal, items]);
+
+  const handleSave = useCallback(() => {
+    const errors = validateCliente(clienteData);
+    if (items.length === 0) {
+      toast({ title: 'Error', description: 'Agrega al menos un producto', variant: 'destructive' });
+    }
+    if (Object.keys(errors).length > 0) {
+      setClienteErrors(errors);
+      if (items.length > 0) {
+        toast({ title: 'Datos incompletos', description: 'Revisa los datos del cliente', variant: 'destructive' });
+      }
+      return;
+    }
+    if (items.length === 0) return;
+
+    createMut.mutate(buildPayload(), {
       onSuccess: (data) => {
         toast({ title: 'Cotización guardada', description: `Folio: ${data.folio}` });
         setPreviewCotizacion(data);
@@ -116,13 +120,78 @@ export default function CotizacionesPage() {
         resetForm();
       },
     });
-  }, [clienteData, sucursal, items, currentUser, createMut, resetForm]);
+  }, [clienteData, items, createMut, buildPayload, resetForm]);
 
-  const handlePrint = () => window.print();
+  const handleUpdate = useCallback(() => {
+    if (!editingCotizacion) return;
+    const errors = validateCliente(clienteData);
+    if (items.length === 0) {
+      toast({ title: 'Error', description: 'Agrega al menos un producto', variant: 'destructive' });
+      return;
+    }
+    if (Object.keys(errors).length > 0) {
+      setClienteErrors(errors);
+      return;
+    }
+
+    updateMut.mutate({
+      id: editingCotizacion.id,
+      data: buildPayload(),
+    }, {
+      onSuccess: (data) => {
+        toast({ title: 'Cotización actualizada', description: `Folio: ${data.folio}` });
+        setPreviewCotizacion(data);
+        setView('preview');
+        setEditingCotizacion(null);
+        resetForm();
+      },
+      onError: () => toast({
+        title: 'Error al actualizar',
+        variant: 'destructive',
+      }),
+    });
+  }, [editingCotizacion, clienteData, items, updateMut, buildPayload, resetForm]);
+
+  const handlePrint = () => {
+    const nombre = previewCotizacion?.cliente_nombre ??
+                   previewCotizacion?.cliente_empresa ??
+                   'cliente';
+    const nombreLimpio = nombre
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_|_$/g, '');
+    const folio = previewCotizacion?.folio ?? 'cotizacion';
+    const tituloOriginal = document.title;
+    document.title = `cotizacion_${folio}_${nombreLimpio}`;
+    window.print();
+    document.title = tituloOriginal;
+  };
 
   const handleView = (c: Cotizacion) => {
     setPreviewCotizacion(c);
     setView('preview');
+  };
+
+  const handleEdit = (c: Cotizacion) => {
+    setEditingCotizacion(c);
+    setClienteData({
+      nombre: c.cliente_nombre ?? '',
+      telefono: c.cliente_telefono ?? '',
+      email: c.cliente_email ?? '',
+      empresa: c.cliente_empresa ?? '',
+    });
+    setItems(c.items.map(item => ({
+      sku: item.sku,
+      descripcion: item.descripcion,
+      pieza: item.pieza,
+      precioUnitario: item.precioUnitario,
+      precioOriginal: item.precioOriginal,
+      cantidad: item.cantidad,
+      total: item.total,
+    })));
+    setSucursal(c.sucursal);
+    setView('edit');
   };
 
   const handleDuplicate = (id: string) => {
@@ -137,6 +206,11 @@ export default function CotizacionesPage() {
     if (!confirm('¿Eliminar esta cotización? Esta acción no se puede deshacer.')) return;
     deleteMut.mutate(id, {
       onSuccess: () => toast({ title: 'Cotización eliminada' }),
+      onError: () => toast({
+        title: 'No se pudo eliminar',
+        description: 'Verifica que tengas permisos para eliminar esta cotización.',
+        variant: 'destructive',
+      }),
     });
   };
 
@@ -160,6 +234,42 @@ export default function CotizacionesPage() {
           </Button>
         </div>
         <CotizacionPreview ref={printRef} cotizacion={previewCotizacion} />
+      </div>
+    );
+  }
+
+  if (view === 'edit' && editingCotizacion) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <Button variant="outline" onClick={() => { setView('list'); setEditingCotizacion(null); resetForm(); }}>
+            <ArrowLeft className="h-4 w-4 mr-2" />Volver
+          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={resetForm}>
+              <RotateCcw className="h-4 w-4 mr-2" />Limpiar
+            </Button>
+            <Button onClick={handleUpdate} disabled={updateMut.isPending}>
+              <Save className="h-4 w-4 mr-2" />Guardar Cambios
+            </Button>
+          </div>
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Editar Cotización — {editingCotizacion.folio}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CotizacionForm
+              items={items}
+              clienteData={clienteData}
+              sucursal={sucursal}
+              clienteErrors={clienteErrors as Record<string, string | undefined>}
+              onItemsChange={setItems}
+              onClienteChange={handleClienteChange}
+              onSucursalChange={setSucursal}
+            />
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -211,6 +321,7 @@ export default function CotizacionesPage() {
       <CotizacionesTable
         cotizaciones={cotizaciones}
         onView={handleView}
+        onEdit={handleEdit}
         onDuplicate={handleDuplicate}
         onUpdateEstado={handleUpdateEstado}
         onDelete={handleDelete}

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   fetchCotizaciones,
   createCotizacion,
+  updateCotizacion,
   updateCotizacionEstado,
   deleteCotizacion,
   duplicateCotizacion,
@@ -23,6 +24,16 @@ export function useCreateCotizacion() {
   return useMutation({
     mutationFn: (data: CreateCotizacionPayload) => createCotizacion(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+}
+
+export function useUpdateCotizacion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: CreateCotizacionPayload }) =>
+      updateCotizacion(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    onError: (err) => console.error('[updateCotizacion]', err),
   });
 }
 
