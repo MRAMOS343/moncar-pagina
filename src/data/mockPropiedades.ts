@@ -3,6 +3,7 @@ import type { Propiedad, Contrato, Pago, SolicitudMantenimiento, DocumentoPropie
 export const mockPropiedades: Propiedad[] = [
   {
     id: 'prop-1',
+    nombre: 'Casa Universidad',
     direccion: 'Av. Universidad 1200, Col. Centro, Durango',
     tipo: 'casa',
     metrosCuadrados: 180,
@@ -17,6 +18,7 @@ export const mockPropiedades: Propiedad[] = [
   },
   {
     id: 'prop-2',
+    nombre: 'Local Dolores del Río',
     direccion: 'Blvd. Dolores del Río 450, Fracc. Valle del Sur',
     tipo: 'local_comercial',
     metrosCuadrados: 85,
@@ -31,6 +33,7 @@ export const mockPropiedades: Propiedad[] = [
   },
   {
     id: 'prop-3',
+    nombre: 'Depto Constitución',
     direccion: 'Calle Constitución 320, Col. Guadalupe',
     tipo: 'departamento',
     metrosCuadrados: 95,
@@ -45,6 +48,7 @@ export const mockPropiedades: Propiedad[] = [
   },
   {
     id: 'prop-4',
+    nombre: 'Bodega Panamericana',
     direccion: 'Carretera Panamericana Km 5, Zona Industrial',
     tipo: 'bodega',
     metrosCuadrados: 350,
@@ -59,6 +63,7 @@ export const mockPropiedades: Propiedad[] = [
   },
   {
     id: 'prop-5',
+    nombre: 'Oficina 20 de Noviembre',
     direccion: 'Av. 20 de Noviembre 890, Col. Centro',
     tipo: 'oficina',
     metrosCuadrados: 60,
