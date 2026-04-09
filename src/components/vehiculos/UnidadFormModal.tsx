@@ -116,7 +116,7 @@ export function UnidadFormModal({ open, onClose, onSave, unidad, loading }: Prop
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>Cancelar</Button>
-            <Button type="submit" disabled={loading || !form.numero.trim() || !form.placa.trim()}>
+            <Button type="submit" disabled={loading || !form.numero.trim()}>
               {loading ? 'Guardando...' : 'Guardar'}
             </Button>
           </DialogFooter>
