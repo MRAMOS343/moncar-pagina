@@ -11,7 +11,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onSave: (data: {
-    numero: string; placa: string; marca?: string; modelo?: string;
+    numero: string; placa?: string; marca?: string; modelo?: string;
     anio?: number; color?: string; km?: number; estado?: string; descripcion?: string;
   }) => void;
   unidad?: Unidad | null;
@@ -44,10 +44,10 @@ export function UnidadFormModal({ open, onClose, onSave, unidad, loading }: Prop
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.numero.trim() || !form.placa.trim()) return;
+    if (!form.numero.trim()) return;
     onSave({
       numero: form.numero.trim(),
-      placa: form.placa.trim(),
+      placa: form.placa.trim() || undefined,
       marca: form.marca.trim() || undefined,
       modelo: form.modelo.trim() || undefined,
       anio: form.anio || undefined,
@@ -71,8 +71,8 @@ export function UnidadFormModal({ open, onClose, onSave, unidad, loading }: Prop
               <Input value={form.numero} onChange={e => set('numero', e.target.value)} required placeholder="04" />
             </div>
             <div>
-              <Label>Placa *</Label>
-              <Input value={form.placa} onChange={e => set('placa', e.target.value)} required placeholder="DGO-104-A" />
+              <Label>Placa</Label>
+              <Input value={form.placa} onChange={e => set('placa', e.target.value)} placeholder="DGO-104-A" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -116,7 +116,7 @@ export function UnidadFormModal({ open, onClose, onSave, unidad, loading }: Prop
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>Cancelar</Button>
-            <Button type="submit" disabled={loading || !form.numero.trim() || !form.placa.trim()}>
+            <Button type="submit" disabled={loading || !form.numero.trim()}>
               {loading ? 'Guardando...' : 'Guardar'}
             </Button>
           </DialogFooter>
