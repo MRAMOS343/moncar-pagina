@@ -31,6 +31,7 @@ const estadoOptions: { value: EstadoPropiedad; label: string }[] = [
 
 export function PropertyFormModal({ open, onClose, onSave, propiedad }: PropertyFormModalProps) {
   const [form, setForm] = useState({
+    nombre: propiedad?.nombre ?? '',
     direccion: propiedad?.direccion ?? '',
     tipo: propiedad?.tipo ?? 'casa' as TipoPropiedad,
     metrosCuadrados: propiedad?.metrosCuadrados ?? 0,
