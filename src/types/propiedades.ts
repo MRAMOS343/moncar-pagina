@@ -17,6 +17,7 @@ export interface DocumentoPropiedad {
 
 export interface Propiedad {
   id: string;
+  nombre: string;
   direccion: string;
   tipo: TipoPropiedad;
   metrosCuadrados: number;
