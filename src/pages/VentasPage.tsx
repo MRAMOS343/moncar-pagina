@@ -230,8 +230,8 @@ export default function VentasPage() {
 
       {/* Chart */}
       <VentasChart
-        chartData={kpisData?.chartData ?? []}
-        isLoading={isLoadingKPIs}
+        sucursalId={currentWarehouse === 'all' ? undefined : currentWarehouse}
+        dias={dateRange === '1d' ? 1 : dateRange === '7d' ? 7 : dateRange === '90d' ? 90 : 30}
         periodLabel={periodLabel}
         isToday={dateRange === '1d'}
       />
