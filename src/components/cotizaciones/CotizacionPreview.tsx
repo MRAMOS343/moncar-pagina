@@ -1,4 +1,3 @@
-import { forwardRef, useEffect } from 'react';
 import type { Cotizacion } from '@/types/cotizaciones';
 import logoMoncar from '@/assets/logo-moncar.jpeg';
 
@@ -6,7 +5,7 @@ interface Props {
   cotizacion: Cotizacion;
 }
 
-export const CotizacionPreview = forwardRef<HTMLDivElement, Props>(({ cotizacion }, ref) => {
+export function CotizacionPreview({ cotizacion }: Props) {
   const fmt = (n: number) =>
     n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
 
@@ -22,36 +21,8 @@ export const CotizacionPreview = forwardRef<HTMLDivElement, Props>(({ cotizacion
 
   const clienteLabel = cotizacion.cliente_nombre || cotizacion.cliente || '—';
 
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.id = 'print-cotizacion-style';
-    style.textContent = `
-      @media print {
-        @page { margin: 10mm; size: auto; }
-        /* Hide everything by default */
-        body * { visibility: hidden; }
-        /* Show only the print root and all its children */
-        #cotizacion-print-root,
-        #cotizacion-print-root * { visibility: visible; }
-        /* Position it at top-left so it fills the page */
-        #cotizacion-print-root {
-          position: absolute;
-          left: 0;
-          top: 0;
-          width: 100%;
-        }
-        /* Ensure sidebar/nav don't take space */
-        header, nav, aside, footer, .sidebar { display: none !important; }
-      }
-    `;
-    document.head.appendChild(style);
-    return () => {
-      document.getElementById('print-cotizacion-style')?.remove();
-    };
-  }, []);
-
   return (
-    <div ref={ref} id="cotizacion-print-root" className="bg-white text-foreground p-8 max-w-[800px] mx-auto print:p-4 print:max-w-none print:shadow-none shadow-lg rounded-lg print:text-black">
+    <div id="cotizacion-print-root" className="bg-white text-foreground p-8 max-w-[800px] mx-auto shadow-lg rounded-lg">
       {/* Header */}
       <div className="flex items-center justify-between border-b-2 border-primary pb-4 mb-6">
         <img src={logoMoncar} alt="Grupo Moncar" className="h-16 object-contain" />
@@ -140,6 +111,4 @@ export const CotizacionPreview = forwardRef<HTMLDivElement, Props>(({ cotizacion
       </div>
     </div>
   );
-});
-
-CotizacionPreview.displayName = 'CotizacionPreview';
+}
