@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CotizacionForm } from '@/components/cotizaciones/CotizacionForm';
@@ -10,8 +10,9 @@ import { useOutletContext } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import type { Cotizacion, CotizacionItem } from '@/types/cotizaciones';
 import type { ClienteData, ClienteErrors } from '@/components/cotizaciones/ClienteFields';
-import { Plus, ArrowLeft, Printer, Save, RotateCcw } from 'lucide-react';
+import { Plus, ArrowLeft, Download, Loader2, Save, RotateCcw } from 'lucide-react';
 import { ApiError } from '@/services/apiClient';
+import { useCotizacionPdf } from '@/hooks/useCotizacionPdf';
 
 type View = 'list' | 'create' | 'edit' | 'preview';
 
@@ -50,6 +51,8 @@ export default function CotizacionesPage() {
   const duplicateMut = useDuplicateCotizacion();
   const deleteMut = useDeleteCotizacion();
 
+  const { downloadPdf, isDownloading } = useCotizacionPdf();
+
   const [view, setView] = useState<View>('list');
   const [items, setItems] = useState<CotizacionItem[]>([]);
   const [clienteData, setClienteData] = useState<ClienteData>({ ...emptyCliente });
@@ -57,7 +60,6 @@ export default function CotizacionesPage() {
   const [sucursal, setSucursal] = useState('');
   const [previewCotizacion, setPreviewCotizacion] = useState<Cotizacion | null>(null);
   const [editingCotizacion, setEditingCotizacion] = useState<Cotizacion | null>(null);
-  const printRef = useRef<HTMLDivElement>(null);
 
   const resetForm = useCallback(() => {
     setItems([]);
@@ -156,21 +158,19 @@ export default function CotizacionesPage() {
     });
   }, [editingCotizacion, clienteData, items, updateMut, buildPayload, resetForm]);
 
-  const handlePrint = () => {
-    const nombre = previewCotizacion?.cliente_nombre ??
-                   previewCotizacion?.cliente_empresa ??
+  const handleDownload = useCallback(() => {
+    if (!previewCotizacion) return;
+    const nombre = previewCotizacion.cliente_nombre ??
+                   previewCotizacion.cliente_empresa ??
                    'cliente';
     const nombreLimpio = nombre
       .toLowerCase()
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '_')
       .replace(/^_|_$/g, '');
-    const folio = previewCotizacion?.folio ?? 'cotizacion';
-    const tituloOriginal = document.title;
-    document.title = `cotizacion_${folio}_${nombreLimpio}`;
-    window.print();
-    document.title = tituloOriginal;
-  };
+    const folio = previewCotizacion.folio ?? 'cotizacion';
+    downloadPdf(previewCotizacion.id, `cotizacion_${folio}_${nombreLimpio}.pdf`);
+  }, [previewCotizacion, downloadPdf]);
 
   const handleView = (c: Cotizacion) => {
     setPreviewCotizacion(c);
@@ -233,11 +233,14 @@ export default function CotizacionesPage() {
           <Button variant="outline" onClick={() => setView('list')}>
             <ArrowLeft className="h-4 w-4 mr-2" />Volver
           </Button>
-          <Button onClick={handlePrint}>
-            <Printer className="h-4 w-4 mr-2" />Imprimir
+          <Button onClick={handleDownload} disabled={isDownloading}>
+            {isDownloading
+              ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Descargando…</>
+              : <><Download className="h-4 w-4 mr-2" />Descargar PDF</>
+            }
           </Button>
         </div>
-        <CotizacionPreview ref={printRef} cotizacion={previewCotizacion} />
+        <CotizacionPreview cotizacion={previewCotizacion} />
       </div>
     );
   }
