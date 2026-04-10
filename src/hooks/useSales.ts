@@ -16,8 +16,9 @@ export function useSales(params: Omit<FetchSalesParams, 'cursor_fecha' | 'cursor
     to: params.to,
     sucursal_id: params.sucursal_id,
     include_cancelled: params.include_cancelled ?? false,
+    only_cancelled: params.only_cancelled ?? false,
     limit: params.limit ?? 100,
-  }), [params.from, params.to, params.sucursal_id, params.include_cancelled, params.limit]);
+  }), [params.from, params.to, params.sucursal_id, params.include_cancelled, params.only_cancelled, params.limit]);
 
   return useInfiniteQuery({
     queryKey: ["sales", stableParams],

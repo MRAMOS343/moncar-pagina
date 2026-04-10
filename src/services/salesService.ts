@@ -12,8 +12,11 @@ export async function fetchSales(
   
   searchParams.set("from", params.from ?? "2025-01-01");
   searchParams.set("limit", String(params.limit ?? 50));
-  searchParams.set("include_cancelled", params.include_cancelled ? "1" : "0");
-  
+  searchParams.set("include_cancelled", (params.include_cancelled || params.only_cancelled) ? "1" : "0");
+
+  if (params.only_cancelled) {
+    searchParams.set("only_cancelled", "1");
+  }
   if (params.sucursal_id) {
     searchParams.set("sucursal_id", params.sucursal_id);
   }

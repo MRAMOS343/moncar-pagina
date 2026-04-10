@@ -70,6 +70,7 @@ export interface FetchSalesParams {
   to?: string;
   sucursal_id?: string;
   include_cancelled?: boolean;
+  only_cancelled?: boolean;
   cursor_fecha?: string;
   cursor_venta_id?: number;
   limit?: number;

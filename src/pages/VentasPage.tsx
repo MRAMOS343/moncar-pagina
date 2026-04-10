@@ -80,6 +80,7 @@ export default function VentasPage() {
     from: fromDate,
     sucursal_id: currentWarehouse === 'all' ? undefined : currentWarehouse,
     include_cancelled: true,
+    only_cancelled: showOnlyCancelled,
   });
 
   // Hook dedicado para KPIs + chart data (hasta 5000 items)
@@ -91,7 +92,7 @@ export default function VentasPage() {
     sucursal_id: currentWarehouse === 'all' ? undefined : currentWarehouse,
   });
 
-  // Aplanar páginas de datos con deduplicación defensiva + filtro de canceladas
+  // Aplanar páginas de datos con deduplicación defensiva
   const salesData = useMemo(() => {
     if (!data?.pages) return [];
     const all = data.pages.flatMap(page => page.items);
@@ -100,12 +101,10 @@ export default function VentasPage() {
       .filter(item => {
         if (seen.has(item.venta_id)) return false;
         seen.add(item.venta_id);
-        const esCancelada = item.cancelada || item.estado_origen?.toUpperCase() === 'CA';
-        if (showOnlyCancelled && !esCancelada) return false;
         return true;
       })
       .sort((a, b) => b.venta_id - a.venta_id);
-  }, [data, showOnlyCancelled]);
+  }, [data]);
 
   // KPIs
   const kpis: KPIData[] = useMemo(() => {
