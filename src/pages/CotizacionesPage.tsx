@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CotizacionForm } from '@/components/cotizaciones/CotizacionForm';
@@ -10,8 +10,9 @@ import { useOutletContext } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import type { Cotizacion, CotizacionItem } from '@/types/cotizaciones';
 import type { ClienteData, ClienteErrors } from '@/components/cotizaciones/ClienteFields';
-import { Plus, ArrowLeft, Printer, Save, RotateCcw } from 'lucide-react';
+import { Plus, ArrowLeft, Download, Loader2, Save, RotateCcw } from 'lucide-react';
 import { ApiError } from '@/services/apiClient';
+import { useCotizacionPdf } from '@/hooks/useCotizacionPdf';
 
 type View = 'list' | 'create' | 'edit' | 'preview';
 
