@@ -281,36 +281,3 @@
   }
 }
 
-/* ===== Print styles for cotización PDF ===== */
-@media print {
-  /* Hide sidebar, topbar, toasts, and any print:hidden elements */
-  [data-sidebar="sidebar"],
-  [data-sidebar="rail"],
-  aside,
-  .toaster,
-  [data-sonner-toaster],
-  [role="status"],
-  .print\:hidden {
-    display: none !important;
-  }
-
-  /* Remove layout padding/margins from wrapper */
-  [data-sidebar="inset"],
-  main {
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    min-height: auto !important;
-  }
-
-  /* Remove shadows for clean print */
-  .shadow-lg, .shadow-md, .shadow-sm {
-    box-shadow: none !important;
-  }
-
-  /* Ensure white background */
-  body {
-    background: white !important;
-  }
-}
