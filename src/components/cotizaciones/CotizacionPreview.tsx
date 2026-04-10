@@ -27,8 +27,20 @@ export const CotizacionPreview = forwardRef<HTMLDivElement, Props>(({ cotizacion
     style.id = 'print-cotizacion-style';
     style.textContent = `
       @media print {
-        @page { margin: 10mm; }
-        body > *:not(#cotizacion-print-root) { display: none !important; }
+        @page { margin: 10mm; size: auto; }
+        /* Hide everything by default */
+        body * { visibility: hidden; }
+        /* Show only the print root and all its children */
+        #cotizacion-print-root,
+        #cotizacion-print-root * { visibility: visible; }
+        /* Position it at top-left so it fills the page */
+        #cotizacion-print-root {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+        /* Ensure sidebar/nav don't take space */
         header, nav, aside, footer, .sidebar { display: none !important; }
       }
     `;
