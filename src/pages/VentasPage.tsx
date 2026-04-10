@@ -135,11 +135,12 @@ export default function VentasPage() {
     const formattedDate = sale.usu_fecha
       ? sale.usu_fecha.split('-').reverse().join('-')
       : '';
-    const estadoLabel = sale.estado_origen?.toUpperCase() === 'CO' ? 'Completada'
-      : sale.estado_origen?.toUpperCase() === 'CA' ? 'Cancelada'
-      : sale.estado_origen || 'N/A';
-    const estadoVariant = sale.estado_origen?.toUpperCase() === 'CO' ? 'default' as const
-      : sale.estado_origen?.toUpperCase() === 'CA' ? 'destructive' as const
+    const estadoNorm = sale.estado_origen?.trim().toUpperCase();
+    const estadoLabel = estadoNorm === 'CO' ? 'Completada'
+      : estadoNorm === 'CA' ? 'Cancelada'
+      : sale.estado_origen?.trim() || 'N/A';
+    const estadoVariant = estadoNorm === 'CO' ? 'default' as const
+      : estadoNorm === 'CA' ? 'destructive' as const
       : 'outline' as const;
 
     return (

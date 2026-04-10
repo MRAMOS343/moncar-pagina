@@ -16,7 +16,7 @@ import { toNumber, formatCurrency } from '@/utils/formatters';
  * Helper para obtener variante de badge según estado_origen
  */
 const getEstadoBadgeVariant = (estado: string): "default" | "destructive" | "outline" | "secondary" => {
-  switch (estado?.toUpperCase()) {
+  switch (estado?.trim().toUpperCase()) {
     case 'CO': return 'default'; // Completada
     case 'CA': return 'destructive'; // Cancelada
     default: return 'outline';
@@ -24,10 +24,10 @@ const getEstadoBadgeVariant = (estado: string): "default" | "destructive" | "out
 };
 
 const getEstadoLabel = (estado: string): string => {
-  switch (estado?.toUpperCase()) {
+  switch (estado?.trim().toUpperCase()) {
     case 'CO': return 'Completada';
     case 'CA': return 'Cancelada';
-    default: return estado || 'N/A';
+    default: return estado?.trim() || 'N/A';
   }
 };
 
