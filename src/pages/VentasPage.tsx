@@ -100,7 +100,8 @@ export default function VentasPage() {
       .filter(item => {
         if (seen.has(item.venta_id)) return false;
         seen.add(item.venta_id);
-        if (showOnlyCancelled && !item.cancelada) return false;
+        const esCancelada = item.cancelada || item.estado_origen?.toUpperCase() === 'CA';
+        if (showOnlyCancelled && !esCancelada) return false;
         return true;
       })
       .sort((a, b) => b.venta_id - a.venta_id);
