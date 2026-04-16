@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,19 +15,37 @@ interface Props {
   solicitud?: SolicitudMantenimiento | null;
 }
 
+const makeEmpty = () => ({
+  propiedadId: '',
+  titulo: '',
+  descripcion: '',
+  prioridad: 'media' as PrioridadMantenimiento,
+  estado: 'pendiente' as EstadoMantenimiento,
+  costoEstimado: 0,
+  costoReal: null as number | null,
+  proveedor: '',
+  fechaSolicitud: new Date().toISOString().slice(0, 10),
+  fechaResolucion: null as string | null,
+});
+
 export function MaintenanceFormModal({ open, onClose, onSave, propiedades, solicitud }: Props) {
-  const [form, setForm] = useState({
-    propiedadId: solicitud?.propiedadId ?? '',
-    titulo: solicitud?.titulo ?? '',
-    descripcion: solicitud?.descripcion ?? '',
-    prioridad: solicitud?.prioridad ?? 'media' as PrioridadMantenimiento,
-    estado: solicitud?.estado ?? 'pendiente' as EstadoMantenimiento,
-    costoEstimado: solicitud?.costoEstimado ?? 0,
-    costoReal: solicitud?.costoReal ?? null,
-    proveedor: solicitud?.proveedor ?? '',
-    fechaSolicitud: solicitud?.fechaSolicitud ?? new Date().toISOString().slice(0, 10),
-    fechaResolucion: solicitud?.fechaResolucion ?? null,
-  });
+  const [form, setForm] = useState(makeEmpty);
+
+  useEffect(() => {
+    if (!open) return;
+    setForm(solicitud ? {
+      propiedadId: solicitud.propiedadId ?? '',
+      titulo: solicitud.titulo ?? '',
+      descripcion: solicitud.descripcion ?? '',
+      prioridad: solicitud.prioridad ?? 'media',
+      estado: solicitud.estado ?? 'pendiente',
+      costoEstimado: solicitud.costoEstimado ?? 0,
+      costoReal: solicitud.costoReal ?? null,
+      proveedor: solicitud.proveedor ?? '',
+      fechaSolicitud: solicitud.fechaSolicitud ?? new Date().toISOString().slice(0, 10),
+      fechaResolucion: solicitud.fechaResolucion ?? null,
+    } : makeEmpty());
+  }, [open, solicitud]);
 
   const set = (k: string, v: unknown) => setForm(prev => ({ ...prev, [k]: v }));
 

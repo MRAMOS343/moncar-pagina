@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,19 +22,37 @@ const estadoOptions: { value: EstadoPago; label: string }[] = [
   { value: 'parcial', label: 'Pago Parcial' },
 ];
 
+const emptyForm = {
+  contratoId: '',
+  propiedadId: '',
+  mesCorrespondiente: '',
+  montoEsperado: 0,
+  montoPagado: 0,
+  fechaEsperada: '',
+  fechaPago: null as string | null,
+  estado: 'pendiente' as EstadoPago,
+  comprobante: null as string | null,
+  notas: '',
+};
+
 export function PaymentFormModal({ open, onClose, onSave, contratos, pago }: Props) {
-  const [form, setForm] = useState({
-    contratoId: pago?.contratoId ?? '',
-    propiedadId: pago?.propiedadId ?? '',
-    mesCorrespondiente: pago?.mesCorrespondiente ?? '',
-    montoEsperado: pago?.montoEsperado ?? 0,
-    montoPagado: pago?.montoPagado ?? 0,
-    fechaEsperada: pago?.fechaEsperada ?? '',
-    fechaPago: pago?.fechaPago ?? null,
-    estado: pago?.estado ?? 'pendiente' as EstadoPago,
-    comprobante: pago?.comprobante ?? null,
-    notas: pago?.notas ?? '',
-  });
+  const [form, setForm] = useState(emptyForm);
+
+  useEffect(() => {
+    if (!open) return;
+    setForm(pago ? {
+      contratoId: pago.contratoId ?? '',
+      propiedadId: pago.propiedadId ?? '',
+      mesCorrespondiente: pago.mesCorrespondiente ?? '',
+      montoEsperado: pago.montoEsperado ?? 0,
+      montoPagado: pago.montoPagado ?? 0,
+      fechaEsperada: pago.fechaEsperada ?? '',
+      fechaPago: pago.fechaPago ?? null,
+      estado: pago.estado ?? 'pendiente',
+      comprobante: pago.comprobante ?? null,
+      notas: pago.notas ?? '',
+    } : emptyForm);
+  }, [open, pago]);
 
   const set = (k: string, v: unknown) => setForm(prev => ({ ...prev, [k]: v }));
 

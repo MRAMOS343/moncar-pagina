@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,23 +15,44 @@ interface Props {
   contrato?: Contrato | null;
 }
 
+const emptyForm = {
+  propiedadId: '',
+  arrendatarioNombre: '',
+  arrendatarioContacto: '',
+  arrendatarioEmail: '',
+  arrendatarioRFC: '',
+  arrendatarioIdentificacion: 'INE',
+  fechaInicio: '',
+  fechaFin: '',
+  montoMensual: 0,
+  diaPago: 1,
+  deposito: 0,
+  condicionesEspeciales: '',
+  activo: true,
+};
+
 export function ContractFormModal({ open, onClose, onSave, propiedades, contrato }: Props) {
   const disponibles = propiedades.filter(p => p.estado === 'disponible' || p.id === contrato?.propiedadId);
-  const [form, setForm] = useState({
-    propiedadId: contrato?.propiedadId ?? '',
-    arrendatarioNombre: contrato?.arrendatarioNombre ?? '',
-    arrendatarioContacto: contrato?.arrendatarioContacto ?? '',
-    arrendatarioEmail: contrato?.arrendatarioEmail ?? '',
-    arrendatarioRFC: contrato?.arrendatarioRFC ?? '',
-    arrendatarioIdentificacion: contrato?.arrendatarioIdentificacion ?? 'INE',
-    fechaInicio: contrato?.fechaInicio ?? '',
-    fechaFin: contrato?.fechaFin ?? '',
-    montoMensual: contrato?.montoMensual ?? 0,
-    diaPago: contrato?.diaPago ?? 1,
-    deposito: contrato?.deposito ?? 0,
-    condicionesEspeciales: contrato?.condicionesEspeciales ?? '',
-    activo: contrato?.activo ?? true,
-  });
+  const [form, setForm] = useState(emptyForm);
+
+  useEffect(() => {
+    if (!open) return;
+    setForm(contrato ? {
+      propiedadId: contrato.propiedadId ?? '',
+      arrendatarioNombre: contrato.arrendatarioNombre ?? '',
+      arrendatarioContacto: contrato.arrendatarioContacto ?? '',
+      arrendatarioEmail: contrato.arrendatarioEmail ?? '',
+      arrendatarioRFC: contrato.arrendatarioRFC ?? '',
+      arrendatarioIdentificacion: contrato.arrendatarioIdentificacion ?? 'INE',
+      fechaInicio: contrato.fechaInicio ?? '',
+      fechaFin: contrato.fechaFin ?? '',
+      montoMensual: contrato.montoMensual ?? 0,
+      diaPago: contrato.diaPago ?? 1,
+      deposito: contrato.deposito ?? 0,
+      condicionesEspeciales: contrato.condicionesEspeciales ?? '',
+      activo: contrato.activo ?? true,
+    } : emptyForm);
+  }, [open, contrato]);
 
   const set = (k: string, v: unknown) => setForm(prev => ({ ...prev, [k]: v }));
 
@@ -67,7 +88,7 @@ export function ContractFormModal({ open, onClose, onSave, propiedades, contrato
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Fecha inicio *</Label><Input type="date" value={form.fechaInicio} onChange={e => set('fechaInicio', e.target.value)} required /></div>
-            <div><Label>Fecha fin *</Label><Input type="date" value={form.fechaFin} onChange={e => set('fechaFin', e.target.value)} required /></div>
+            <div><Label>Fecha fin</Label><Input type="date" value={form.fechaFin} onChange={e => set('fechaFin', e.target.value)} /></div>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div><Label>Renta mensual ($) *</Label><Input type="number" min={0} value={form.montoMensual} onChange={e => set('montoMensual', +e.target.value)} required /></div>

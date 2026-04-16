@@ -1,255 +1,320 @@
 import { useState } from "react";
-import { ShoppingCart, TrendingDown, RotateCcw, DollarSign, Upload, FileText, Plus } from "lucide-react";
+import { ShoppingCart, DollarSign, Plus, Search, Pencil, Trash2, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { supplierSchema, SupplierFormData } from '@/schemas/supplierSchema';
-import { sanitizeHtml, sanitizePhone } from '@/utils/sanitize';
+import { supplierSchema, SupplierFormData } from "@/schemas/supplierSchema";
+import { sanitizeHtml, sanitizePhone } from "@/utils/sanitize";
 import { toast } from "sonner";
-import { useData } from '@/contexts/DataContext';
-import { Supplier } from "@/types";
-import { formatCurrency } from "@/utils/formatters";
-
-interface SupplierPayment {
-  id: string;
-  supplierId: string;
-  supplierName: string;
-  banco: string;
-  cuenta: string;
-  saldo: number;
-  pagosProgramados: number;
-  estadoSemana: 'pendiente' | 'pagado';
-  comprobantes: string[];
-}
+import { useAuth } from "@/contexts/AuthContext";
+import { useProveedores, useCreateProveedor, usePatchProveedor, useDeleteProveedor } from "@/hooks/useProveedores";
+import type { Proveedor } from "@/types/proveedores";
+import { EmptyState } from "@/components/ui/empty-state";
+import { KPISkeleton } from "@/components/ui/kpi-skeleton";
 
 export default function ProveedoresPage() {
-  const { suppliers: initialSuppliers } = useData();
-  const [suppliers, setSuppliers] = useState<Supplier[]>(initialSuppliers);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const { currentUser } = useAuth();
+  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "gerente";
 
-  const [supplierPayments] = useState<SupplierPayment[]>([
-    {
-      id: "1",
-      supplierId: "1",
-      supplierName: "Bosch MX",
-      banco: "BBVA",
-      cuenta: "CLABE 012 345 678901234",
-      saldo: 18760,
-      pagosProgramados: 12000,
-      estadoSemana: 'pendiente',
-      comprobantes: []
-    },
-    {
-      id: "2",
-      supplierId: "2",
-      supplierName: "Brembo MX",
-      banco: "Banorte",
-      cuenta: "CLABE 072 123 456789012",
-      saldo: 24490,
-      pagosProgramados: 15000,
-      estadoSemana: 'pagado',
-      comprobantes: ["comprobante_brembo_2025-10-22.pdf"]
-    },
-    {
-      id: "3",
-      supplierId: "3",
-      supplierName: "Mann Filter",
-      banco: "Santander",
-      cuenta: "CLABE 014 987 654321098",
-      saldo: 9800,
-      pagosProgramados: 8000,
-      estadoSemana: 'pendiente',
-      comprobantes: []
-    }
-  ]);
+  const [search, setSearch]               = useState("");
+  const [isDialogOpen, setIsDialogOpen]   = useState(false);
+  const [editingId, setEditingId]         = useState<string | null>(null);
+  const [deletingId, setDeletingId]       = useState<string | null>(null);
 
+  const { data, isLoading } = useProveedores({ q: search || undefined });
+  const createProveedor = useCreateProveedor();
+  const patchProveedor  = usePatchProveedor();
+  const deleteProveedor = useDeleteProveedor();
 
-  const purchaseOrders = [
-    { folio: "PO-8791", fecha: "2025-10-22", sucursal: "MonCar Pachuca", proveedor: "RefaExpress", items: 42, montoETA: "$38,210 2 días", estado: "en-transito" },
-    { folio: "PO-8790", fecha: "2025-10-22", sucursal: "Monzalvo Centro", proveedor: "Distrib. Hidalgo", items: 15, montoETA: "$12,990 Hoy", estado: "recibiendo" },
-    { folio: "PO-8787", fecha: "2025-10-21", sucursal: "MonCar Pachuca", proveedor: "Bosch MX", items: 8, montoETA: "$18,760 3 días", estado: "ordenado" }
-  ];
+  const proveedores: Proveedor[] = data?.items ?? [];
 
   const form = useForm<SupplierFormData>({
     resolver: zodResolver(supplierSchema),
-    defaultValues: {
-      nombre: "",
-      contacto: "",
-      telefono: "",
-      email: "",
-      direccion: "",
-      rfc: "",
-      categorias: "",
-      activo: true
-    }
+    defaultValues: { nombre: "", contacto: "", telefono: "", email: "", direccion: "", rfc: "", categorias: "", activo: true },
   });
 
-  const totalAdeudado = supplierPayments.reduce((sum, p) => sum + p.saldo, 0);
-  const programadoSemana = supplierPayments.reduce((sum, p) => sum + p.pagosProgramados, 0);
-  const pagadoSemana = supplierPayments
-    .filter(p => p.estadoSemana === 'pagado')
-    .reduce((sum, p) => sum + p.pagosProgramados, 0);
-
-  const handleOpenDialog = (supplier?: Supplier) => {
-    if (supplier) {
-      setEditingSupplier(supplier);
-      form.reset({
-        nombre: supplier.nombre,
-        contacto: supplier.contacto,
-        telefono: supplier.telefono,
-        email: supplier.email,
-        direccion: supplier.direccion || "",
-        rfc: supplier.rfc || "",
-        categorias: supplier.categorias.join(", "),
-        activo: supplier.activo
-      });
-    } else {
-      setEditingSupplier(null);
-      form.reset();
-    }
+  const handleOpenCreate = () => {
+    setEditingId(null);
+    form.reset({ nombre: "", contacto: "", telefono: "", email: "", direccion: "", rfc: "", categorias: "", activo: true });
     setIsDialogOpen(true);
   };
 
-  const onSubmit = (data: SupplierFormData) => {
-    const sanitizedData = {
-      ...data,
-      nombre: sanitizeHtml(data.nombre),
-      contacto: sanitizeHtml(data.contacto),
-      telefono: sanitizePhone(data.telefono),
-      direccion: data.direccion ? sanitizeHtml(data.direccion) : "",
-      categorias: sanitizeHtml(data.categorias)
+  const handleOpenEdit = (p: Proveedor) => {
+    setEditingId(p.proveedor_id);
+    form.reset({
+      nombre:     p.nombre,
+      contacto:   p.contacto,
+      telefono:   p.telefono,
+      email:      p.email,
+      direccion:  p.direccion ?? "",
+      rfc:        p.rfc ?? "",
+      categorias: p.categorias.join(", "),
+      activo:     p.activo,
+    });
+    setIsDialogOpen(true);
+  };
+
+  const onSubmit = (raw: SupplierFormData) => {
+    const data = {
+      nombre:     sanitizeHtml(raw.nombre),
+      contacto:   sanitizeHtml(raw.contacto),
+      telefono:   sanitizePhone(raw.telefono),
+      email:      raw.email,
+      direccion:  raw.direccion ? sanitizeHtml(raw.direccion) : "",
+      rfc:        raw.rfc ?? "",
+      categorias: sanitizeHtml(raw.categorias).split(",").map(c => c.trim()).filter(Boolean),
     };
 
-    const categoriasArray = sanitizedData.categorias.split(",").map(c => c.trim()).filter(c => c.length > 0);
-
-    if (editingSupplier) {
-      setSuppliers(suppliers.map(s =>
-        s.id === editingSupplier.id
-          ? { ...editingSupplier, ...sanitizedData, categorias: categoriasArray }
-          : s
-      ));
-      toast.success("Proveedor actualizado");
+    if (editingId) {
+      patchProveedor.mutate(
+        { id: editingId, data },
+        {
+          onSuccess: () => { toast.success("Proveedor actualizado"); setIsDialogOpen(false); },
+          onError:   () => toast.error("Error al actualizar el proveedor"),
+        }
+      );
     } else {
-      const newSupplier: Supplier = {
-        id: String(suppliers.length + 1),
-        nombre: sanitizedData.nombre,
-        contacto: sanitizedData.contacto,
-        telefono: sanitizedData.telefono,
-        email: sanitizedData.email,
-        direccion: sanitizedData.direccion,
-        rfc: sanitizedData.rfc,
-        categorias: categoriasArray,
-        activo: sanitizedData.activo
-      };
-      setSuppliers([...suppliers, newSupplier]);
-      toast.success("Proveedor creado");
+      createProveedor.mutate(data, {
+        onSuccess: () => { toast.success("Proveedor creado"); setIsDialogOpen(false); },
+        onError:   () => toast.error("Error al crear el proveedor"),
+      });
     }
-
-    setIsDialogOpen(false);
-    form.reset();
   };
+
+  const handleDelete = (id: string) => {
+    deleteProveedor.mutate(id, {
+      onSuccess: () => { toast.success("Proveedor desactivado"); setDeletingId(null); },
+      onError:   () => toast.error("Error al desactivar el proveedor"),
+    });
+  };
+
+  const isMutating = createProveedor.isPending || patchProveedor.isPending;
 
   return (
     <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-3xl font-bold">Operación – Refaccionarias</h1>
-        <p className="text-muted-foreground">
-          Monitoreo de inventario, pedidos, backorders, devoluciones y pagos a proveedores.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Proveedores</h1>
+          <p className="text-muted-foreground">Directorio de proveedores y seguimiento de operaciones</p>
+        </div>
+        {isAdmin && (
+          <Button onClick={handleOpenCreate} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Nuevo Proveedor
+          </Button>
+        )}
       </div>
 
-      <Tabs defaultValue="ordenes">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="ordenes"><ShoppingCart className="h-4 w-4 mr-2" />Órdenes</TabsTrigger>
-          <TabsTrigger value="backorder"><TrendingDown className="h-4 w-4 mr-2" />Backorder</TabsTrigger>
-          <TabsTrigger value="devoluciones"><RotateCcw className="h-4 w-4 mr-2" />Devoluciones</TabsTrigger>
+      <Tabs defaultValue="directorio">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="directorio"><ShoppingCart className="h-4 w-4 mr-2" />Directorio</TabsTrigger>
           <TabsTrigger value="pagos"><DollarSign className="h-4 w-4 mr-2" />Pagos</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="ordenes" className="space-y-4">
-          <h2 className="text-2xl font-bold">Órdenes de compra</h2>
+        {/* ── Directorio ── */}
+        <TabsContent value="directorio" className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar proveedor..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+          </div>
+
           <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Folio</TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Sucursal</TableHead>
-                  <TableHead>Proveedor</TableHead>
-                  <TableHead>Items</TableHead>
-                  <TableHead>Monto/ETA</TableHead>
-                  <TableHead>Estado</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {purchaseOrders.map(o => (
-                  <TableRow key={o.folio}>
-                    <TableCell className="font-medium">{o.folio}</TableCell>
-                    <TableCell>{o.fecha}</TableCell>
-                    <TableCell>{o.sucursal}</TableCell>
-                    <TableCell>{o.proveedor}</TableCell>
-                    <TableCell>{o.items}</TableCell>
-                    <TableCell>{o.montoETA}</TableCell>
-                    <TableCell><Badge>{o.estado}</Badge></TableCell>
+            {isLoading ? (
+              <CardContent className="pt-6 grid grid-cols-1 gap-4">
+                <KPISkeleton /><KPISkeleton /><KPISkeleton />
+              </CardContent>
+            ) : proveedores.length === 0 ? (
+              <CardContent className="py-12">
+                <EmptyState
+                  icon={ShoppingCart}
+                  title="Sin proveedores"
+                  description={search ? "No se encontraron proveedores con esa búsqueda." : "Agrega tu primer proveedor."}
+                  action={isAdmin ? { label: "Nuevo Proveedor", onClick: handleOpenCreate } : undefined}
+                />
+              </CardContent>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Contacto</TableHead>
+                    <TableHead>Teléfono</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>RFC</TableHead>
+                    <TableHead>Categorías</TableHead>
+                    <TableHead>Estado</TableHead>
+                    {isAdmin && <TableHead className="text-right">Acciones</TableHead>}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {proveedores.map(p => (
+                    <TableRow key={p.proveedor_id}>
+                      <TableCell className="font-medium">{p.nombre}</TableCell>
+                      <TableCell>{p.contacto || "—"}</TableCell>
+                      <TableCell>{p.telefono || "—"}</TableCell>
+                      <TableCell>{p.email || "—"}</TableCell>
+                      <TableCell className="font-mono text-xs">{p.rfc || "—"}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {p.categorias.length > 0
+                            ? p.categorias.map(c => <Badge key={c} variant="secondary">{c}</Badge>)
+                            : "—"}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={p.activo ? "default" : "outline"}>
+                          {p.activo ? "Activo" : "Inactivo"}
+                        </Badge>
+                      </TableCell>
+                      {isAdmin && (
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button size="sm" variant="ghost" onClick={() => handleOpenEdit(p)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => setDeletingId(p.proveedor_id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </Card>
         </TabsContent>
 
-        <TabsContent value="backorder"><Card><CardContent className="py-20 text-center text-muted-foreground">Sin backorders</CardContent></Card></TabsContent>
-        <TabsContent value="devoluciones"><Card><CardContent className="py-20 text-center text-muted-foreground">Sin devoluciones</CardContent></Card></TabsContent>
-
-        <TabsContent value="pagos" className="space-y-4">
-          <h2 className="text-2xl font-bold">Pagos a Proveedores</h2>
-          <div className="grid md:grid-cols-3 gap-4">
-            <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Adeudado total</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{formatCurrency(totalAdeudado)}</div></CardContent></Card>
-            <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Programado semana</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{formatCurrency(programadoSemana)}</div></CardContent></Card>
-            <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Pagado semana</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{formatCurrency(pagadoSemana)}</div></CardContent></Card>
-          </div>
+        {/* ── Pagos (placeholder) ── */}
+        <TabsContent value="pagos">
           <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Proveedor</TableHead>
-                  <TableHead>Banco</TableHead>
-                  <TableHead>Cuenta</TableHead>
-                  <TableHead>Saldo</TableHead>
-                  <TableHead>Programado</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Comprobantes</TableHead>
-                  <TableHead>Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {supplierPayments.map(p => (
-                  <TableRow key={p.id}>
-                    <TableCell className="font-medium">{p.supplierName}</TableCell>
-                    <TableCell>{p.banco}</TableCell>
-                    <TableCell>{p.cuenta}</TableCell>
-                    <TableCell>{formatCurrency(p.saldo)}</TableCell>
-                    <TableCell>{formatCurrency(p.pagosProgramados)}</TableCell>
-                    <TableCell><Badge variant={p.estadoSemana === 'pagado' ? 'default' : 'outline'}>{p.estadoSemana}</Badge></TableCell>
-                    <TableCell>{p.comprobantes.length > 0 ? <><FileText className="h-4 w-4 inline mr-1"/>{p.comprobantes[0]}</> : '—'}</TableCell>
-                    <TableCell><div className="flex gap-2"><Button size="sm" variant="outline"><Upload className="h-4 w-4"/></Button><Button size="sm" disabled={p.estadoSemana === 'pagado'}>Marcar pagado</Button></div></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <CardContent className="py-20 text-center text-muted-foreground">
+              Módulo de pagos a proveedores — próximamente
+            </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* ── Dialog crear / editar ── */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingId ? "Editar Proveedor" : "Nuevo Proveedor"}</DialogTitle>
+            <DialogDescription>
+              {editingId ? "Modifica los datos del proveedor." : "Completa los datos del nuevo proveedor."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2 space-y-1">
+                <Label>Nombre *</Label>
+                <Input {...form.register("nombre")} placeholder="Bosch MX" />
+                {form.formState.errors.nombre && (
+                  <p className="text-xs text-destructive">{form.formState.errors.nombre.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <Label>Contacto *</Label>
+                <Input {...form.register("contacto")} placeholder="Juan Pérez" />
+                {form.formState.errors.contacto && (
+                  <p className="text-xs text-destructive">{form.formState.errors.contacto.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <Label>Teléfono *</Label>
+                <Input {...form.register("telefono")} placeholder="5512345678" />
+                {form.formState.errors.telefono && (
+                  <p className="text-xs text-destructive">{form.formState.errors.telefono.message}</p>
+                )}
+              </div>
+
+              <div className="col-span-2 space-y-1">
+                <Label>Email *</Label>
+                <Input {...form.register("email")} type="email" placeholder="contacto@proveedor.com" />
+                {form.formState.errors.email && (
+                  <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <Label>RFC</Label>
+                <Input {...form.register("rfc")} placeholder="ABC123456XYZ" className="uppercase" />
+                {form.formState.errors.rfc && (
+                  <p className="text-xs text-destructive">{form.formState.errors.rfc.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <Label>Categorías</Label>
+                <Input {...form.register("categorias")} placeholder="frenos, filtros, eléctrico" />
+                <p className="text-xs text-muted-foreground">Separadas por coma</p>
+              </div>
+
+              <div className="col-span-2 space-y-1">
+                <Label>Dirección</Label>
+                <Textarea {...form.register("direccion")} placeholder="Av. Ejemplo 123, Col. Centro" rows={2} />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isMutating}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isMutating}>
+                {isMutating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {editingId ? "Guardar cambios" : "Crear Proveedor"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog confirmar desactivar ── */}
+      <Dialog open={!!deletingId} onOpenChange={() => setDeletingId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Desactivar proveedor?</DialogTitle>
+            <DialogDescription>
+              El proveedor se marcará como inactivo y no aparecerá en el directorio.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletingId(null)}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              disabled={deleteProveedor.isPending}
+              onClick={() => deletingId && handleDelete(deletingId)}
+            >
+              {deleteProveedor.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Desactivar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

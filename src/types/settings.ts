@@ -1,9 +1,9 @@
 // Preferencias del usuario (notificaciones, etc)
 export interface UserPreferences {
-  alert_stock_bajo: boolean;
-  alert_nuevas_ventas: boolean;
-  alert_nuevos_proveedores: boolean;
-  alert_reportes_diarios: boolean;
+  notif_stock_bajo: boolean;
+  notif_nuevas_ventas: boolean;
+  notif_nuevos_proveedores: boolean;
+  notif_reportes_diarios: boolean;
 }
 
 export interface UserPreferencesResponse {

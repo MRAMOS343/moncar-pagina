@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,20 +29,40 @@ const estadoOptions: { value: EstadoPropiedad; label: string }[] = [
   { value: 'mantenimiento', label: 'En Mantenimiento' },
 ];
 
+const emptyForm = {
+  nombre: '',
+  direccion: '',
+  tipo: 'casa' as TipoPropiedad,
+  metrosCuadrados: 0,
+  habitaciones: 0,
+  banos: 0,
+  estacionamientos: 0,
+  estado: 'disponible' as EstadoPropiedad,
+  descripcion: '',
+  costoMensual: 0,
+  fotos: [] as string[],
+};
+
 export function PropertyFormModal({ open, onClose, onSave, propiedad }: PropertyFormModalProps) {
-  const [form, setForm] = useState({
-    nombre: propiedad?.nombre ?? '',
-    direccion: propiedad?.direccion ?? '',
-    tipo: propiedad?.tipo ?? 'casa' as TipoPropiedad,
-    metrosCuadrados: propiedad?.metrosCuadrados ?? 0,
-    habitaciones: propiedad?.habitaciones ?? 0,
-    banos: propiedad?.banos ?? 0,
-    estacionamientos: propiedad?.estacionamientos ?? 0,
-    estado: propiedad?.estado ?? 'disponible' as EstadoPropiedad,
-    descripcion: propiedad?.descripcion ?? '',
-    costoMensual: propiedad?.costoMensual ?? 0,
-    fotos: propiedad?.fotos ?? [] as string[],
-  });
+  const [form, setForm] = useState(emptyForm);
+
+  // Re-sincroniza el form cada vez que se abre el modal con propiedad distinta
+  useEffect(() => {
+    if (!open) return;
+    setForm(propiedad ? {
+      nombre: propiedad.nombre ?? '',
+      direccion: propiedad.direccion ?? '',
+      tipo: propiedad.tipo ?? 'casa',
+      metrosCuadrados: propiedad.metrosCuadrados ?? 0,
+      habitaciones: propiedad.habitaciones ?? 0,
+      banos: propiedad.banos ?? 0,
+      estacionamientos: propiedad.estacionamientos ?? 0,
+      estado: propiedad.estado ?? 'disponible',
+      descripcion: propiedad.descripcion ?? '',
+      costoMensual: propiedad.costoMensual ?? 0,
+      fotos: propiedad.fotos ?? [],
+    } : emptyForm);
+  }, [open, propiedad]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

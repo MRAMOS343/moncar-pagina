@@ -1,11 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { userProfileSchema, UserProfileFormData } from '@/schemas/userProfileSchema';
-import { 
-  useUserPreferences, 
-  useUpdatePreferences, 
+import {
+  useUserPreferences,
+  useUpdatePreferences,
   useUpdateProfile,
   useCompanySettings,
   useUpdateCompanySettings,
@@ -21,10 +21,37 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User, Building2, Package, Shield, Settings, Loader2, UserPlus } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  User,
+  Building2,
+  Package,
+  Shield,
+  Settings,
+  Loader2,
+  UserPlus,
+  Search,
+  Mail,
+  Ban,
+  RotateCw,
+} from "lucide-react";
 import { showSuccessToast, showErrorToast } from "@/utils/toastHelpers";
 import { NuevoUsuarioForm } from "@/components/admin/NuevoUsuarioForm";
-import { useUsuarios } from "@/hooks/useUsuarios";
+import {
+  useUsuarios,
+  useResendInvitation,
+  useToggleUsuarioActivo,
+} from "@/hooks/useUsuarios";
+import type { UsuarioListItem } from "@/types/usuarios";
 import { Badge } from "@/components/ui/badge";
 
 export default function ConfiguracionPage() {
@@ -36,6 +63,62 @@ export default function ConfiguracionPage() {
 
   // Usuarios (solo admin)
   const { data: usuarios, isLoading: loadingUsuarios } = useUsuarios();
+  const resendMut = useResendInvitation();
+  const toggleActivoMut = useToggleUsuarioActivo();
+  const [usuarioSearch, setUsuarioSearch] = useState("");
+  const [usuarioFilter, setUsuarioFilter] = useState<"todos" | "activos" | "pendientes" | "inactivos">("todos");
+  const [deactivateTarget, setDeactivateTarget] = useState<UsuarioListItem | null>(null);
+
+  const usuariosFiltrados = useMemo(() => {
+    if (!usuarios) return [] as UsuarioListItem[];
+    const q = usuarioSearch.trim().toLowerCase();
+    return usuarios.filter((u) => {
+      if (q && !u.nombre.toLowerCase().includes(q) && !u.email.toLowerCase().includes(q)) {
+        return false;
+      }
+      const pendiente = u.activo === false && !u.activated_at;
+      if (usuarioFilter === "activos" && !u.activo) return false;
+      if (usuarioFilter === "pendientes" && !pendiente) return false;
+      if (usuarioFilter === "inactivos" && (u.activo || pendiente)) return false;
+      return true;
+    });
+  }, [usuarios, usuarioSearch, usuarioFilter]);
+
+  const handleResendInvite = (u: UsuarioListItem) => {
+    resendMut.mutate(u.usuario_id, {
+      onSuccess: () => showSuccessToast("Invitación reenviada", `Se envió un nuevo link a ${u.email}.`),
+      onError: () => showErrorToast("Error", "No se pudo reenviar la invitación."),
+    });
+  };
+
+  const handleConfirmDeactivate = () => {
+    if (!deactivateTarget) return;
+    const nextActivo = !deactivateTarget.activo;
+    toggleActivoMut.mutate(
+      { usuario_id: deactivateTarget.usuario_id, activo: nextActivo },
+      {
+        onSuccess: () => {
+          showSuccessToast(
+            nextActivo ? "Usuario reactivado" : "Usuario desactivado",
+            `${deactivateTarget.nombre} ahora está ${nextActivo ? "activo" : "inactivo"}.`
+          );
+          setDeactivateTarget(null);
+        },
+        onError: () => showErrorToast("Error", "No se pudo actualizar el estado del usuario."),
+      }
+    );
+  };
+
+  const roleLabel = (rol: string) => {
+    const map: Record<string, string> = {
+      admin: "Administrador",
+      gerente: "Gerente",
+      cajero: "Cajero",
+      vendedor: "Vendedor",
+      gestor_propiedades: "Gestor propiedades",
+    };
+    return map[rol] ?? rol;
+  };
   
   // === Hooks de datos ===
   const { data: preferences, isLoading: loadingPrefs } = useUserPreferences();
@@ -276,8 +359,8 @@ export default function ConfiguracionPage() {
                       </p>
                     </div>
                     <Switch
-                      checked={preferences?.alert_stock_bajo ?? true}
-                      onCheckedChange={(checked) => handleTogglePreference('alert_stock_bajo', checked)}
+                      checked={preferences?.notif_stock_bajo ?? true}
+                      onCheckedChange={(checked) => handleTogglePreference('notif_stock_bajo', checked)}
                       disabled={updatePrefs.isPending}
                     />
                   </div>
@@ -289,8 +372,8 @@ export default function ConfiguracionPage() {
                       </p>
                     </div>
                     <Switch
-                      checked={preferences?.alert_nuevas_ventas ?? true}
-                      onCheckedChange={(checked) => handleTogglePreference('alert_nuevas_ventas', checked)}
+                      checked={preferences?.notif_nuevas_ventas ?? true}
+                      onCheckedChange={(checked) => handleTogglePreference('notif_nuevas_ventas', checked)}
                       disabled={updatePrefs.isPending}
                     />
                   </div>
@@ -302,8 +385,8 @@ export default function ConfiguracionPage() {
                       </p>
                     </div>
                     <Switch
-                      checked={preferences?.alert_nuevos_proveedores ?? false}
-                      onCheckedChange={(checked) => handleTogglePreference('alert_nuevos_proveedores', checked)}
+                      checked={preferences?.notif_nuevos_proveedores ?? false}
+                      onCheckedChange={(checked) => handleTogglePreference('notif_nuevos_proveedores', checked)}
                       disabled={updatePrefs.isPending}
                     />
                   </div>
@@ -315,8 +398,8 @@ export default function ConfiguracionPage() {
                       </p>
                     </div>
                     <Switch
-                      checked={preferences?.alert_reportes_diarios ?? true}
-                      onCheckedChange={(checked) => handleTogglePreference('alert_reportes_diarios', checked)}
+                      checked={preferences?.notif_reportes_diarios ?? true}
+                      onCheckedChange={(checked) => handleTogglePreference('notif_reportes_diarios', checked)}
                       disabled={updatePrefs.isPending}
                     />
                   </div>
@@ -459,34 +542,158 @@ export default function ConfiguracionPage() {
               <CardHeader>
                 <CardTitle>Usuarios registrados</CardTitle>
                 <CardDescription>
-                  Lista de usuarios en el sistema
+                  Gestiona los accesos al sistema: reenvía invitaciones o desactiva cuentas.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar por nombre o email..."
+                      value={usuarioSearch}
+                      onChange={(e) => setUsuarioSearch(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                  <Select value={usuarioFilter} onValueChange={(v) => setUsuarioFilter(v as typeof usuarioFilter)}>
+                    <SelectTrigger className="sm:w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="activos">Activos</SelectItem>
+                      <SelectItem value="pendientes">Pendientes de activar</SelectItem>
+                      <SelectItem value="inactivos">Inactivos</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {loadingUsuarios ? (
-                  <Skeleton className="h-24 w-full" />
-                ) : usuarios && usuarios.length > 0 ? (
+                  <Skeleton className="h-40 w-full" />
+                ) : usuariosFiltrados.length > 0 ? (
                   <div className="space-y-2">
-                    {usuarios.map((u) => (
-                      <div
-                        key={u.usuario_id}
-                        className="flex items-center justify-between p-3 rounded-lg border"
-                      >
-                        <div>
-                          <p className="font-medium">{u.nombre}</p>
-                          <p className="text-sm text-muted-foreground">{u.email}</p>
+                    {usuariosFiltrados.map((u) => {
+                      const pendiente = !u.activo && !u.activated_at;
+                      const isSelf = u.usuario_id === currentUser?.id;
+                      const busy =
+                        (resendMut.isPending && resendMut.variables === u.usuario_id) ||
+                        (toggleActivoMut.isPending && toggleActivoMut.variables?.usuario_id === u.usuario_id);
+
+                      return (
+                        <div
+                          key={u.usuario_id}
+                          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-lg border"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-medium truncate">{u.nombre}</p>
+                              <Badge variant="outline" className="text-xs">
+                                {roleLabel(u.rol)}
+                              </Badge>
+                              {pendiente ? (
+                                <Badge className="bg-yellow-500/15 text-yellow-700 border-yellow-500/30 text-xs">
+                                  Pendiente de activación
+                                </Badge>
+                              ) : u.activo ? (
+                                <Badge className="bg-green-500/15 text-green-700 border-green-500/30 text-xs">
+                                  Activo
+                                </Badge>
+                              ) : (
+                                <Badge variant="destructive" className="text-xs">
+                                  Inactivo
+                                </Badge>
+                              )}
+                              {isSelf && (
+                                <Badge variant="secondary" className="text-xs">Tú</Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground truncate">{u.email}</p>
+                            {u.sucursal_nombre && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                Sucursal: {u.sucursal_nombre}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {pendiente && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleResendInvite(u)}
+                                disabled={busy}
+                              >
+                                {busy && resendMut.variables === u.usuario_id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Mail className="h-4 w-4" />
+                                )}
+                                <span className="ml-2 hidden sm:inline">Reenviar</span>
+                              </Button>
+                            )}
+                            {!isSelf && (
+                              <Button
+                                variant={u.activo ? "outline" : "secondary"}
+                                size="sm"
+                                onClick={() => setDeactivateTarget(u)}
+                                disabled={busy}
+                              >
+                                {u.activo ? (
+                                  <Ban className="h-4 w-4" />
+                                ) : (
+                                  <RotateCw className="h-4 w-4" />
+                                )}
+                                <span className="ml-2 hidden sm:inline">
+                                  {u.activo ? "Desactivar" : "Reactivar"}
+                                </span>
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                        <Badge variant="secondary">Activo</Badge>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No hay usuarios registrados aún.
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    {usuarioSearch || usuarioFilter !== "todos"
+                      ? "No se encontraron usuarios con esos filtros."
+                      : "No hay usuarios registrados aún."}
                   </p>
                 )}
               </CardContent>
             </Card>
+
+            <AlertDialog open={!!deactivateTarget} onOpenChange={(v) => !v && setDeactivateTarget(null)}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    {deactivateTarget?.activo ? "¿Desactivar usuario?" : "¿Reactivar usuario?"}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {deactivateTarget?.activo ? (
+                      <>
+                        <strong>{deactivateTarget?.nombre}</strong> no podrá iniciar sesión hasta que lo reactives. Los datos se conservan.
+                      </>
+                    ) : (
+                      <>
+                        <strong>{deactivateTarget?.nombre}</strong> podrá volver a iniciar sesión con su contraseña actual.
+                      </>
+                    )}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={toggleActivoMut.isPending}>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleConfirmDeactivate}
+                    disabled={toggleActivoMut.isPending}
+                    className={deactivateTarget?.activo ? "bg-destructive hover:bg-destructive/90" : undefined}
+                  >
+                    {toggleActivoMut.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    {deactivateTarget?.activo ? "Desactivar" : "Reactivar"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </TabsContent>
         )}
 

@@ -45,3 +45,24 @@ export async function createUsuario(
     body: data,
   });
 }
+
+export async function resendInvitation(
+  usuario_id: string,
+  authToken: string
+): Promise<{ ok: boolean; error?: string }> {
+  return apiRequest<{ ok: boolean; error?: string }>(
+    `/api/v1/admin/usuarios/${encodeURIComponent(usuario_id)}/resend-invite`,
+    { method: "POST", token: authToken }
+  );
+}
+
+export async function setUsuarioActivo(
+  usuario_id: string,
+  activo: boolean,
+  authToken: string
+): Promise<{ ok: boolean; usuario_id?: string; activo?: boolean; reason?: string }> {
+  return apiRequest(
+    `/api/v1/admin/usuarios/${encodeURIComponent(usuario_id)}/activo`,
+    { method: "PATCH", token: authToken, body: { activo } }
+  );
+}

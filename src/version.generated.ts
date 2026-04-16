@@ -1,7 +1,5 @@
 // AUTO-GENERATED. Do not edit.
-// This is a fallback for local development.
-// The actual values are generated during build by scripts/write-version.mjs
-export const APP_VERSION = "0.0.0-dev";
-export const GIT_COMMIT = "local";
-export const GIT_BRANCH = "development";
-export const BUILD_TIME = new Date().toISOString();
+export const APP_VERSION = "0.0.0";
+export const GIT_COMMIT = "220ef8c";
+export const GIT_BRANCH = "main";
+export const BUILD_TIME = "2026-04-10T23:46:01.346Z";

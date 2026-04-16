@@ -1,10 +1,15 @@
 import { useState, useMemo } from 'react';
-import { Building2, Plus, FileText, Wrench, AlertTriangle } from 'lucide-react';
+import { Building2, Plus, FileText, Wrench, AlertTriangle, Lock, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
+import { EmptyState } from '@/components/ui/empty-state';
+import { KPISkeleton } from '@/components/ui/kpi-skeleton';
 import { PropertyCard } from '@/components/propiedades/PropertyCard';
 import { PropertyFormModal } from '@/components/propiedades/PropertyFormModal';
 import { PropertyDetailModal } from '@/components/propiedades/PropertyDetailModal';
@@ -19,6 +24,7 @@ import {
   usePagosAPI, useCreatePago, useUpdatePago,
   useMantenimientoAPI, useCreateMantenimiento, useUpdateMantenimiento,
 } from '@/hooks/usePropiedadesAPI';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import type { Propiedad, Contrato, Pago, SolicitudMantenimiento, TipoDocumento } from '@/types/propiedades';
 
@@ -30,10 +36,30 @@ const estadoMantLabels: Record<string, string> = {
 };
 
 export default function PropiedadesPage() {
-  const { data: propiedades = [] } = usePropiedadesAPI();
-  const { data: contratos = [] } = useContratosAPI();
-  const { data: pagos = [] } = usePagosAPI();
-  const { data: mantenimiento = [] } = useMantenimientoAPI();
+  const { currentUser } = useAuth();
+  const isAllowed = currentUser?.role === 'admin' || currentUser?.role === 'gerente';
+
+  // Gate de rol: el backend devuelve 403 si no es admin/gerente, mostramos UI amigable
+  if (!isAllowed) {
+    return (
+      <div className="p-6">
+        <EmptyState
+          icon={Lock}
+          title="Acceso restringido"
+          description="Solo administradores y gerentes pueden ver esta sección."
+        />
+      </div>
+    );
+  }
+
+  return <PropiedadesPageInner />;
+}
+
+function PropiedadesPageInner() {
+  const { data: propiedades = [], isLoading: loadingProps }     = usePropiedadesAPI();
+  const { data: contratos = [], isLoading: loadingContratos }   = useContratosAPI();
+  const { data: pagos = [], isLoading: loadingPagos }           = usePagosAPI();
+  const { data: mantenimiento = [], isLoading: loadingMant }    = useMantenimientoAPI();
 
   const createPropMut     = useCreatePropiedad();
   const updatePropMut     = useUpdatePropiedad();
@@ -54,6 +80,7 @@ export default function PropiedadesPage() {
   const [propFormOpen, setPropFormOpen] = useState(false);
   const [editingProp, setEditingProp] = useState<Propiedad | null>(null);
   const [detailProp, setDetailProp] = useState<Propiedad | null>(null);
+  const [deletingProp, setDeletingProp] = useState<Propiedad | null>(null);
   const [contractFormOpen, setContractFormOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<Contrato | null>(null);
   const [paymentFormOpen, setPaymentFormOpen] = useState(false);
@@ -105,12 +132,13 @@ export default function PropiedadesPage() {
     }
   };
 
-  const handleDeletePropiedad = (id: string) => {
-    if (!confirm('¿Eliminar esta propiedad? Esta acción no se puede deshacer.')) return;
-    deletePropMut.mutate(id, {
+  const handleConfirmDelete = () => {
+    if (!deletingProp) return;
+    deletePropMut.mutate(deletingProp.id, {
       onSuccess: () => {
         toast({ title: 'Propiedad eliminada' });
         setDetailProp(null);
+        setDeletingProp(null);
       },
       onError: (err: any) => toast({
         title: 'No se pudo eliminar',
@@ -195,8 +223,19 @@ export default function PropiedadesPage() {
               <Plus className="w-4 h-4 mr-1" />Nueva Propiedad
             </Button>
           </div>
-          {filteredProps.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">No se encontraron propiedades</div>
+          {loadingProps ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <KPISkeleton /><KPISkeleton /><KPISkeleton />
+            </div>
+          ) : filteredProps.length === 0 ? (
+            <EmptyState
+              icon={Building2}
+              title="Sin propiedades"
+              description={search || estadoFilter !== 'all' || tipoFilter !== 'all'
+                ? 'No se encontraron propiedades con esos filtros.'
+                : 'Agrega tu primera propiedad para empezar.'}
+              action={{ label: 'Nueva Propiedad', onClick: () => { setEditingProp(null); setPropFormOpen(true); } }}
+            />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filteredProps.map(p => (
@@ -213,122 +252,165 @@ export default function PropiedadesPage() {
               <Plus className="w-4 h-4 mr-1" />Nuevo Contrato
             </Button>
           </div>
-          <div className="border rounded-lg overflow-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Propiedad</TableHead>
-                  <TableHead>Arrendatario</TableHead>
-                  <TableHead className="text-right">Renta</TableHead>
-                  <TableHead>Inicio</TableHead>
-                  <TableHead>Fin</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="w-10" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {contratosWithWarning.length === 0 && (
+          {loadingContratos ? (
+            <div className="grid gap-3"><KPISkeleton /><KPISkeleton /></div>
+          ) : contratosWithWarning.length === 0 ? (
+            <EmptyState
+              icon={FileText}
+              title="Sin contratos"
+              description="Registra el primer contrato de arrendamiento."
+              action={{ label: 'Nuevo Contrato', onClick: () => { setEditingContract(null); setContractFormOpen(true); } }}
+            />
+          ) : (
+            <div className="border rounded-lg overflow-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Sin contratos</TableCell>
+                    <TableHead>Propiedad</TableHead>
+                    <TableHead>Arrendatario</TableHead>
+                    <TableHead className="text-right">Renta</TableHead>
+                    <TableHead>Inicio</TableHead>
+                    <TableHead>Fin</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead className="w-10" />
                   </TableRow>
-                )}
-                {contratosWithWarning.map(c => (
-                  <TableRow key={c.id}>
-                    <TableCell className="max-w-[180px] truncate text-sm">{c.propDireccion}</TableCell>
-                    <TableCell className="text-sm">{c.arrendatarioNombre}</TableCell>
-                    <TableCell className="text-right text-sm font-medium">${c.montoMensual.toLocaleString()}</TableCell>
-                    <TableCell className="text-sm">{c.fechaInicio}</TableCell>
-                    <TableCell className="text-sm flex items-center gap-1">
-                      {c.fechaFin || '—'}
-                      {c.expiringSoon && <AlertTriangle className="w-4 h-4 text-warning" />}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={c.activo ? 'default' : 'outline'} className="text-xs">
-                        {c.activo ? 'Activo' : 'Inactivo'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => { setEditingContract(c); setContractFormOpen(true); }}>
-                        <FileText className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {contratosWithWarning.map(c => (
+                    <TableRow key={c.id}>
+                      <TableCell className="max-w-[180px] truncate text-sm">{c.propDireccion}</TableCell>
+                      <TableCell className="text-sm">{c.arrendatarioNombre}</TableCell>
+                      <TableCell className="text-right text-sm font-medium">${c.montoMensual.toLocaleString()}</TableCell>
+                      <TableCell className="text-sm">{c.fechaInicio}</TableCell>
+                      <TableCell className="text-sm flex items-center gap-1">
+                        {c.fechaFin || '—'}
+                        {c.expiringSoon && <AlertTriangle className="w-4 h-4 text-warning" />}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={c.activo ? 'default' : 'outline'} className="text-xs">
+                          {c.activo ? 'Activo' : 'Inactivo'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" onClick={() => { setEditingContract(c); setContractFormOpen(true); }}>
+                          <FileText className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </TabsContent>
 
         {/* ── TAB: PAGOS ── */}
         <TabsContent value="pagos" className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Total Cobrado</p><p className="text-xl font-bold text-foreground">${pagoKpis.cobrado.toLocaleString()}</p></CardContent></Card>
-            <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Pendiente</p><p className="text-xl font-bold text-foreground">${pagoKpis.pendiente.toLocaleString()}</p></CardContent></Card>
-            <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Atrasados</p><p className="text-xl font-bold text-destructive">{pagoKpis.atrasados}</p></CardContent></Card>
-            <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Tasa de Cobro</p><p className="text-xl font-bold text-foreground">{pagoKpis.tasa}%</p></CardContent></Card>
-          </div>
+          {loadingPagos ? (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <KPISkeleton /><KPISkeleton /><KPISkeleton /><KPISkeleton />
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Total Cobrado</p><p className="text-xl font-bold text-foreground">${pagoKpis.cobrado.toLocaleString()}</p></CardContent></Card>
+              <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Pendiente</p><p className="text-xl font-bold text-foreground">${pagoKpis.pendiente.toLocaleString()}</p></CardContent></Card>
+              <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Atrasados</p><p className="text-xl font-bold text-destructive">{pagoKpis.atrasados}</p></CardContent></Card>
+              <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Tasa de Cobro</p><p className="text-xl font-bold text-foreground">{pagoKpis.tasa}%</p></CardContent></Card>
+            </div>
+          )}
           <div className="flex justify-end">
-            <Button onClick={() => { setEditingPayment(null); setPaymentFormOpen(true); }}>
+            <Button
+              onClick={() => { setEditingPayment(null); setPaymentFormOpen(true); }}
+              disabled={contratos.filter(c => c.activo).length === 0}
+            >
               <Plus className="w-4 h-4 mr-1" />Registrar Pago
             </Button>
           </div>
-          <PaymentTable
-            pagos={pagos}
-            propiedades={propiedades}
-            onEdit={p => { setEditingPayment(p); setPaymentFormOpen(true); }}
-          />
+          {loadingPagos ? null : pagos.length === 0 ? (
+            <EmptyState
+              icon={FileText}
+              title="Sin pagos registrados"
+              description={
+                contratos.filter(c => c.activo).length === 0
+                  ? 'Primero crea un contrato activo para poder registrar pagos.'
+                  : 'Registra el primer pago de renta.'
+              }
+            />
+          ) : (
+            <PaymentTable
+              pagos={pagos}
+              propiedades={propiedades}
+              onEdit={p => { setEditingPayment(p); setPaymentFormOpen(true); }}
+            />
+          )}
         </TabsContent>
 
         {/* ── TAB: MANTENIMIENTO ── */}
         <TabsContent value="mantenimiento" className="space-y-4">
           <div className="flex justify-end">
-            <Button onClick={() => { setEditingMaint(null); setMaintFormOpen(true); }}>
+            <Button
+              onClick={() => { setEditingMaint(null); setMaintFormOpen(true); }}
+              disabled={propiedades.length === 0}
+            >
               <Plus className="w-4 h-4 mr-1" />Nueva Solicitud
             </Button>
           </div>
-          <div className="border rounded-lg overflow-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Propiedad</TableHead>
-                  <TableHead>Título</TableHead>
-                  <TableHead>Prioridad</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Estimado</TableHead>
-                  <TableHead className="text-right">Real</TableHead>
-                  <TableHead>Proveedor</TableHead>
-                  <TableHead className="w-10" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mantenimiento.length === 0 && (
+          {loadingMant ? (
+            <div className="grid gap-3"><KPISkeleton /><KPISkeleton /></div>
+          ) : mantenimiento.length === 0 ? (
+            <EmptyState
+              icon={Wrench}
+              title="Sin solicitudes"
+              description={
+                propiedades.length === 0
+                  ? 'Primero crea una propiedad para poder registrar mantenimiento.'
+                  : 'Registra la primera solicitud de mantenimiento.'
+              }
+              action={propiedades.length > 0 ? {
+                label: 'Nueva Solicitud',
+                onClick: () => { setEditingMaint(null); setMaintFormOpen(true); },
+              } : undefined}
+            />
+          ) : (
+            <div className="border rounded-lg overflow-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">Sin solicitudes</TableCell>
+                    <TableHead>Propiedad</TableHead>
+                    <TableHead>Título</TableHead>
+                    <TableHead>Prioridad</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead className="text-right">Estimado</TableHead>
+                    <TableHead className="text-right">Real</TableHead>
+                    <TableHead>Proveedor</TableHead>
+                    <TableHead className="w-10" />
                   </TableRow>
-                )}
-                {mantenimiento.map(m => (
-                  <TableRow key={m.id}>
-                    <TableCell className="max-w-[160px] truncate text-sm">
-                      {propiedades.find(p => p.id === m.propiedadId)?.direccion ?? '—'}
-                    </TableCell>
-                    <TableCell className="text-sm">{m.titulo}</TableCell>
-                    <TableCell>
-                      <Badge variant={prioridadBadge[m.prioridad]} className="text-xs capitalize">{m.prioridad}</Badge>
-                    </TableCell>
-                    <TableCell className="text-sm">{estadoMantLabels[m.estado]}</TableCell>
-                    <TableCell className="text-right text-sm">${m.costoEstimado.toLocaleString()}</TableCell>
-                    <TableCell className="text-right text-sm">{m.costoReal != null ? `$${m.costoReal.toLocaleString()}` : '—'}</TableCell>
-                    <TableCell className="text-sm">{m.proveedor || '—'}</TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => { setEditingMaint(m); setMaintFormOpen(true); }}>
-                        <Wrench className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {mantenimiento.map(m => (
+                    <TableRow key={m.id}>
+                      <TableCell className="max-w-[160px] truncate text-sm">
+                        {propiedades.find(p => p.id === m.propiedadId)?.direccion ?? '—'}
+                      </TableCell>
+                      <TableCell className="text-sm">{m.titulo}</TableCell>
+                      <TableCell>
+                        <Badge variant={prioridadBadge[m.prioridad]} className="text-xs capitalize">{m.prioridad}</Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">{estadoMantLabels[m.estado]}</TableCell>
+                      <TableCell className="text-right text-sm">${m.costoEstimado.toLocaleString()}</TableCell>
+                      <TableCell className="text-right text-sm">{m.costoReal != null ? `$${m.costoReal.toLocaleString()}` : '—'}</TableCell>
+                      <TableCell className="text-sm">{m.proveedor || '—'}</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" onClick={() => { setEditingMaint(m); setMaintFormOpen(true); }}>
+                          <Wrench className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
@@ -344,7 +426,10 @@ export default function PropiedadesPage() {
         onClose={() => setDetailProp(null)}
         propiedad={detailProp}
         onEdit={p => { setDetailProp(null); setEditingProp(p); setPropFormOpen(true); }}
-        onDelete={handleDeletePropiedad}
+        onDelete={(id: string) => {
+          const p = propiedades.find(x => x.id === id) ?? detailProp;
+          if (p) setDeletingProp(p);
+        }}
         documentos={[]}
         onAddDocumento={(_tipo: TipoDocumento) => {}}
         onDeleteDocumento={() => {}}
@@ -370,6 +455,29 @@ export default function PropiedadesPage() {
         propiedades={propiedades}
         solicitud={editingMaint}
       />
+
+      {/* Confirmar eliminación de propiedad */}
+      <Dialog open={!!deletingProp} onOpenChange={v => !v && setDeletingProp(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Eliminar propiedad?</DialogTitle>
+            <DialogDescription>
+              {deletingProp ? (
+                <>Esta acción eliminará permanentemente <strong>{deletingProp.direccion}</strong>. No se puede deshacer.</>
+              ) : null}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletingProp(null)} disabled={deletePropMut.isPending}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete} disabled={deletePropMut.isPending}>
+              {deletePropMut.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
