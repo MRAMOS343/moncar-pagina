@@ -8,6 +8,7 @@ export interface CompraSugeridaItem {
   marca: string;
   categoria: string;
   precio: number;
+  precio_compra?: number;
   unidad: string;
   stock_actual: number;
   stock_minimo: number;
@@ -17,6 +18,9 @@ export interface CompraSugeridaItem {
   cantidad_sugerida: number;
   prioridad: "urgente" | "normal" | "opcional";
   calculado_en: string;
+  proveedor_id?: string;
+  proveedor_nombre?: string;
+  lead_dias?: number;
 }
 
 export interface CompraSugeridaResumen {
