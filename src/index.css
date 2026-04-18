@@ -6,165 +6,169 @@
 
 @layer base {
   :root {
-    /* Base colors - Professional automotive theme */
-    --background: 0 0% 100%;
-    --foreground: 220 15% 15%;
-    
-    /* Card system */
+    /* ── Grupo Moncar brand palette ──────────────────────────────────────────
+     * Azul principal : #1657e4  → HSL 221 82% 49%
+     * Azul medio     : #0178d0  → HSL 206 99% 41%
+     * Azul claro     : #439af7  → HSL 211 92% 62%
+     * Rojo oscuro    : #c6020d  → HSL 357 98% 39%
+     * Rojo vivo      : #ff0002  → HSL   0 100% 50%
+     * Amarillo dorado: #ffbd00  → HSL  44 100% 50%
+     * ────────────────────────────────────────────────────────────────────── */
+
+    /* Base */
+    --background: 210 40% 98%;       /* #f8fafc */
+    --foreground: 222 47% 11%;       /* #0f172a */
+
+    /* Cards */
     --card: 0 0% 100%;
-    --card-foreground: 220 15% 15%;
-    
+    --card-foreground: 222 47% 11%;
+
     /* Popovers */
     --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 15%;
-    
-    /* Primary - Professional red for highlights */
-    --primary: 0 84% 60%;
-    --primary-foreground: 0 0% 98%;
-    --primary-hover: 0 84% 55%;
-    --primary-light: 0 84% 90%;
-    
-    /* Secondary - Neutral professional */
-    --secondary: 210 20% 96%;
-    --secondary-foreground: 220 15% 25%;
-    --secondary-hover: 210 20% 92%;
-    
-    /* Muted elements */
-    --muted: 210 20% 96%;
-    --muted-foreground: 220 10% 45%;
-    
-    /* Accent - Orange for actions and alerts */
-    --accent: 25 95% 53%;
-    --accent-foreground: 0 0% 98%;
-    --accent-hover: 25 95% 47%;
-    
-    /* Success - Green for positive actions */
+    --popover-foreground: 222 47% 11%;
+
+    /* Primary — Azul principal #1657e4 */
+    --primary: 221 82% 49%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 206 99% 41%;    /* #0178d0 */
+    --primary-light: 211 92% 93%;    /* tint de #439af7 */
+
+    /* Secondary — neutral claro */
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 20%;
+    --secondary-hover: 210 40% 92%;
+
+    /* Muted */
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%; /* #64748b */
+
+    /* Accent — azul claro #439af7 (info, tags, highlights) */
+    --accent: 211 92% 62%;
+    --accent-foreground: 0 0% 100%;
+    --accent-hover: 206 99% 41%;
+
+    /* Success — verde (fuera de paleta Moncar, necesario para UI) */
     --success: 142 76% 36%;
-    --success-foreground: 0 0% 98%;
-    --success-light: 142 76% 90%;
-    
-    /* Info - Blue for informational */
-    --info: 214 84% 56%;
-    --info-foreground: 0 0% 98%;
-    --info-light: 214 84% 90%;
-    
-    /* Warning - Amber for cautions */
-    --warning: 45 93% 47%;
-    --warning-foreground: 0 0% 98%;
-    --warning-light: 45 93% 90%;
-    
-    /* Destructive - Red for errors */
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --destructive-light: 0 84% 90%;
-    
-    /* Borders and inputs */
-    --border: 214 32% 91%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 76% 93%;
+
+    /* Info — azul claro #439af7 */
+    --info: 211 92% 62%;
+    --info-foreground: 0 0% 100%;
+    --info-light: 211 92% 93%;
+
+    /* Warning — amarillo dorado #ffbd00 */
+    --warning: 44 100% 50%;
+    --warning-foreground: 222 47% 11%; /* texto oscuro sobre amarillo */
+    --warning-light: 44 100% 90%;
+
+    /* Destructive — rojo oscuro #c6020d */
+    --destructive: 357 98% 39%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-light: 357 98% 94%;
+
+    /* Borders & inputs */
+    --border: 214 32% 91%;           /* #e2e8f0 */
     --input: 214 32% 91%;
-    --ring: 214 84% 56%;
-    
-    /* Radius system */
+    --ring: 221 82% 49%;
+
+    /* Radius */
     --radius: 0.75rem;
     --radius-sm: 0.5rem;
     --radius-lg: 1rem;
-    
+
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-hover)));
-    --gradient-accent: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--accent-hover)));
+    --gradient-primary: linear-gradient(135deg, hsl(221 82% 49%), hsl(206 99% 41%));
+    --gradient-accent: linear-gradient(135deg, hsl(211 92% 62%), hsl(206 99% 41%));
     --gradient-subtle: linear-gradient(180deg, hsl(var(--background)), hsl(var(--muted)));
-    
+
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(var(--primary) / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(var(--primary) / 0.1), 0 2px 4px -1px hsl(var(--primary) / 0.06);
-    --shadow-lg: 0 10px 15px -3px hsl(var(--primary) / 0.1), 0 4px 6px -2px hsl(var(--primary) / 0.05);
-    --shadow-xl: 0 20px 25px -5px hsl(var(--primary) / 0.1), 0 10px 10px -5px hsl(var(--primary) / 0.04);
+    --shadow-sm: 0 1px 2px 0 hsl(221 82% 49% / 0.08);
+    --shadow-md: 0 4px 6px -1px hsl(221 82% 49% / 0.12), 0 2px 4px -1px hsl(221 82% 49% / 0.07);
+    --shadow-lg: 0 10px 15px -3px hsl(221 82% 49% / 0.12), 0 4px 6px -2px hsl(221 82% 49% / 0.06);
+    --shadow-xl: 0 20px 25px -5px hsl(221 82% 49% / 0.12), 0 10px 10px -5px hsl(221 82% 49% / 0.05);
 
-    /* Chart colors */
-    --chart-1: 214 84% 56%;
-    --chart-2: 142 76% 36%;
-    --chart-3: 45 93% 47%;
-    --chart-4: 0 84% 60%;
-    --chart-5: 25 95% 53%;
-    --sidebar-background: 0 0% 98%;
+    /* Chart — paleta Moncar */
+    --chart-1: 221 82% 49%;   /* azul principal */
+    --chart-2: 142 76% 36%;   /* verde éxito */
+    --chart-3: 44 100% 50%;   /* amarillo dorado */
+    --chart-4: 211 92% 62%;   /* azul claro */
+    --chart-5: 206 99% 41%;   /* azul medio */
 
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar — azul oscuro #0e3d9e → HSL 220 84% 34% */
+    --sidebar-background: 220 84% 34%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 220 84% 34%;
+    --sidebar-accent: 220 84% 27%;   /* versión más oscura para hover */
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 220 84% 28%;
+    --sidebar-ring: 211 92% 62%;
   }
 
   .dark {
-    /* Dark theme for professional look */
-    --background: 220 20% 8%;
-    --foreground: 0 0% 95%;
-    
-    --card: 220 20% 10%;
-    --card-foreground: 0 0% 95%;
-    
-    --popover: 220 20% 10%;
-    --popover-foreground: 0 0% 95%;
-    
-    --primary: 214 84% 56%;
-    --primary-foreground: 0 0% 98%;
-    --primary-hover: 214 84% 60%;
-    --primary-light: 214 84% 20%;
-    
-    --secondary: 220 20% 15%;
-    --secondary-foreground: 0 0% 90%;
-    --secondary-hover: 220 20% 18%;
-    
-    --muted: 220 20% 15%;
-    --muted-foreground: 220 10% 60%;
-    
-    --accent: 25 95% 53%;
-    --accent-foreground: 0 0% 98%;
-    --accent-hover: 25 95% 57%;
-    
-    --success: 142 76% 36%;
-    --success-foreground: 0 0% 98%;
-    --success-light: 142 76% 20%;
-    
-    --info: 214 84% 56%;
-    --info-foreground: 0 0% 98%;
-    --info-light: 214 84% 20%;
-    
-    --warning: 45 93% 47%;
-    --warning-foreground: 0 0% 98%;
-    --warning-light: 45 93% 20%;
-    
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --destructive-light: 0 84% 20%;
-    
-    --border: 220 20% 20%;
-    --input: 220 20% 15%;
-    --ring: 214 84% 56%;
-    
-    /* Chart colors for dark mode */
-    --chart-1: 214 84% 56%;
-    --chart-2: 142 76% 45%;
-    --chart-3: 45 93% 55%;
-    --chart-4: 0 84% 65%;
-    --chart-5: 25 95% 60%;
+    --background: 222 47% 7%;
+    --foreground: 210 40% 96%;
 
-    /* Dark mode sidebar */
-    --sidebar-background: 220 20% 8%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 214 84% 56%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 220 20% 15%;
-    --sidebar-accent-foreground: 0 0% 90%;
-    --sidebar-border: 220 20% 20%;
-    --sidebar-ring: 214 84% 56%;
+    --card: 222 47% 9%;
+    --card-foreground: 210 40% 96%;
+
+    --popover: 222 47% 9%;
+    --popover-foreground: 210 40% 96%;
+
+    /* En dark mode el azul se aclara ligeramente para contraste */
+    --primary: 221 82% 58%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 211 92% 65%;
+    --primary-light: 221 82% 20%;
+
+    --secondary: 222 47% 14%;
+    --secondary-foreground: 210 40% 90%;
+    --secondary-hover: 222 47% 18%;
+
+    --muted: 222 47% 14%;
+    --muted-foreground: 215 16% 60%;
+
+    --accent: 211 92% 65%;
+    --accent-foreground: 0 0% 100%;
+    --accent-hover: 206 99% 55%;
+
+    --success: 142 76% 40%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 76% 15%;
+
+    --info: 211 92% 65%;
+    --info-foreground: 0 0% 100%;
+    --info-light: 211 92% 18%;
+
+    --warning: 44 100% 50%;
+    --warning-foreground: 222 47% 11%;
+    --warning-light: 44 100% 18%;
+
+    --destructive: 357 98% 48%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-light: 357 98% 18%;
+
+    --border: 222 47% 18%;
+    --input: 222 47% 14%;
+    --ring: 221 82% 58%;
+
+    /* Chart dark */
+    --chart-1: 221 82% 62%;
+    --chart-2: 142 76% 45%;
+    --chart-3: 44 100% 55%;
+    --chart-4: 211 92% 68%;
+    --chart-5: 206 99% 55%;
+
+    /* Sidebar dark — más oscuro que en light */
+    --sidebar-background: 222 60% 14%;
+    --sidebar-foreground: 0 0% 92%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 222 60% 14%;
+    --sidebar-accent: 222 60% 20%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 222 60% 20%;
+    --sidebar-ring: 211 92% 62%;
   }
 }
 
