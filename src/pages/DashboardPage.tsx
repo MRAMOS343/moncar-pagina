@@ -22,6 +22,7 @@ import {
   useDashboardMetodosPago,
   useDashboardTopProductos,
 } from "@/hooks/useDashboardHooks";
+import { ExtractorStatusWidget } from "@/components/dashboard/ExtractorStatusWidget";
 import {
   Tooltip as UITooltip,
   TooltipContent,
@@ -195,6 +196,9 @@ export default function DashboardPage() {
           </Button>
         </div>
       </div>
+
+      {/* Sincronizacion POS */}
+      <ExtractorStatusWidget currentUser={currentUser} />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
