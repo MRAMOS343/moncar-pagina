@@ -59,7 +59,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md animate-fade-in border-0 shadow-none bg-transparent">
         <CardHeader className="text-center space-y-4">
-          <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center bg-red-600">
+          <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center bg-primary">
             <Package className="w-8 h-8 text-primary-foreground" />
           </div>
           <div>
@@ -109,7 +109,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
             <Button
               type="submit"
               disabled={!canSubmit}
-              className="w-full bg-red-600 hover:bg-red-500"
+              className="w-full"
             >
               {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Iniciar Sesión

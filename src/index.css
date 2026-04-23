@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Professional auto parts industry design system */
-
 @layer base {
   :root {
     /* ── Grupo Moncar brand palette ──────────────────────────────────────────
@@ -95,15 +93,15 @@
     --chart-4: 211 92% 62%;   /* azul claro */
     --chart-5: 206 99% 41%;   /* azul medio */
 
-    /* Sidebar — azul oscuro #0e3d9e → HSL 220 84% 34% */
-    --sidebar-background: 220 84% 34%;
-    --sidebar-foreground: 0 0% 96%;
-    --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 220 84% 34%;
-    --sidebar-accent: 220 84% 27%;   /* versión más oscura para hover */
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 220 84% 28%;
-    --sidebar-ring: 211 92% 62%;
+    /* Sidebar — fondo blanco con borde sutil */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 221 82% 49%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 94%;   /* gris claro para hover */
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 221 82% 49%;
   }
 
   .dark {
@@ -160,14 +158,14 @@
     --chart-4: 211 92% 68%;
     --chart-5: 206 99% 55%;
 
-    /* Sidebar dark — más oscuro que en light */
-    --sidebar-background: 222 60% 14%;
-    --sidebar-foreground: 0 0% 92%;
-    --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 222 60% 14%;
-    --sidebar-accent: 222 60% 20%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 222 60% 20%;
+    /* Sidebar dark — fondo oscuro con borde sutil */
+    --sidebar-background: 222 47% 9%;
+    --sidebar-foreground: 210 40% 96%;
+    --sidebar-primary: 221 82% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 47% 14%;
+    --sidebar-accent-foreground: 210 40% 96%;
+    --sidebar-border: 222 47% 18%;
     --sidebar-ring: 211 92% 62%;
   }
 }
