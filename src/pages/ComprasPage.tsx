@@ -574,7 +574,7 @@ export default function ComprasPage() {
     if (!token) return;
     setExporting(true);
     try {
-      await exportarCompraSugerida(token, { sucursal_id: warehouseParam });
+      await exportarCompraSugerida(token, { sucursal_id: warehouseParam, prioridad: prioridadFilter ?? undefined });
       toast.success('Archivo descargado correctamente.');
     } catch {
       toast.error('Error al generar el archivo.');
