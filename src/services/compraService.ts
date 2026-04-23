@@ -100,7 +100,7 @@ export async function exportarCompraSugerida(
   if (opts.prioridad) params.set("prioridad", opts.prioridad);
   const qs = params.toString();
 
-  const BASE = import.meta.env.VITE_API_URL ?? "";
+  const BASE = import.meta.env.VITE_API_BASE_URL ?? "";
   const response = await fetch(
     `${BASE}/api/v1/compras/sugerida/export${qs ? `?${qs}` : ""}`,
     { headers: { Authorization: `Bearer ${token}` } }

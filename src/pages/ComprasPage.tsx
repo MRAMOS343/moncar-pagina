@@ -193,7 +193,7 @@ interface PreOrderModalProps {
   cantidades: Record<string, number>;
   onConfirm: (notas: string) => Promise<void>;
   submitting: boolean;
-  onExportExcel: () => Promise<void>;
+  onExportExcel: () => void;
 }
 
 function PreOrderModal({
@@ -341,6 +341,7 @@ function PreOrderModal({
                   iconCls: 'bg-destructive/10 text-destructive',
                   title: 'Descargar como PDF',
                   desc: 'Documento imprimible con desglose detallado',
+                  onClick: () => toast.info('Función de exportación próximamente.'),
                 },
                 {
                   icon: (
@@ -364,18 +365,15 @@ function PreOrderModal({
                     'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
                   title: 'Descargar como Excel',
                   desc: 'Hoja de cálculo editable para ajustar antes de ordenar',
+                  onClick: () => {
+                    onExportExcel();
+                    onClose();
+                  },
                 },
-              ].map(({ icon, iconCls, title, desc }, idx) => (
+              ].map(({ icon, iconCls, title, desc, onClick }) => (
                 <button
                   key={title}
-                  onClick={() => {
-                    if (idx === 0) {
-                      toast.info('Función de exportación próximamente.');
-                    } else {
-                      onExportExcel();
-                      onClose();
-                    }
-                  }}
+                  onClick={onClick}
                   className="w-full p-4 rounded-xl border hover:border-primary hover:bg-primary/5 transition-all text-left flex items-center gap-4"
                 >
                   <div
