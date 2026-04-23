@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCompraSugerida } from '@/hooks/useCompraSugerida';
-import { crearPreOrden, recalcularCompras, type CompraSugeridaItem } from '@/services/compraService';
+import { crearPreOrden, recalcularCompras, exportarCompraSugerida, type CompraSugeridaItem } from '@/services/compraService';
 import { formatCurrency } from '@/utils/formatters';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -193,6 +193,7 @@ interface PreOrderModalProps {
   cantidades: Record<string, number>;
   onConfirm: (notas: string) => Promise<void>;
   submitting: boolean;
+  onExportExcel: () => Promise<void>;
 }
 
 function PreOrderModal({
@@ -202,6 +203,7 @@ function PreOrderModal({
   cantidades,
   onConfirm,
   submitting,
+  onExportExcel,
 }: PreOrderModalProps) {
   const [step, setStep] = useState<'review' | 'export'>('review');
   const [notas, setNotas] = useState('');
@@ -363,10 +365,17 @@ function PreOrderModal({
                   title: 'Descargar como Excel',
                   desc: 'Hoja de cálculo editable para ajustar antes de ordenar',
                 },
-              ].map(({ icon, iconCls, title, desc }) => (
+              ].map(({ icon, iconCls, title, desc }, idx) => (
                 <button
                   key={title}
-                  onClick={() => toast.info('Función de exportación próximamente.')}
+                  onClick={() => {
+                    if (idx === 0) {
+                      toast.info('Función de exportación próximamente.');
+                    } else {
+                      onExportExcel();
+                      onClose();
+                    }
+                  }}
                   className="w-full p-4 rounded-xl border hover:border-primary hover:bg-primary/5 transition-all text-left flex items-center gap-4"
                 >
                   <div
@@ -409,6 +418,7 @@ export default function ComprasPage() {
   const [preOrderOpen, setPreOrderOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [recalculating, setRecalculating] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const warehouseParam = currentWarehouse === 'all' ? undefined : currentWarehouse;
   const { data, isLoading, isError, refetch } = useCompraSugerida(warehouseParam);
@@ -562,6 +572,19 @@ export default function ComprasPage() {
     setTimeout(() => setRecalculating(false), 30_000);
   };
 
+  const handleExport = async () => {
+    if (!token) return;
+    setExporting(true);
+    try {
+      await exportarCompraSugerida(token, { sucursal_id: warehouseParam });
+      toast.success('Archivo descargado correctamente.');
+    } catch {
+      toast.error('Error al generar el archivo.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const selectCls =
     'h-9 rounded-lg border border-input bg-background pl-3 pr-8 text-sm appearance-none focus:ring-2 focus:ring-ring focus:outline-none cursor-pointer';
 
@@ -603,10 +626,11 @@ export default function ComprasPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => toast.info('Función de exportación próximamente.')}
+              disabled={exporting}
+              onClick={handleExport}
             >
-              <Download className="w-4 h-4" />
-              Exportar
+              <Download className={`w-4 h-4 ${exporting ? 'animate-spin' : ''}`} />
+              {exporting ? 'Generando…' : 'Exportar'}
             </Button>
             <Button
               size="sm"
@@ -941,6 +965,7 @@ export default function ComprasPage() {
         cantidades={cantidades}
         onConfirm={handleSubmitPreOrder}
         submitting={submitting}
+        onExportExcel={handleExport}
       />
     </div>
   );

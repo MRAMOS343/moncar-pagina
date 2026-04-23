@@ -90,3 +90,31 @@ export async function recalcularCompras(
     { method: "POST", token }
   );
 }
+
+export async function exportarCompraSugerida(
+  token: string,
+  opts: { sucursal_id?: string; prioridad?: string } = {}
+): Promise<void> {
+  const params = new URLSearchParams();
+  if (opts.sucursal_id) params.set("sucursal_id", opts.sucursal_id);
+  if (opts.prioridad) params.set("prioridad", opts.prioridad);
+  const qs = params.toString();
+
+  const BASE = import.meta.env.VITE_API_URL ?? "";
+  const response = await fetch(
+    `${BASE}/api/v1/compras/sugerida/export${qs ? `?${qs}` : ""}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+
+  if (!response.ok) throw new Error("Error al generar el export");
+
+  const blob = await response.blob();
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = `compra_sugerida_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
