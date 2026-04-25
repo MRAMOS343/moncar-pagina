@@ -85,6 +85,8 @@ const router = createBrowserRouter([
         ),
         children: [
           { index: true, element: <S><PropiedadesPage /></S> },
+          { path: "soporte", element: <S><SoportePage /></S> },
+          { path: "configuracion", element: <S><ConfiguracionPage /></S> },
         ],
       },
       {
@@ -97,6 +99,8 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <S><VehiculosPage /></S> },
           { path: "alertas-config", element: <S><AlertasConfigPage /></S> },
+          { path: "soporte", element: <S><SoportePage /></S> },
+          { path: "configuracion", element: <S><ConfiguracionPage /></S> },
         ],
       },
       { path: "*", element: <S><NotFound /></S> },

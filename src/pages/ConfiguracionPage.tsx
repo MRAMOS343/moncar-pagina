@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/contexts/AuthContext";
@@ -56,8 +57,10 @@ import { Badge } from "@/components/ui/badge";
 
 export default function ConfiguracionPage() {
   const { currentUser, updateUserRole } = useAuth();
+  const { pathname } = useLocation();
+  const isRefaccionarias = pathname.startsWith('/refaccionarias');
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'developer';
-  
+
   // Control de acceso por rol
   const canManageSettings = currentUser?.role === 'admin' || currentUser?.role === 'gerente';
 
@@ -237,7 +240,13 @@ export default function ConfiguracionPage() {
       </div>
 
       <Tabs defaultValue="perfil" className="space-y-4">
-        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-6' : canManageSettings ? 'grid-cols-5' : 'grid-cols-3'}`}>
+        <TabsList className={`grid w-full ${
+          isAdmin
+            ? isRefaccionarias ? 'grid-cols-6' : 'grid-cols-5'
+            : canManageSettings
+              ? isRefaccionarias ? 'grid-cols-5' : 'grid-cols-4'
+              : 'grid-cols-3'
+        }`}>
           <TabsTrigger value="perfil" className="gap-2">
             <User className="h-4 w-4" />
             Perfil
@@ -248,10 +257,12 @@ export default function ConfiguracionPage() {
                 <Building2 className="h-4 w-4" />
                 Empresa
               </TabsTrigger>
-              <TabsTrigger value="inventario" className="gap-2">
-                <Package className="h-4 w-4" />
-                Inventario
-              </TabsTrigger>
+              {isRefaccionarias && (
+                <TabsTrigger value="inventario" className="gap-2">
+                  <Package className="h-4 w-4" />
+                  Inventario
+                </TabsTrigger>
+              )}
             </>
           )}
           {isAdmin && (
@@ -351,45 +362,49 @@ export default function ConfiguracionPage() {
                 <SettingsSkeleton />
               ) : (
                 <>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Alertas de stock bajo</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Recibir notificaciones cuando el inventario esté bajo
-                      </p>
-                    </div>
-                    <Switch
-                      checked={preferences?.notif_stock_bajo ?? true}
-                      onCheckedChange={(checked) => handleTogglePreference('notif_stock_bajo', checked)}
-                      disabled={updatePrefs.isPending}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Nuevas ventas</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Notificar sobre cada venta realizada
-                      </p>
-                    </div>
-                    <Switch
-                      checked={preferences?.notif_nuevas_ventas ?? true}
-                      onCheckedChange={(checked) => handleTogglePreference('notif_nuevas_ventas', checked)}
-                      disabled={updatePrefs.isPending}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Nuevos proveedores</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Alertas cuando se registren nuevos proveedores
-                      </p>
-                    </div>
-                    <Switch
-                      checked={preferences?.notif_nuevos_proveedores ?? false}
-                      onCheckedChange={(checked) => handleTogglePreference('notif_nuevos_proveedores', checked)}
-                      disabled={updatePrefs.isPending}
-                    />
-                  </div>
+                  {isRefaccionarias && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label>Alertas de stock bajo</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Recibir notificaciones cuando el inventario esté bajo
+                          </p>
+                        </div>
+                        <Switch
+                          checked={preferences?.notif_stock_bajo ?? true}
+                          onCheckedChange={(checked) => handleTogglePreference('notif_stock_bajo', checked)}
+                          disabled={updatePrefs.isPending}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label>Nuevas ventas</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Notificar sobre cada venta realizada
+                          </p>
+                        </div>
+                        <Switch
+                          checked={preferences?.notif_nuevas_ventas ?? true}
+                          onCheckedChange={(checked) => handleTogglePreference('notif_nuevas_ventas', checked)}
+                          disabled={updatePrefs.isPending}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <Label>Nuevos proveedores</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Alertas cuando se registren nuevos proveedores
+                          </p>
+                        </div>
+                        <Switch
+                          checked={preferences?.notif_nuevos_proveedores ?? false}
+                          onCheckedChange={(checked) => handleTogglePreference('notif_nuevos_proveedores', checked)}
+                          disabled={updatePrefs.isPending}
+                        />
+                      </div>
+                    </>
+                  )}
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label>Reportes diarios</Label>
@@ -470,8 +485,8 @@ export default function ConfiguracionPage() {
           </TabsContent>
         )}
 
-        {/* Pestaña: Configuración de Inventario (solo admin/gerente) */}
-        {canManageSettings && (
+        {/* Pestaña: Configuración de Inventario (solo admin/gerente, solo refaccionarias) */}
+        {canManageSettings && isRefaccionarias && (
           <TabsContent value="inventario" className="space-y-4">
             <Card>
               <CardHeader>

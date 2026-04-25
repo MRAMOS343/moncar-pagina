@@ -6,10 +6,12 @@ import { AppTopbar } from '../components/layout/AppTopbar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { toast } from '@/hooks/use-toast';
-import { Building2 } from 'lucide-react';
+import { Building2, LifeBuoy, Settings } from 'lucide-react';
 
 const navItems: SidebarNavItem[] = [
   { title: "Inmuebles", url: "/propiedades", icon: Building2, description: "Gestión de propiedades en renta" },
+  { title: "Soporte", url: "/propiedades/soporte", icon: LifeBuoy, description: "Tickets y ayuda" },
+  { title: "Configuración", url: "/propiedades/configuracion", icon: Settings, description: "Preferencias del sistema" },
 ];
 
 const routeLabels: Record<string, string> = {
