@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,23 @@ import { toast } from 'sonner';
 
 const ALL_TIPOS: TipoDocUnidad[] = ['cromatica', 'factura', 'poliza_seguro', 'tarjeta_circulacion', 'titulo_concesion', 'verificacion', 'permiso'];
 
+interface AlertConfig {
+  tipoDocumento: TipoDocUnidad;
+  diasAntes: number;
+  activa: boolean;
+}
+
+function buildConfigs(alertas: ReturnType<typeof useAlertas>['data']): AlertConfig[] {
+  return ALL_TIPOS.map(tipo => {
+    const existing = (alertas ?? []).find(a => a.tipoDocumento === tipo);
+    return {
+      tipoDocumento: tipo,
+      diasAntes: existing?.diasAntes ?? 30,
+      activa: existing?.activa ?? tipo === 'poliza_seguro',
+    };
+  });
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -19,21 +36,27 @@ interface Props {
 }
 
 export function AlertConfigModal({ open, onClose, unidadId, unidadLabel }: Props) {
-  const { data: alertas = [] } = useAlertas(unidadId);
+  const { data: alertas, isSuccess } = useAlertas(unidadId);
   const upsertAlerta = useUpsertAlerta();
 
-  const initialState = useMemo(() => {
-    return ALL_TIPOS.map(tipo => {
-      const existing = alertas.find(a => a.tipoDocumento === tipo);
-      return {
-        tipoDocumento: tipo,
-        diasAntes: existing?.diasAntes ?? 30,
-        activa: existing?.activa ?? tipo === 'poliza_seguro',
-      };
-    });
-  }, [alertas]);
+  const [configs, setConfigs] = useState<AlertConfig[]>(() => buildConfigs([]));
+  // Track whether we have initialized from real server data to avoid overwriting
+  // user edits if React Query does a background refetch while the modal is open.
+  const initializedRef = useRef(false);
 
-  const [configs, setConfigs] = useState(initialState);
+  useEffect(() => {
+    if (isSuccess && !initializedRef.current) {
+      initializedRef.current = true;
+      setConfigs(buildConfigs(alertas));
+    }
+  }, [isSuccess, alertas]);
+
+  // Reset initialization flag when the modal closes so next open starts fresh.
+  useEffect(() => {
+    if (!open) {
+      initializedRef.current = false;
+    }
+  }, [open]);
 
   const update = (idx: number, field: string, value: unknown) => {
     setConfigs(prev => prev.map((c, i) => i === idx ? { ...c, [field]: value } : c));
