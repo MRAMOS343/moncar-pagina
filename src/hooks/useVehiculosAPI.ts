@@ -167,5 +167,20 @@ export function useUpsertAlerta() {
   });
 }
 
+/* ── Diagnóstico y prueba de alertas ── */
+
+export function useDiagnosticoAlertas() {
+  return useQuery({
+    queryKey: ['vehiculos', 'alertas-diagnostico'] as const,
+    queryFn: svc.fetchDiagnosticoAlertas,
+  });
+}
+
+export function useEnviarPrueba() {
+  return useMutation({
+    mutationFn: svc.enviarPruebaAlerta,
+  });
+}
+
 /* ── Re-export archivo service for convenience ── */
 export { uploadFile, getDownloadUrl } from '@/services/archivoService';

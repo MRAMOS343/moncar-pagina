@@ -112,6 +112,26 @@ export interface ImportarBulkResultado {
   resumen: string;
 }
 
+export interface DiagnosticoAlerta {
+  documentoId: string;
+  unidadNumero: string;
+  placa: string | null;
+  rutaNombre: string;
+  documentoNombre: string;
+  tipo: TipoDocUnidad;
+  vigenciaHasta: string;
+  diasRestantes: number;
+  diasAntes: number;
+  yaNotificado: boolean;
+}
+
+export interface PruebaAlertaResult {
+  ok: boolean;
+  enviadoA: string;
+  totalDocs: number;
+  emailId: string | null;
+}
+
 // Legacy aliases
 export type Vehiculo = Unidad;
 export type DocumentoVehiculo = DocumentoUnidad;

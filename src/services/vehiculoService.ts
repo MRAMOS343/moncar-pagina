@@ -1,5 +1,5 @@
 import { apiRequest } from './apiClient';
-import type { Ruta, Unidad, DocumentoUnidad, AlertaDocumento } from '@/types/vehiculos';
+import type { Ruta, Unidad, DocumentoUnidad, AlertaDocumento, DiagnosticoAlerta, PruebaAlertaResult } from '@/types/vehiculos';
 
 /* ── Mappers snake_case → camelCase ── */
 
@@ -177,4 +177,38 @@ export interface DocPorVencer {
 export async function fetchDocsPorVencer(dias: number): Promise<DocPorVencer> {
   const res = await apiRequest<{ items: Record<string, unknown>[]; dias: number }>(`/api/v1/vehiculos/documentos/por-vencer?dias=${dias}`, { token: getToken() });
   return { items: res.items.map(mapDocumento), dias: res.dias };
+}
+
+/* ── Diagnóstico y prueba de alertas ── */
+
+export async function fetchDiagnosticoAlertas(): Promise<DiagnosticoAlerta[]> {
+  const res = await apiRequest<{ items: Record<string, unknown>[]; total: number }>(
+    '/api/v1/vehiculos/alertas/diagnostico',
+    { token: getToken() }
+  );
+  return res.items.map(d => ({
+    documentoId:     d.documento_id as string,
+    unidadNumero:    d.unidad_numero as string,
+    placa:           (d.placa as string) ?? null,
+    rutaNombre:      d.ruta_nombre as string,
+    documentoNombre: d.documento_nombre as string,
+    tipo:            d.tipo as DiagnosticoAlerta['tipo'],
+    vigenciaHasta:   d.vigencia_hasta as string,
+    diasRestantes:   d.dias_restantes as number,
+    diasAntes:       d.dias_antes as number,
+    yaNotificado:    d.ya_notificado as boolean,
+  }));
+}
+
+export async function enviarPruebaAlerta(): Promise<PruebaAlertaResult> {
+  const res = await apiRequest<{ ok: boolean; enviado_a: string; total_docs: number; email_id: string | null }>(
+    '/api/v1/vehiculos/alertas/prueba',
+    { method: 'POST', token: getToken() }
+  );
+  return {
+    ok:        res.ok,
+    enviadoA:  res.enviado_a,
+    totalDocs: res.total_docs,
+    emailId:   res.email_id,
+  };
 }
