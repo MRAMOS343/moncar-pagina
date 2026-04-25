@@ -6,7 +6,7 @@ import { AppTopbar } from '../components/layout/AppTopbar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { toast } from '@/hooks/use-toast';
-import { Truck } from 'lucide-react';
+import { Truck, Settings } from 'lucide-react';
 import { useDocsPorVencer } from '@/hooks/useVehiculosAPI';
 import { Badge } from '@/components/ui/badge';
 
@@ -25,9 +25,20 @@ function FlotillaIcon({ className }: { className?: string }) {
   );
 }
 
-const navItems: SidebarNavItem[] = [
-  { title: "Flotilla", url: "/vehiculos", icon: FlotillaIcon as any, description: "Gestión de vehículos de transporte" },
-];
+function buildNavItems(rol: string): SidebarNavItem[] {
+  const items: SidebarNavItem[] = [
+    { title: "Flotilla", url: "/vehiculos", icon: FlotillaIcon as any, description: "Gestión de vehículos de transporte" },
+  ];
+  if (rol === 'admin') {
+    items.push({
+      title: "Config. Alertas",
+      url: "/vehiculos/alertas-config",
+      icon: Settings as any,
+      description: "Diagnóstico y prueba del sistema de alertas",
+    });
+  }
+  return items;
+}
 
 export function VehiculosLayout() {
   const { currentUser, logout } = useAuth();
@@ -58,7 +69,7 @@ export function VehiculosLayout() {
           onLogout={handleLogout}
           moduleTitle="Grupo Monzalvo"
           moduleSubtitle="Vehículos"
-          navItems={navItems}
+          navItems={buildNavItems(currentUser.rol ?? '')}
           onChangeModule={() => navigate('/selector')}
         />
         <SidebarInset className="flex-1 flex flex-col min-w-0">

@@ -26,6 +26,7 @@ const SoportePage = lazy(() => import("./pages/SoportePage"));
 const CotizacionesPage = lazy(() => import("./pages/CotizacionesPage"));
 const PropiedadesPage = lazy(() => import("./pages/PropiedadesPage"));
 const VehiculosPage = lazy(() => import("./pages/VehiculosPage"));
+const AlertasConfigPage = lazy(() => import("./pages/AlertasConfigPage"));
 const InvitacionPage = lazy(() => import("./pages/InvitacionPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -95,6 +96,7 @@ const router = createBrowserRouter([
         ),
         children: [
           { index: true, element: <S><VehiculosPage /></S> },
+          { path: "alertas-config", element: <S><AlertasConfigPage /></S> },
         ],
       },
       { path: "*", element: <S><NotFound /></S> },
