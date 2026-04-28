@@ -227,11 +227,13 @@ export default function PrediccionPage() {
     const order = [1, 2, 3, 4, 5, 6, 0]; // Lun to Dom
     const results = order.map((dw) => {
       const s = sums[dw];
-      const avg = s ? s.total / s.count : 0;
+      const avg = s && s.count > 0 ? s.total / s.count : 0;
       return { dia: dw, nombre: DIAS_SEMANA[dw], avg };
     });
-    const maxAvg = Math.max(...results.map((r) => r.avg));
-    const minAvg = Math.min(...results.filter(r => r.avg > 0).map((r) => r.avg));
+    const avgs = results.map((r) => r.avg);
+    const positives = avgs.filter((v) => v > 0);
+    const maxAvg = avgs.length > 0 ? Math.max(...avgs) : 0;
+    const minAvg = positives.length > 0 ? Math.min(...positives) : 0;
     const bestDia = results.find(r => r.avg === maxAvg);
     const worstDia = results.filter(r => r.avg > 0).find(r => r.avg === minAvg);
 
@@ -261,7 +263,8 @@ export default function PrediccionPage() {
   }, [drillDown, diariaData]);
 
   const drillDownTotal = drillDownData.reduce((s, d) => s + d.monto, 0);
-  const drillDownMax = Math.max(...drillDownData.map(d => d.monto), 1);
+  const drillDownMax =
+    drillDownData.length > 0 ? Math.max(...drillDownData.map((d) => d.monto), 1) : 1;
 
   /* ── Handlers ── */
   const handleBarClick = useCallback((data: any) => {

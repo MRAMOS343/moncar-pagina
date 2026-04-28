@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ChartSkeleton } from '@/components/ui/chart-skeleton';
 import { LazyLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from '@/components/charts/LazyLineChart';
 import { formatCurrency } from '@/utils/formatters';
+import { safeMax } from '@/utils/math';
 import { useDashboardTendencia } from '@/hooks/useDashboardHooks';
 
 interface Props {
