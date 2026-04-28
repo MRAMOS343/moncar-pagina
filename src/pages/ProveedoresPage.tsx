@@ -143,9 +143,9 @@ export default function ProveedoresPage() {
               <CardContent className="py-12">
                 <EmptyState
                   icon={ShoppingCart}
-                  title="Sin proveedores"
-                  description={search ? "No se encontraron proveedores con esa búsqueda." : "Agrega tu primer proveedor."}
-                  action={isAdmin ? { label: "Nuevo Proveedor", onClick: handleOpenCreate } : undefined}
+                  title={search ? "Sin resultados" : "Sin proveedores registrados"}
+                  description={search ? "No se encontraron proveedores con esa búsqueda." : "Agrega tus proveedores para registrar compras y rastrear pagos pendientes."}
+                  action={isAdmin && !search ? { label: "Agregar proveedor", onClick: handleOpenCreate } : undefined}
                 />
               </CardContent>
             ) : (

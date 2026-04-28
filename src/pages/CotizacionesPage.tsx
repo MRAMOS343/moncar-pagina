@@ -14,6 +14,7 @@ import { Plus, ArrowLeft, Download, Loader2, Save, RotateCcw } from 'lucide-reac
 import { ApiError } from '@/services/apiClient';
 import { useCotizacionPdf } from '@/hooks/useCotizacionPdf';
 import { PageLayout } from '@/components/layout/PageLayout';
+import { EmptyState } from '@/components/ui/empty-state';
 
 type View = 'list' | 'create' | 'edit' | 'preview';
 
@@ -326,14 +327,23 @@ export default function CotizacionesPage() {
           <Plus className="h-4 w-4 mr-2" />Nueva Cotización
         </Button>
       </div>
-      <CotizacionesTable
-        cotizaciones={cotizaciones}
-        onView={handleView}
-        onEdit={handleEdit}
-        onDuplicate={handleDuplicate}
-        onUpdateEstado={handleUpdateEstado}
-        onDelete={handleDelete}
-      />
+      {(cotizaciones?.length ?? 0) === 0 ? (
+        <EmptyState
+          icon={Plus}
+          title="Sin cotizaciones"
+          description="Crea tu primera cotización para enviar a clientes."
+          action={{ label: "Nueva cotización", onClick: () => setView('create') }}
+        />
+      ) : (
+        <CotizacionesTable
+          cotizaciones={cotizaciones}
+          onView={handleView}
+          onEdit={handleEdit}
+          onDuplicate={handleDuplicate}
+          onUpdateEstado={handleUpdateEstado}
+          onDelete={handleDelete}
+        />
+      )}
     </PageLayout>
   );
 }
