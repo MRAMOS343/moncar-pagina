@@ -8,7 +8,7 @@ function formatVigencia(v: string | null): string {
   const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
   return `${dd}-${mm}-${d.getUTCFullYear()}`;
 }
-import { Truck, Search, AlertTriangle, FileText, ChevronDown, Plus, RefreshCw } from 'lucide-react';
+import { Truck, Search, FileText, ChevronDown, Plus, RefreshCw, Route } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -122,10 +122,16 @@ export default function VehiculosPage() {
 
   // KPIs
   const kpis = useMemo(() => {
-    if (!porVencerData) return { vencidos: 0, porVencer: 0 };
-    // The API returns docs about to expire; we count them
-    return { vencidos: 0, porVencer: porVencerData.items.length };
-  }, [porVencerData]);
+    const totalUnidades = rutas.reduce(
+      (acc, ruta) => acc + ((ruta as any).unidades?.length ?? 0),
+      0
+    );
+    return {
+      porVencer: porVencerData?.items.length ?? 0,
+      totalUnidades,
+      rutasActivas: rutas.length,
+    };
+  }, [porVencerData, rutas]);
 
   // Filtered rutas
   const filteredRutas = useMemo(() => {
@@ -216,10 +222,22 @@ export default function VehiculosPage() {
       </div>
 
       {/* KPIs */}
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
         <Card><CardContent className="p-4 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-destructive/10 flex items-center justify-center"><AlertTriangle className="w-5 h-5 text-destructive" /></div>
-          <div><p className="text-xs text-muted-foreground">Docs Vencidos</p><p className="text-xl font-bold text-destructive">{kpis.vencidos}</p></div>
+          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center"><Truck className="w-5 h-5 text-primary" /></div>
+          <div>
+            <p className="text-xs text-muted-foreground">Total Unidades</p>
+            <p className="text-xl font-bold text-foreground">{kpis.totalUnidades}</p>
+            <p className="text-xs text-muted-foreground">en {kpis.rutasActivas} rutas activas</p>
+          </div>
+        </CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center"><Route className="w-5 h-5 text-blue-600" /></div>
+          <div>
+            <p className="text-xs text-muted-foreground">Rutas Activas</p>
+            <p className="text-xl font-bold text-foreground">{kpis.rutasActivas}</p>
+            <p className="text-xs text-muted-foreground">configuradas</p>
+          </div>
         </CardContent></Card>
         <Card><CardContent className="p-4 flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center"><FileText className="w-5 h-5 text-amber-600" /></div>
