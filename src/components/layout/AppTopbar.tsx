@@ -211,6 +211,8 @@ export function AppTopbar({
 
         {/* Actions */}
         <div className="flex items-center gap-1 md:gap-2">
+          {/* Dark mode toggle — oculto temporalmente hasta auditoría completa de colores. Ver plan de trabajo Día 7 */}
+          {/*
           <Button
             variant="ghost"
             size="icon"
@@ -223,6 +225,7 @@ export function AppTopbar({
               <Moon className="h-4 w-4" />
             )}
           </Button>
+          */}
 
           <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
             <PopoverTrigger asChild>
