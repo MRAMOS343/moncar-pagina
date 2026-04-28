@@ -249,14 +249,14 @@ export default function EquiposPage() {
         {!isLoading && !isError && equipos.length === 0 && (
           <EmptyState
             icon={Users}
-            title="No se encontraron equipos"
+            title={searchTerm ? "No se encontraron equipos" : "Sin equipos creados"}
             description={
               searchTerm
                 ? "Intenta con otro término de búsqueda"
-                : "Crea tu primer equipo para comenzar"
+                : "Crea un equipo para asignar vendedores a sucursales."
             }
             action={
-              canCreate
+              canCreate && !searchTerm
                 ? {
                     label: "Crear equipo",
                     onClick: handleOpenCreate,
