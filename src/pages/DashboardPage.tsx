@@ -87,10 +87,34 @@ export default function DashboardPage() {
   // Mapear KPIs del backend a KPIData[]
   const kpisData: KPIData[] = kpis.data
     ? [
-        { label: "Ventas Totales", value: kpis.data.ventas_totales, format: "currency", change: 0, changeType: "neutral" },
-        { label: "Transacciones", value: kpis.data.num_transacciones, format: "number", change: 0, changeType: "neutral" },
-        { label: "Ticket Promedio", value: kpis.data.ticket_promedio, format: "currency", change: 0, changeType: "neutral" },
-        { label: "Ventas Canceladas", value: kpis.data.ventas_canceladas, format: "number", change: 0, changeType: kpis.data.ventas_canceladas > 0 ? "negative" : "neutral" },
+        {
+          label: "Ventas Totales",
+          value: kpis.data.ventas_totales,
+          format: "currency",
+          change: kpis.data.cambio_ventas_pct ?? 0,
+          changeType: kpis.data.cambio_ventas_tipo ?? "neutral",
+        },
+        {
+          label: "Transacciones",
+          value: kpis.data.num_transacciones,
+          format: "number",
+          change: kpis.data.cambio_transacciones_pct ?? 0,
+          changeType: kpis.data.cambio_transacciones_tipo ?? "neutral",
+        },
+        {
+          label: "Ticket Promedio",
+          value: kpis.data.ticket_promedio,
+          format: "currency",
+          change: kpis.data.cambio_ticket_pct ?? 0,
+          changeType: kpis.data.cambio_ticket_tipo ?? "neutral",
+        },
+        {
+          label: "Ventas Canceladas",
+          value: kpis.data.ventas_canceladas,
+          format: "number",
+          change: 0,
+          changeType: kpis.data.ventas_canceladas > 0 ? "negative" : "neutral",
+        },
       ]
     : [];
 
