@@ -78,8 +78,7 @@ function StatusRow({ item }: { item: ExtractorStatusItem }) {
 
 export function ExtractorStatusWidget({ currentUser }: Props) {
   const role = currentUser?.role;
-  const canView =
-    role === "admin" || role === "gerente" || role === "owner";
+  const canView = role === "admin" || role === "gerente";
 
   if (!canView) return null;
 
