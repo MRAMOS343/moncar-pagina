@@ -117,6 +117,8 @@ function PropiedadesPageInner() {
     }));
   }, [contratos, propiedades]);
 
+  const contratosProximosAVencer = contratosWithWarning.filter(c => c.expiringSoon);
+
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleSavePropiedad = (data: Omit<Propiedad, 'id' | 'createdAt'>) => {
@@ -204,7 +206,23 @@ function PropiedadesPageInner() {
         </div>
       </div>
 
-      <Tabs defaultValue="propiedades" className="space-y-4">
+      {!loadingContratos && contratosProximosAVencer.length > 0 && (
+        <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
+          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+          <span className="text-amber-800 flex-1">
+            <strong>{contratosProximosAVencer.length} contrato{contratosProximosAVencer.length > 1 ? 's' : ''}</strong>
+            {' '}vence{contratosProximosAVencer.length > 1 ? 'n' : ''} en los próximos 30 días
+          </span>
+          <button
+            onClick={() => setActiveTab('contratos')}
+            className="text-amber-700 font-medium underline underline-offset-2 hover:text-amber-900 whitespace-nowrap"
+          >
+            Ver contratos →
+          </button>
+        </div>
+      )}
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="propiedades">Propiedades</TabsTrigger>
           <TabsTrigger value="contratos">Contratos</TabsTrigger>
