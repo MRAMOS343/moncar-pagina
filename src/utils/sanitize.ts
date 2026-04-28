@@ -1,7 +1,9 @@
 /**
- * Sanitiza strings para prevenir XSS
+ * Sanitiza strings para prevenir XSS.
+ * Acepta valores nullish y devuelve "" para evitar crashes en call-sites no validados.
  */
-export function sanitizeHtml(input: string): string {
+export function sanitizeHtml(input?: string | null): string {
+  if (!input) return '';
   return input
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -27,8 +29,9 @@ export function sanitizeUrl(input: string): string {
 }
 
 /**
- * Sanitiza números de teléfono
+ * Sanitiza números de teléfono. Tolera nullish.
  */
-export function sanitizePhone(input: string): string {
+export function sanitizePhone(input?: string | null): string {
+  if (!input) return '';
   return input.replace(/[^\d\s\-\+\(\)]/g, '');
 }
