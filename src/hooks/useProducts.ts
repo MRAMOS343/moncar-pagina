@@ -41,7 +41,7 @@ export function useProducts(params: UseProductsParams = {}) {
       seen.add(item.sku);
       return true;
     });
-  }, [query.dataUpdatedAt]);
+  }, [query.data]);
 
   return { 
     ...query, 
