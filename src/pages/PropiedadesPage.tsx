@@ -87,6 +87,7 @@ function PropiedadesPageInner() {
   const [editingPayment, setEditingPayment] = useState<Pago | null>(null);
   const [maintFormOpen, setMaintFormOpen] = useState(false);
   const [editingMaint, setEditingMaint] = useState<SolicitudMantenimiento | null>(null);
+  const [activeTab, setActiveTab] = useState('propiedades');
 
   const filteredProps = useMemo(() => {
     return propiedades.filter(p => {
