@@ -7,11 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LazyLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from "@/components/charts/LazyLineChart";
-import { LazyPieChart, Pie, Cell } from "@/components/charts/LazyPieChart";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TrendingUp, ShoppingCart, AlertTriangle, CreditCard, RefreshCw, Trophy } from "lucide-react";
 import { User, KPIData, Warehouse } from "@/types";
-import { COLORES_GRAFICOS } from "@/constants";
 import { KPISkeleton } from "@/components/ui/kpi-skeleton";
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
 import { formatCurrency } from "@/utils/formatters";
@@ -133,8 +131,8 @@ export default function DashboardPage() {
     return Math.ceil((maxVal * 1.15) / 100) * 100;
   }, [tendenciaChartData]);
 
-  // Datos del pie chart (métodos de pago)
-  const pieChartData = (metodosPago.data?.data ?? []).map((item) => ({
+  // Datos del chart de métodos de pago
+  const paymentChartData = (metodosPago.data?.data ?? []).map((item) => ({
     name: item.metodo,
     value: Number(item.total),
     count: item.num_pagos,
@@ -307,51 +305,40 @@ export default function DashboardPage() {
               </CardTitle>
               <CardDescription>Distribución de pagos por método</CardDescription>
             </CardHeader>
-            <CardContent>
-              {pieChartData.length > 0 ? (
-                <LazyPieChart height={320}>
-                  <Pie
-                    data={pieChartData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    dataKey="value"
-                    label={(entry) => {
-                      const RADIAN = Math.PI / 180;
-                      const { cx, cy, midAngle, outerRadius, name, percentage } = entry;
-                      const radius = outerRadius + 30;
-                      const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                      const y = cy + radius * Math.sin(-midAngle * RADIAN);
+            <CardContent className="pt-2">
+              {paymentChartData.length > 0 ? (
+                <div className="space-y-3">
+                  {[...paymentChartData]
+                    .sort((a, b) => b.value - a.value)
+                    .map((item, index, arr) => {
+                      const maxValue = Math.max(...arr.map((d) => d.value));
+                      const widthPct = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
                       return (
-                        <text
-                          x={x}
-                          y={y}
-                          fill="hsl(var(--foreground))"
-                          textAnchor={x > cx ? "start" : "end"}
-                          dominantBaseline="central"
-                          fontSize={12}
-                        >
-                          {`${name} ${percentage}%`}
-                        </text>
+                        <div key={item.name} className="space-y-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium text-foreground">{item.name}</span>
+                            <span className="text-muted-foreground">{item.percentage}%</span>
+                          </div>
+                          <div className="h-8 bg-muted rounded-md overflow-hidden">
+                            <div
+                              className="h-full rounded-md transition-all duration-500 flex items-center px-3"
+                              style={{
+                                width: `${widthPct}%`,
+                                backgroundColor: `hsl(var(--primary) / ${1 - index * 0.2})`,
+                                minWidth: widthPct > 0 ? "60px" : "0px",
+                              }}
+                            >
+                              <span className="text-xs font-semibold text-primary-foreground whitespace-nowrap">
+                                {formatCurrency(item.value)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
                       );
-                    }}
-                  >
-                    {pieChartData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORES_GRAFICOS[index % COLORES_GRAFICOS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
-                      color: "hsl(var(--foreground))",
-                    }}
-                    formatter={(value: number) => [formatCurrency(value), "Monto"]}
-                  />
-                </LazyPieChart>
+                    })}
+                </div>
               ) : (
-                <div className="flex flex-col items-center justify-center h-[320px] text-muted-foreground">
+                <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
                   <CreditCard className="w-12 h-12 mb-2 opacity-50" />
                   <p>No hay datos de pagos</p>
                 </div>
