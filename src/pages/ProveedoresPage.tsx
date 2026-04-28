@@ -316,6 +316,6 @@ export default function ProveedoresPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageLayout>
   );
 }
