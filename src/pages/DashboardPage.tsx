@@ -13,6 +13,7 @@ import { User, KPIData, Warehouse } from "@/types";
 import { KPISkeleton } from "@/components/ui/kpi-skeleton";
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
 import { formatCurrency } from "@/utils/formatters";
+import { safeMax } from "@/utils/math";
 import { format, subDays } from "date-fns";
 import {
   useDashboardKpis,
@@ -126,7 +127,7 @@ export default function DashboardPage() {
   // Dominio Y con headroom para evitar recorte de picos
   const yAxisMax = useMemo(() => {
     if (tendenciaChartData.length === 0) return 1000;
-    const maxVal = Math.max(...tendenciaChartData.map((d) => d.value));
+    const maxVal = safeMax(tendenciaChartData.map((d) => d.value));
     if (maxVal === 0) return 1000;
     return Math.ceil((maxVal * 1.15) / 100) * 100;
   }, [tendenciaChartData]);
@@ -311,7 +312,7 @@ export default function DashboardPage() {
                   {[...paymentChartData]
                     .sort((a, b) => b.value - a.value)
                     .map((item, index, arr) => {
-                      const maxValue = Math.max(...arr.map((d) => d.value));
+                      const maxValue = safeMax(arr.map((d) => d.value));
                       const widthPct = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
                       return (
                         <div key={item.name} className="space-y-1">

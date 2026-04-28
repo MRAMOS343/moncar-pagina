@@ -45,7 +45,7 @@ export function VentasChart({ sucursalId, dias, periodLabel, isToday }: Props) {
 
   const yAxisMax = useMemo(() => {
     if (chartData.length === 0) return 1000;
-    const maxVal = Math.max(...chartData.map((d) => d.value));
+    const maxVal = safeMax(chartData.map((d) => d.value));
     if (maxVal === 0) return 1000;
     return Math.ceil((maxVal * 1.15) / 100) * 100;
   }, [chartData]);
