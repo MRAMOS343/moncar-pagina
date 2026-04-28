@@ -13,6 +13,7 @@ import type { ClienteData, ClienteErrors } from '@/components/cotizaciones/Clien
 import { Plus, ArrowLeft, Download, Loader2, Save, RotateCcw } from 'lucide-react';
 import { ApiError } from '@/services/apiClient';
 import { useCotizacionPdf } from '@/hooks/useCotizacionPdf';
+import { PageLayout } from '@/components/layout/PageLayout';
 
 type View = 'list' | 'create' | 'edit' | 'preview';
 
@@ -318,7 +319,7 @@ export default function CotizacionesPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <PageLayout>
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">Cotizaciones</h1>
         <Button onClick={() => setView('create')}>
@@ -333,6 +334,6 @@ export default function CotizacionesPage() {
         onUpdateEstado={handleUpdateEstado}
         onDelete={handleDelete}
       />
-    </div>
+    </PageLayout>
   );
 }
