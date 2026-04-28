@@ -25,6 +25,7 @@ import { TableSkeleton } from '@/components/ui/table-skeleton';
 import { showSuccessToast, showErrorToast } from '@/utils/toastHelpers';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { PageLayout } from '@/components/layout/PageLayout';
 
 interface ContextType {
   currentWarehouse: string;
@@ -312,7 +313,7 @@ export default function InventarioPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <PageLayout>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -772,6 +773,6 @@ export default function InventarioPage() {
         onOpenChange={setDetailModalOpen}
         sku={selectedSku}
       />
-    </div>
+    </PageLayout>
   );
 }
