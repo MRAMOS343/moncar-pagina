@@ -185,7 +185,7 @@ export default function CotizacionesPage() {
       email: c.cliente_email ?? '',
       empresa: c.cliente_empresa ?? '',
     });
-    setItems(c.items.map(item => ({
+    setItems((c.items ?? []).map(item => ({
       sku: item.sku,
       descripcion: item.descripcion,
       pieza: item.pieza,
