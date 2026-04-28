@@ -7,6 +7,8 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
       console.error(`Error reading localStorage key "${key}":`, error);
+      // Limpia el valor corrupto para no repetir el error en cada recarga.
+      try { window.localStorage.removeItem(key); } catch {}
       return initialValue;
     }
   });

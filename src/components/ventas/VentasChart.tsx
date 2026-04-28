@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ChartSkeleton } from '@/components/ui/chart-skeleton';
 import { LazyLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from '@/components/charts/LazyLineChart';
 import { formatCurrency } from '@/utils/formatters';
+import { safeMax } from '@/utils/math';
 import { useDashboardTendencia } from '@/hooks/useDashboardHooks';
 
 interface Props {
@@ -45,7 +46,7 @@ export function VentasChart({ sucursalId, dias, periodLabel, isToday }: Props) {
 
   const yAxisMax = useMemo(() => {
     if (chartData.length === 0) return 1000;
-    const maxVal = Math.max(...chartData.map((d) => d.value));
+    const maxVal = safeMax(chartData.map((d) => d.value));
     if (maxVal === 0) return 1000;
     return Math.ceil((maxVal * 1.15) / 100) * 100;
   }, [chartData]);

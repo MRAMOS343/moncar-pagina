@@ -62,7 +62,7 @@ export function CotizacionPreview({ cotizacion }: Props) {
           </tr>
         </thead>
         <tbody>
-          {cotizacion.items.map((item, i) => (
+          {(cotizacion.items ?? []).map((item, i) => (
             <tr key={i} className={i % 2 === 0 ? 'bg-muted/40' : 'bg-background'}>
               <td className="py-2 px-3">{item.cantidad}</td>
               <td className="py-2 px-3">{item.descripcion}</td>
@@ -71,9 +71,9 @@ export function CotizacionPreview({ cotizacion }: Props) {
               <td className="py-2 px-3 text-right font-medium">{fmt(item.total)}</td>
             </tr>
           ))}
-          {cotizacion.items.length < 8 &&
-            Array.from({ length: 8 - cotizacion.items.length }).map((_, i) => (
-              <tr key={`empty-${i}`} className={((cotizacion.items.length + i) % 2 === 0) ? 'bg-muted/40' : 'bg-background'}>
+          {(cotizacion.items ?? []).length < 8 &&
+            Array.from({ length: 8 - (cotizacion.items ?? []).length }).map((_, i) => (
+              <tr key={`empty-${i}`} className={(((cotizacion.items ?? []).length + i) % 2 === 0) ? 'bg-muted/40' : 'bg-background'}>
                 <td className="py-2 px-3">&nbsp;</td>
                 <td className="py-2 px-3"></td>
                 <td className="py-2 px-3"></td>

@@ -122,8 +122,9 @@ export default function VehiculosPage() {
 
   // KPIs
   const kpis = useMemo(() => {
+    // Preferimos `unidadesCount` del backend; fallback a `unidades.length` si viene anidado.
     const totalUnidades = rutas.reduce(
-      (acc, ruta) => acc + ((ruta as any).unidades?.length ?? 0),
+      (acc, ruta) => acc + (ruta.unidadesCount ?? ruta.unidades?.length ?? 0),
       0
     );
     return {
@@ -186,8 +187,8 @@ export default function VehiculosPage() {
   // Doc handler
   const handleAddDoc = (unidadId: string) => {
     // Find the unit number from rutas data
-    const allUnidades = rutas.flatMap(r => (r as any).unidades ?? []);
-    const unidad = allUnidades.find((u: any) => u.id === unidadId);
+    const allUnidades = rutas.flatMap(r => r.unidades ?? []);
+    const unidad = allUnidades.find(u => u.id === unidadId);
     setDocFormUnidad({ id: unidadId, numero: unidad?.numero ?? '' });
   };
 
