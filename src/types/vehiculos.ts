@@ -10,6 +10,8 @@ export interface Ruta {
   creadoEn: string;
   actualizadoEn: string;
   unidadesCount: number;
+  /** Algunas respuestas anidan unidades; opcional. */
+  unidades?: Unidad[];
 }
 
 /* ── Unidad ── */
