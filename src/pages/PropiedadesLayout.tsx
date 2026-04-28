@@ -24,13 +24,17 @@ export function PropiedadesLayout() {
   const navigate = useNavigate();
   const [isDarkMode, setIsDarkMode] = useLocalStorage('autoparts_dark_mode', false);
 
+  // Dark mode toggle — oculto temporalmente hasta auditoría completa de colores. Ver plan de trabajo Día 7
+  // useEffect(() => {
+  //   if (isDarkMode) {
+  //     document.documentElement.classList.add('dark');
+  //   } else {
+  //     document.documentElement.classList.remove('dark');
+  //   }
+  // }, [isDarkMode]);
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [isDarkMode]);
+    document.documentElement.classList.remove('dark');
+  }, []);
 
   const generateBreadcrumbs = () => {
     const breadcrumbs = [{ label: 'Propiedades', href: '/propiedades' }];
