@@ -19,6 +19,7 @@ import { useProveedores, useCreateProveedor, usePatchProveedor, useDeleteProveed
 import type { Proveedor } from "@/types/proveedores";
 import { EmptyState } from "@/components/ui/empty-state";
 import { KPISkeleton } from "@/components/ui/kpi-skeleton";
+import { PageLayout } from "@/components/layout/PageLayout";
 
 export default function ProveedoresPage() {
   const { currentUser } = useAuth();
@@ -99,7 +100,7 @@ export default function ProveedoresPage() {
   const isMutating = createProveedor.isPending || patchProveedor.isPending;
 
   return (
-    <div className="space-y-6 p-6">
+    <PageLayout>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Proveedores</h1>
