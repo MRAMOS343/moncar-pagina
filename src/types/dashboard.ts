@@ -4,6 +4,13 @@ export interface DashboardKpisResponse {
   num_transacciones: number;
   ticket_promedio: number;
   ventas_canceladas: number;
+  cambio_ventas_pct: number | null;
+  cambio_ventas_tipo: 'positive' | 'negative' | 'neutral';
+  total_prev: number;
+  cambio_transacciones_pct: number | null;
+  cambio_transacciones_tipo: 'positive' | 'negative' | 'neutral';
+  cambio_ticket_pct: number | null;
+  cambio_ticket_tipo: 'positive' | 'negative' | 'neutral';
   from_cache?: boolean;
 }
 
